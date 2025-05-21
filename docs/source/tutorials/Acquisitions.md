@@ -855,7 +855,7 @@ This provides insights into the overall occurrence of triggers when running the 
 The overall distribution of triggers would be: trigger count of 1 occurred twice, and trigger count of 3 occurred once. Hence, the resulting dictionary would be: `{1: 2, 3: 1}`.
 The dictionary notation shows the number of triggers as keys and their corresponding frequencies as values.
 
-Note, the threshold is set for the QRM via the field {class}`~quantify_scheduler.backends.types.qblox.SequencerOptions.ttl_acq_threshold` in {ref}`sec-qblox-sequencer-options`, while for the QTM this threshold is set via the field `in_threshold_primary` in the {ref}`sec-qblox-digitization-thresholds` hardware option.
+Note, the threshold is set for the QRM via the field {class}`~quantify_scheduler.backends.types.qblox.SequencerOptions.ttl_acq_threshold` in {ref}`sec-qblox-sequencer-options`, while for the QTM this threshold is set via the field `analog_threshold` in the {ref}`sec-qblox-digitization-thresholds` hardware option.
 
 #### Setup and schedule
 
@@ -1047,7 +1047,7 @@ The thresholded trigger count protocol is currently only implemented for the Qbl
 
 The protocol only works with the **append** bin mode. This means each acquisition result will appear in a separate bin.
 
-Note, the analog threshold for registering a single count is set for the QRM via the field {class}`~quantify_scheduler.backends.types.qblox.SequencerOptions.ttl_acq_threshold` in {ref}`sec-qblox-sequencer-options`, while for the QTM this threshold is set via the field `in_threshold_primary` in the {ref}`sec-qblox-digitization-thresholds` hardware option.
+Note, the analog threshold for registering a single count is set for the QRM via the field {class}`~quantify_scheduler.backends.types.qblox.SequencerOptions.ttl_acq_threshold` in {ref}`sec-qblox-sequencer-options`, while for the QTM this threshold is set via the field `analog_threshold` in the {ref}`sec-qblox-digitization-thresholds` hardware option.
 
 #### Setup and schedule
 
@@ -1201,7 +1201,7 @@ The thresholded trigger count protocol is currently only implemented for the Qbl
 
 The protocol only works with the **append** bin mode. This means each acquisition result will appear in a separate bin.
 
-Note, the analog threshold for registering a single count is set via the field `in_threshold_primary` in the {ref}`sec-qblox-digitization-thresholds` hardware option.
+Note, the analog threshold for registering a single count is set via the field `analog_threshold` in the {ref}`sec-qblox-digitization-thresholds` hardware option.
 
 #### Setup and schedule
 
@@ -1241,7 +1241,7 @@ hardware_cfg_trigger_count = config = {
         },
         "digitization_thresholds": {
             "qe0:optical_readout-qe0.ge0": {
-                "in_threshold_primary": 0.5
+                "analog_threshold": 0.5
             }
         }
     },

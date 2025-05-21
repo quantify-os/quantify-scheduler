@@ -676,10 +676,10 @@ class ClusterCompiler(compiler_abc.InstrumentCompiler):
                         "threshold, either via the 'sync_on_external_trigger' settings or the "
                         "hardware options."
                     )
-            elif dig_thresholds[port_clock].in_threshold_primary != ext_trig_sync.input_threshold:
+            elif dig_thresholds[port_clock].analog_threshold != ext_trig_sync.input_threshold:
                 raise ValueError(
-                    f"Channel {path} has an associated 'in_threshold_primary="
-                    f"{dig_thresholds[port_clock].in_threshold_primary}' "
+                    f"Channel {path} has an associated 'analog_threshold="
+                    f"{dig_thresholds[port_clock].analog_threshold}' "
                     "which is different from 'sync_on_external_trigger.input_threshold="
                     f"{ext_trig_sync.input_threshold}'"
                 )

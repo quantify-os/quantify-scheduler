@@ -138,7 +138,7 @@ def test_validate_sync_on_external_trigger_doubly_defined_channel_diff_threshold
             ),
             hardware_options=QbloxHardwareOptions(
                 digitization_thresholds={
-                    "some:port-some.clock": DigitizationThresholds(in_threshold_primary=0.5)
+                    "some:port-some.clock": DigitizationThresholds(analog_threshold=0.5)
                 }
             ),
             portclock_to_path={"some:port-some.clock": ChannelPath.from_path(path)},
@@ -148,7 +148,7 @@ def test_validate_sync_on_external_trigger_doubly_defined_channel_diff_threshold
 
     with pytest.raises(
         ValueError,
-        match=f"Channel {path} has an associated 'in_threshold_primary="
+        match=f"Channel {path} has an associated 'analog_threshold="
         "0.5' "
         "which is different from 'sync_on_external_trigger.input_threshold="
         "1.0'",

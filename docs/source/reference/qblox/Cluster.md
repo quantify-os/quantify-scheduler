@@ -945,7 +945,7 @@ The `"filter_func"` is a python function that we apply with `"kwargs"` arguments
 (sec-qblox-digitization-thresholds)=
 ### Digitization thresholds
 
-For the QTM, you can specify the threshold voltage above which an incoming signal is registered as a digital `high` signal. The corresponding hardware option is `"digitization_thresholds"`, which has a single field `"in_threshold_primary"`. See the following example.
+For the QTM, you can specify the threshold voltage above which an incoming signal is registered as a digital `high` signal. The corresponding hardware option is `"digitization_thresholds"`, which has a single field `"analog_threshold"`. See the following example.
 
 ```{code-block} python
 ---
@@ -971,7 +971,7 @@ hardware_compilation_cfg = {
     "hardware_options": {
         "digitization_thresholds": {
             "qe0:optical_readout-qe0.ge0": {
-                "in_threshold_primary": 0.5,
+                "analog_threshold": 0.5,
             }
         }
     }

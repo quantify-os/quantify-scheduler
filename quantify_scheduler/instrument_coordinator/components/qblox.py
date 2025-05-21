@@ -1444,25 +1444,25 @@ class _QTMComponent(_ModuleComponentBase):
         for channel_idx in settings.connected_input_indices:
             self._set_parameter(
                 self.instrument.io_channels[channel_idx],
-                "out_mode",
-                "disabled",
+                "mode",
+                "input",
             )
         for channel_idx in settings.connected_output_indices:
             self._set_parameter(
                 self.instrument.io_channels[channel_idx],
-                "out_mode",
-                "sequencer",
+                "mode",
+                "output",
             )
 
-        if settings.in_threshold_primary is not None:
+        if settings.analog_threshold is not None:
             self._set_parameter(
                 self.instrument.io_channels[seq_idx],
-                "in_threshold_primary",
-                settings.in_threshold_primary,
+                "analog_threshold",
+                settings.analog_threshold,
             )
         self._set_parameter(
             self.instrument.io_channels[seq_idx],
-            "in_trigger_en",
+            "forward_trigger_en",
             False,
         )
 
@@ -2771,8 +2771,8 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
             # settings do not conflict, if they already exist in a QTMComponent.
             self._set_parameter(
                 self.instrument.modules[module_idx].io_channels[channel_idx],
-                "out_mode",
-                "disabled",
+                "mode",
+                "input",
             )
             if settings.input_threshold is None:
                 raise ValueError(
@@ -2782,7 +2782,7 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
                 )
             self._set_parameter(
                 self.instrument.modules[module_idx].io_channels[channel_idx],
-                "in_threshold_primary",
+                "analog_threshold",
                 settings.input_threshold,
             )
         sync_ref = SyncRef.ON if settings.sync_to_ref_clock else SyncRef.OFF

@@ -6,11 +6,21 @@
             "instrument_type": "Cluster",
             "ref": "internal",
             "modules": {
-                "1": {"instrument_type": "QCM_RF"},
-                "2": {"instrument_type": "QCM"},
-                "4": {"instrument_type": "QRM"},
-                "5": {"instrument_type": "QTM"},
-                "7": {"instrument_type": "QCM"}
+                "1": {
+                    "instrument_type": "QCM_RF"
+                },
+                "2": {
+                    "instrument_type": "QCM"
+                },
+                "4": {
+                    "instrument_type": "QRM"
+                },
+                "5": {
+                    "instrument_type": "QTM"
+                },
+                "7": {
+                    "instrument_type": "QCM"
+                }
             }
         },
         "red_laser": {
@@ -53,24 +63,24 @@
                 "lo_freq": null
             },
             "qe0:optical_control-qe0.ge1": {
-            	"interm_freq": 200e6,
-            	"lo_freq": null
+                "interm_freq": 200e6,
+                "lo_freq": null
             },
             "qe0:optical_control-qe0.ionization": {
-            	"interm_freq": 200e6,
-            	"lo_freq": null
+                "interm_freq": 200e6,
+                "lo_freq": null
             },
             "qe0:optical_control-qe0.ge0": {
-            	"interm_freq": 200e6,
-            	"lo_freq": null
+                "interm_freq": 200e6,
+                "lo_freq": null
             },
             "qe0:optical_readout-qe0.ge0": {
-            	"interm_freq": 0,
-            	"lo_freq": null
+                "interm_freq": 0,
+                "lo_freq": null
             },
             "qe1:optical_control-qe1.ge0": {
-            	"interm_freq": 200e6,
-            	"lo_freq": null
+                "interm_freq": 200e6,
+                "lo_freq": null
             }
         },
         "mixer_corrections": {
@@ -81,15 +91,15 @@
                 "phase_error": -4.2
             },
             "qe1:mw-qe1.spec": {
-               "amp_ratio": 1.0,
-               "dc_offset_i": 0.0,
-               "dc_offset_q": 0.0,
-               "phase_error": 0.0
+                "amp_ratio": 1.0,
+                "dc_offset_i": 0.0,
+                "dc_offset_q": 0.0,
+                "phase_error": 0.0
             }
-       },
+        },
         "digitization_thresholds": {
             "qe1:optical_readout-qe1.ge0": {
-                "in_threshold_primary": 0.5
+                "analog_threshold": 0.5
             }
         },
         "sequencer_options": {
@@ -120,7 +130,7 @@
                 "optical_mod_spinpump_laser.out",
                 "qe0:optical_control"
             ],
-	        [
+            [
                 "cluster0.module2.real_output_1",
                 "optical_mod_green_laser.if"
             ],

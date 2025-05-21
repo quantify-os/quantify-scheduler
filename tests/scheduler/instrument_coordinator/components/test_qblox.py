@@ -71,10 +71,12 @@ def patch_qtm_parameters(mocker, module):
         # sequence is not wrapped because the QTM instructions are not yet in the qblox-instruments
         # assembler binaries.
         mocker.patch.object(sequencer.sequence, "set")
-        mocker.patch.object(io_channel.out_mode, "set", wraps=io_channel.out_mode.set)
-        mocker.patch.object(io_channel.in_trigger_en, "set", wraps=io_channel.in_trigger_en.set)
+        mocker.patch.object(io_channel.mode, "set", wraps=io_channel.mode.set)
         mocker.patch.object(
-            io_channel.in_threshold_primary, "set", wraps=io_channel.in_threshold_primary.set
+            io_channel.forward_trigger_en, "set", wraps=io_channel.forward_trigger_en.set
+        )
+        mocker.patch.object(
+            io_channel.analog_threshold, "set", wraps=io_channel.analog_threshold.set
         )
         mocker.patch.object(
             io_channel.binned_acq_time_ref, "set", wraps=io_channel.binned_acq_time_ref.set
@@ -1132,7 +1134,7 @@ def test_timetag_acquisition_qtm_append(
     qtm_instrument.io_channel4.binned_acq_time_ref.set.assert_called_with(str(TimeRef.START))
 
 
-def test_set_in_threshold_primary(
+def test_set_analog_threshold(
     mock_setup_basic_nv,
     make_cluster_component,
 ):
@@ -1143,7 +1145,7 @@ def test_set_in_threshold_primary(
     quantum_device = mock_setup_basic_nv["quantum_device"]
     hardware_cfg = EXAMPLE_QBLOX_HARDWARE_CONFIG_NV_CENTER.copy()
     hardware_cfg["hardware_options"]["digitization_thresholds"]["qe1:optical_readout-qe1.ge0"][
-        "in_threshold_primary"
+        "analog_threshold"
     ] = 0.3
     quantum_device.hardware_config(hardware_cfg)
 
@@ -1169,7 +1171,7 @@ def test_set_in_threshold_primary(
     cluster.prepare(prog)
     cluster.start()
 
-    qtm_instrument.io_channel4.in_threshold_primary.set.assert_called_with(0.3)
+    qtm_instrument.io_channel4.analog_threshold.set.assert_called_with(0.3)
 
 
 def test_retrieve_trace_acquisition_qtm(

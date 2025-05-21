@@ -1,5 +1,13 @@
 # Recent interface changes
 
+
+## 0.24.0: QTM-related user interface changes
+
+- Some of the QTM-related parameters have changed names in qblox-instruments v0.17.0. For the hardware configuration file, the following changes need to be made:
+
+  - `in_threshold_primary` -> `analog_threshold`
+
+
 ## 0.20.1: DistortionCorrection
 
 - `DistortionCorrection` is now deprecated in favor of `SoftwareDistortionCorrection`. 

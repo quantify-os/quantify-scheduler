@@ -1362,11 +1362,11 @@ def _generate_new_style_hardware_compilation_config(  # noqa: PLR0915
                     )
 
                     port_clock = f"{portclock_cfg.pop('port')}-{portclock_cfg.pop('clock')}"
-                    if "in_threshold_primary" in portclock_cfg:
+                    if "analog_threshold" in portclock_cfg:
                         # Set init gain from portclock config:
                         new_style_config["hardware_options"]["digitization_thresholds"][port_clock][
-                            "in_threshold_primary"
-                        ] = portclock_cfg.pop("in_threshold_primary")
+                            "analog_threshold"
+                        ] = portclock_cfg.pop("analog_threshold")
 
     def _convert_cluster_module_config(
         cluster_name: str,

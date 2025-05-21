@@ -1321,7 +1321,7 @@ def test_time_ref_port(mock_setup_basic_nv, qblox_hardware_config_nv_center):
 
     qblox_hardware_config_nv_center["hardware_options"]["digitization_thresholds"][
         "test:another_port-digital"
-    ] = {"in_threshold_primary": 0.5}
+    ] = {"analog_threshold": 0.5}
     qblox_hardware_config_nv_center["connectivity"]["graph"].append(
         ["cluster0.module5.digital_input_7", "test:another_port"]
     )

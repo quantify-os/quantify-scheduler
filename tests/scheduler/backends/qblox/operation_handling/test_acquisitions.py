@@ -1290,9 +1290,7 @@ def test_trigger_count_append_qtm(
                 },
                 "qe0:optical_control-qe0.ge0": {"lo_freq": None, "interm_freq": 0},
             },
-            "digitization_thresholds": {
-                "qe0:optical_readout-qe0.ge0": {"in_threshold_primary": 0.5}
-            },
+            "digitization_thresholds": {"qe0:optical_readout-qe0.ge0": {"analog_threshold": 0.5}},
             "sequencer_options": {"qe0:optical_readout-qe0.ge0": {"ttl_acq_threshold": 0.5}},
         },
         "connectivity": {
@@ -1333,9 +1331,9 @@ def test_trigger_count_append_qtm(
     # TODO remove these patches when the QTM dummy is available (SE-499)
     mocker.patch.object(ic_cluster0.instrument.module5.sequencer0.sync_en, "set")
     mocker.patch.object(ic_cluster0.instrument.module5.sequencer0.sequence, "set")
-    mocker.patch.object(ic_cluster0.instrument.module5.io_channel0.out_mode, "set")
-    mocker.patch.object(ic_cluster0.instrument.module5.io_channel0.out_mode, "get")
-    mocker.patch.object(ic_cluster0.instrument.module5.io_channel0.in_trigger_en, "set")
+    mocker.patch.object(ic_cluster0.instrument.module5.io_channel0.mode, "set")
+    mocker.patch.object(ic_cluster0.instrument.module5.io_channel0.mode, "get")
+    mocker.patch.object(ic_cluster0.instrument.module5.io_channel0.forward_trigger_en, "set")
     mocker.patch.object(ic_cluster0.instrument.module5.io_channel0.binned_acq_time_ref, "set")
     mocker.patch.object(ic_cluster0.instrument.module5.io_channel0.binned_acq_time_source, "set")
     mocker.patch.object(

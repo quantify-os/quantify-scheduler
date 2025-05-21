@@ -298,7 +298,7 @@ Please also see {ref}`sec-qblox-acquisition-details` for more information on Qbl
 ```
 
 This acquisition protocol measures how many times a predefined voltage threshold has been
-passed. For the QRM, the threshold is set via {class}`~quantify_scheduler.backends.types.qblox.SequencerOptions.ttl_acq_threshold` (see also {ref}`sec-qblox-sequencer-options`), while for the QTM this threshold setting is a dedicated hardware option called `in_threshold_primary`, see {ref}`sec-qblox-digitization-thresholds`.
+passed. For the QRM, the threshold is set via {class}`~quantify_scheduler.backends.types.qblox.SequencerOptions.ttl_acq_threshold` (see also {ref}`sec-qblox-sequencer-options`), while for the QTM this threshold setting is a dedicated hardware option called `analog_threshold`, see {ref}`sec-qblox-digitization-thresholds`.
 
 First, let's see an example when the bin mode is `BinMode.APPEND`.
 The returned data for the acquisition channel contains the number of triggers counted for each acquisition index. In the following example, suppose a schedule with one trigger count acquisition was executed 5 times (`repetitions=5`). In order, the number of triggers counted is `[6, 3, 8, 1, 3]`. The resulting dataset would then look like:
@@ -353,7 +353,7 @@ Please also see {ref}`sec-qblox-acquisition-details` for more information on Qbl
 
 This acquisition protocol returns the result of the threshold comparison. I.e., it returns a `1` if the comparison is `True` and a `0` if it is `False`. It can also be used together with the {class}`~quantify_scheduler.operations.control_flow_library.ConditionalOperation` to execute instructions based on the threshold comparison result.
 
-Note that the _analog_ thresholded for registering a single trigger is set via the hardware configuration. For the QRM, the analog threshold is set via {class}`~quantify_scheduler.backends.types.qblox.SequencerOptions.ttl_acq_threshold` (see also {ref}`sec-qblox-sequencer-options`), while for the QTM this threshold setting is a dedicated hardware option called `in_threshold_primary`, see {ref}`sec-qblox-digitization-thresholds`.
+Note that the _analog_ thresholded for registering a single trigger is set via the hardware configuration. For the QRM, the analog threshold is set via {class}`~quantify_scheduler.backends.types.qblox.SequencerOptions.ttl_acq_threshold` (see also {ref}`sec-qblox-sequencer-options`), while for the QTM this threshold setting is a dedicated hardware option called `analog_threshold`, see {ref}`sec-qblox-digitization-thresholds`.
 
 The only available bin mode is `BinMode.APPEND`.
 

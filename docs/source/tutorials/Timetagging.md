@@ -49,7 +49,7 @@ Next, we write the {ref}`hardware configuration <sec-tutorial-compiling>`:
 
 - In the `"connectivity"` we assign the QCM port 1 (`"cluster0.module{QCM_SLOT}.real_output_0"`) to a mock device port `"qcm:out"`, and assign the QTM port 1 (`"cluster0.module{QTM_SLOT}.digital_output_0"`) to the mock device port `"qtm:in"`.
 
-- In the {ref}`sec-qblox-digitization-thresholds` of `"hardware_options"` we set the value of `in_threshold_primary` field, which is the value of the voltage threshold that needs to be crossed to register a timetag in QTM modules. Note the `"qtm:in-digital"` key that is used here; `digital` is the default clock assigned to digital channels.
+- In the {ref}`sec-qblox-digitization-thresholds` of `"hardware_options"` we set the value of `analog_threshold` field, which is the value of the voltage threshold that needs to be crossed to register a timetag in QTM modules. Note the `"qtm:in-digital"` key that is used here; `digital` is the default clock assigned to digital channels.
 
 ```{code-cell} ipython3
 ---
@@ -72,7 +72,7 @@ hw_cfg = {
         },
     },
     "hardware_options": {
-        "digitization_thresholds": {"qtm:in-digital": {"in_threshold_primary": 0.5}},
+        "digitization_thresholds": {"qtm:in-digital": {"analog_threshold": 0.5}},
     },
     "connectivity": {
         "graph": [
@@ -361,7 +361,7 @@ hw_cfg = {
             "qe0:optical_readout-qe0.ge0": {"interm_freq": 0.0, "lo_freq": None},
         },
         "digitization_thresholds": {
-            "qe0:optical_readout-qe0.ge0": {"in_threshold_primary": 0.5}
+            "qe0:optical_readout-qe0.ge0": {"analog_threshold": 0.5}
         },
     },
     "connectivity": {

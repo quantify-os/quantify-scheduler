@@ -36,8 +36,8 @@ def test_sync_on_external_trigger_success_cmm(mocker):
 def test_sync_on_external_trigger_success_qtm(mocker):
     cluster = Cluster("cluster", dummy_cfg={10: ClusterType.CLUSTER_QTM})
     mocker.patch.object(cluster.time, "sync_ext_trigger")
-    mocker.patch.object(cluster.module10.io_channel0.in_threshold_primary, "set")
-    mocker.patch.object(cluster.module10.io_channel0.out_mode, "set")
+    mocker.patch.object(cluster.module10.io_channel0.analog_threshold, "set")
+    mocker.patch.object(cluster.module10.io_channel0.mode, "set")
     component = ClusterComponent(cluster)
     # TODO more settings
     component.prepare(
@@ -61,5 +61,5 @@ def test_sync_on_external_trigger_success_qtm(mocker):
         edge_polarity=Polarity.RISING_EDGE,
         sync_ref=SyncRef.OFF,
     )
-    cluster.module10.io_channel0.in_threshold_primary.set.assert_called_once_with(0.5)
-    cluster.module10.io_channel0.out_mode.set.assert_called_once_with("disabled")
+    cluster.module10.io_channel0.analog_threshold.set.assert_called_once_with(0.5)
+    cluster.module10.io_channel0.mode.set.assert_called_once_with("input")

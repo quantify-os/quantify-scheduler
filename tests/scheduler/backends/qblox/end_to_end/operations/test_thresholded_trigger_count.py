@@ -751,7 +751,7 @@ def test_same_cond_sequencer_different_condition_qtm_success(
 ):
     qblox_hardware_config_nv_center["hardware_options"]["digitization_thresholds"][
         "qe2:optical_readout-digital"
-    ] = {"in_threshold_primary": 0.5}
+    ] = {"analog_threshold": 0.5}
     qblox_hardware_config_nv_center["connectivity"]["graph"].append(
         ["cluster0.module5.digital_input_6", "qe2:optical_readout"]
     )

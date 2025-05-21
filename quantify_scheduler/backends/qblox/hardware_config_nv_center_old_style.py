@@ -110,7 +110,7 @@ hardware_config = {
                     {
                         "port": "qe1:optical_readout",
                         "clock": "qe1.ge0",
-                        "in_threshold_primary": 0.5,
+                        "analog_threshold": 0.5,
                     }
                 ],
             },

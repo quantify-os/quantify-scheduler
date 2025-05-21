@@ -883,7 +883,7 @@ class TimetagSequencerSettings(SequencerSettings):
     (e.g. parameters related to thresholded acquisition).
     """
 
-    in_threshold_primary: Optional[float] = None
+    analog_threshold: Optional[float] = None
     """The settings that determine when an analog voltage is counted as a pulse."""
     time_source: Optional[TimeSource] = None
     """Selects the timetag data source for timetag acquisitions."""
@@ -968,8 +968,8 @@ class TimetagSequencerSettings(SequencerSettings):
             channel_name_measure=sequencer_cfg.channel_name_measure,
             connected_output_indices=connected_output_indices,
             connected_input_indices=connected_input_indices,
-            in_threshold_primary=(
-                sequencer_cfg.digitization_thresholds.in_threshold_primary
+            analog_threshold=(
+                sequencer_cfg.digitization_thresholds.analog_threshold
                 if sequencer_cfg.digitization_thresholds is not None
                 else None
             ),
@@ -1595,7 +1595,7 @@ class QbloxHardwareDistortionCorrection(HardwareDistortionCorrection):
 class DigitizationThresholds(DataStructure):
     """The settings that determine when an analog voltage is counted as a pulse."""
 
-    in_threshold_primary: Optional[float] = None
+    analog_threshold: Optional[float] = None
     """
     For QTM modules only, this is the voltage threshold above which an input signal is
     registered as high.
