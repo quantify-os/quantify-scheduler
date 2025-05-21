@@ -360,6 +360,7 @@ class QRCCompiler(RFModuleCompiler):
         channel_name_to_digital_marker={
             "digital_output_0": 0b1,
         },
+        default_nco_en=True,
     )
 
 

@@ -462,7 +462,6 @@ class _AnalogModuleComponent(_ModuleComponentBase):
 
         """
         assert isinstance(settings, AnalogSequencerSettings)
-        self._set_parameter(self.instrument.sequencers[seq_idx], "mod_en_awg", settings.nco_en)
 
         if settings.nco_en:
             self._nco_frequency_changed[seq_idx] = not parameter_value_same_as_cache(
@@ -633,6 +632,11 @@ class _QCMComponent(_AnalogModuleComponent):
             self._configure_sequencer_settings(seq_idx=seq_idx, settings=sequencer_settings)
             self._configure_nco_mixer_calibration(seq_idx=seq_idx, settings=sequencer_settings)
 
+    def _configure_sequencer_settings(self, seq_idx: int, settings: SequencerSettings) -> None:
+        assert isinstance(settings, AnalogSequencerSettings)
+        self._set_parameter(self.instrument.sequencers[seq_idx], "mod_en_awg", settings.nco_en)
+        super()._configure_sequencer_settings(seq_idx, settings)
+
     def _configure_global_settings(self, settings: BaseModuleSettings) -> None:
         """
         Configures all settings that are set globally for the whole instrument.
@@ -693,15 +697,13 @@ class _QCMComponent(_AnalogModuleComponent):
             )
 
 
-class _QRMComponent(_AnalogModuleComponent):
-    """QRM specific InstrumentCoordinator component."""
-
-    _hardware_properties = _QRM_BASEBAND_PROPERTIES
+class _AnalogReadoutComponent(_AnalogModuleComponent):
+    """Qblox InstrumentCoordinator readout component base class."""
 
     def __init__(self, instrument: Module) -> None:
         if not (instrument.is_qrm_type or instrument.is_qrc_type):
             raise TypeError(
-                f"Trying to create _QRMComponent from non-QRM or QRC instrument "
+                f"Trying to create _AnalogReadoutComponent from non-QRM or QRC instrument "
                 f'of type "{type(instrument)}".'
             )
         super().__init__(instrument)
@@ -762,7 +764,6 @@ class _QRMComponent(_AnalogModuleComponent):
                 )
 
             self._configure_sequencer_settings(seq_idx=seq_idx, settings=sequencer_settings)
-            self._configure_nco_mixer_calibration(seq_idx=seq_idx, settings=sequencer_settings)
             acq_duration[seq_name] = sequencer_settings.integration_length_acq
 
         if (acq_metadata := program.get("acq_metadata")) is not None:
@@ -840,7 +841,6 @@ class _QRMComponent(_AnalogModuleComponent):
                 settings.integration_length_acq,
             )
 
-        self._set_parameter(self.instrument.sequencers[seq_idx], "demod_en_acq", settings.nco_en)
         if settings.ttl_acq_auto_bin_incr_en is not None:
             self._set_parameter(
                 self.instrument.sequencers[seq_idx],
@@ -972,6 +972,53 @@ class _QRMComponent(_AnalogModuleComponent):
         """Clears remaining data on the module. Module type specific function."""
         if self._acquisition_manager:
             self._acquisition_manager.delete_acquisition_data()
+
+
+class _QRMComponent(_AnalogReadoutComponent):
+    """QRM specific InstrumentCoordinator component."""
+
+    _hardware_properties = _QRM_BASEBAND_PROPERTIES
+
+    def prepare(self, program: dict[str, dict]) -> None:
+        """
+        Uploads the waveforms and programs to the sequencers.
+
+        All the settings that are required are configured. Keep in mind that
+        values set directly through the driver may be overridden (e.g. the
+        offsets will be set according to the specified mixer calibration
+        parameters).
+
+        Parameters
+        ----------
+        program
+            Program to upload to the sequencers.
+            Under the key :code:`"sequencer"` you specify the sequencer specific
+            options for each sequencer, e.g. :code:`"seq0"`.
+            For global settings, the options are under different keys, e.g. :code:`"settings"`.
+
+        """
+        super().prepare(program)
+
+        for seq_name, settings in program["sequencers"].items():
+            if isinstance(settings, dict):
+                sequencer_settings = AnalogSequencerSettings.from_dict(settings)
+            else:
+                sequencer_settings = settings
+            if seq_name in self._seq_name_to_idx_map:
+                seq_idx = self._seq_name_to_idx_map[seq_name]
+            else:
+                raise KeyError(
+                    f"Invalid program. Attempting to access non-existing sequencer "
+                    f'with name "{seq_name}".'
+                )
+
+            self._configure_nco_mixer_calibration(seq_idx=seq_idx, settings=sequencer_settings)
+
+    def _configure_sequencer_settings(self, seq_idx: int, settings: SequencerSettings) -> None:
+        assert isinstance(settings, AnalogSequencerSettings)
+        self._set_parameter(self.instrument.sequencers[seq_idx], "mod_en_awg", settings.nco_en)
+        self._set_parameter(self.instrument.sequencers[seq_idx], "demod_en_acq", settings.nco_en)
+        super()._configure_sequencer_settings(seq_idx, settings)
 
 
 class _RFComponent(_AnalogModuleComponent):
@@ -1221,7 +1268,7 @@ class _QRMRFComponent(_RFComponent, _QRMComponent):
         return channel_map_parameters
 
 
-class _QRCComponent(_RFComponent, _QRMComponent):
+class _QRCComponent(_RFComponent, _AnalogReadoutComponent):
     """QRC specific InstrumentCoordinator component."""
 
     _hardware_properties = _QRC_PROPERTIES
@@ -1270,6 +1317,12 @@ class _QRCComponent(_RFComponent, _QRMComponent):
             channel_map_parameters["connect_acq"] = "off"
 
         return channel_map_parameters
+
+    def _configure_sequencer_settings(self, seq_idx: int, settings: SequencerSettings) -> None:
+        assert isinstance(settings, AnalogSequencerSettings)
+        if not settings.nco_en:
+            raise ValueError(f"QRC module '{self.name}' does not support operating without NCO.")
+        super()._configure_sequencer_settings(seq_idx, settings)
 
 
 class _QTMComponent(_ModuleComponentBase):
@@ -1493,7 +1546,7 @@ class _QTMComponent(_ModuleComponentBase):
             self._acquisition_manager.delete_acquisition_data()
 
 
-_ReadoutModuleComponentT = Union[_QRMComponent, _QTMComponent]
+_ReadoutModuleComponentT = Union[_AnalogReadoutComponent, _QTMComponent]
 
 
 class _AcquisitionManagerBase(ABC):
@@ -1771,7 +1824,7 @@ class _QRMAcquisitionManager(_AcquisitionManagerBase):
 
     def __init__(
         self,
-        parent: _QRMComponent,
+        parent: _AnalogReadoutComponent,
         acquisition_metadata: dict[str, AcquisitionMetadata],
         acquisition_duration: dict[str, int],
         seq_name_to_idx_map: dict[str, int],

@@ -120,6 +120,7 @@ class AnalogSequencerCompiler(SequencerCompiler):
                     sequencer_cfg.channel_name,
                     sequencer_cfg.channel_name_measure,
                 ),
+                default_nco_en=static_hw_properties.default_nco_en,
             )
         )
 
@@ -879,7 +880,7 @@ class AnalogModuleCompiler(ClusterModuleCompiler, ABC):
         Raises an error if multiple sequencers use scope mode acquisition,
         because that's not supported by the hardware.
         Also, see
-        :func:`~quantify_scheduler.instrument_coordinator.components.qblox._QRMComponent._determine_scope_mode_acquisition_sequencer_and_qblox_acq_index`
+        :func:`~quantify_scheduler.instrument_coordinator.components.qblox._AnalogReadoutComponent._determine_scope_mode_acquisition_sequencer_and_qblox_acq_index`
         which also ensures the program that gets uploaded to the hardware satisfies this
         requirement.
 

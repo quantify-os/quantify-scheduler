@@ -88,6 +88,7 @@ class TimetagSequencerCompiler(SequencerCompiler):
                     sequencer_cfg.channel_name,
                     sequencer_cfg.channel_name_measure,
                 ),
+                default_nco_en=False,
             )
         )
 
