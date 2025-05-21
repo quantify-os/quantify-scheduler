@@ -195,6 +195,11 @@ class DispersiveMeasurementSpin(DispersiveMeasurement):
     ) -> None:
         super().__init__(parent=parent, name=name, **kwargs)
 
+        # TODO: this should be refactored when we redesign how quantify supports different qubits.
+        # See QTFY-738.
+        self.integration_time.remove_validator()
+        self.integration_time.add_validator(vals=validators.Numbers(min_value=0, max_value=10e-3))
+
         self.gate_pulse_amp = ManualParameter(
             name="gate_pulse_amp",
             instrument=self,
