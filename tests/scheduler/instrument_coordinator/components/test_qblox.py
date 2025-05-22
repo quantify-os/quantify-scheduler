@@ -1333,6 +1333,61 @@ def test_retrieve_timetag_trace_acquisition_qtm(
     xr.testing.assert_identical(qtm.retrieve_acquisition(), expected_dataset)
 
 
+def test_retrieve_empty_timetag_trace_acquisition_qtm():
+    acq_channel_metadata = AcquisitionChannelMetadata(acq_channel=0, acq_indices=[0])
+    acq_metadata = AcquisitionMetadata(
+        "TimetagTrace", BinMode.APPEND, np.ndarray, {0: acq_channel_metadata}, 1
+    )
+    acq_manager = qblox._QTMAcquisitionManager(
+        parent=Mock(),
+        acquisition_metadata={"0": acq_metadata},
+        acquisition_duration={"0": 10},
+        seq_name_to_idx_map={"seq0": 0},
+    )
+
+    dummy_data = {
+        "0": {
+            "index": 0,
+            "acquisition": {
+                "bins": {
+                    "count": [
+                        np.nan,
+                    ],
+                    "timedelta": [
+                        np.nan,
+                    ],
+                    "threshold": [0.0],
+                    "avg_cnt": [0],
+                },
+                "scope": [
+                    ["OPEN", 322053621179604992],
+                    ["CLOSE", 322053621200494592],
+                ],
+            },
+        }
+    }
+
+    expected_dataarray = xr.DataArray(
+        [[[]]],
+        dims=["repetition", "acq_index_0", "trace_index_0"],
+        coords={"acq_index_0": [0], "trace_index_0": []},
+        attrs={"acq_protocol": "TimetagTrace"},
+    )
+
+    xr.testing.assert_identical(
+        acq_manager._get_timetag_trace_data(
+            acq_indices=[0],
+            hardware_retrieved_acquisitions=dummy_data,
+            acquisition_metadata=acq_metadata,
+            acq_duration=10,
+            qblox_acq_index=0,
+            acq_channel=0,
+            sequencer_name="seq0",
+        ),
+        expected_dataarray,
+    )
+
+
 def test_multiple_retrieve_timetag_trace_acquisition_qtm(
     mock_setup_basic_nv,
     make_cluster_component,
@@ -1432,6 +1487,65 @@ def test_multiple_retrieve_timetag_trace_acquisition_qtm(
     cluster.start()
 
     xr.testing.assert_identical(qtm.retrieve_acquisition(), expected_dataset)
+
+
+def test_multiple_retrieve_empty_timetag_trace_acquisition_qtm():
+    acq_channel_metadata = AcquisitionChannelMetadata(acq_channel=0, acq_indices=[0])
+    acq_metadata = AcquisitionMetadata(
+        "TimetagTrace", BinMode.APPEND, np.ndarray, {0: acq_channel_metadata}, 2
+    )
+    acq_manager = qblox._QTMAcquisitionManager(
+        parent=Mock(),
+        acquisition_metadata={"0": acq_metadata},
+        acquisition_duration={"0": 10},
+        seq_name_to_idx_map={"seq0": 0},
+    )
+
+    dummy_data = {
+        "0": {
+            "index": 0,
+            "acquisition": {
+                "bins": {
+                    "count": [
+                        4.0,
+                        3.0,
+                    ],
+                    "timedelta": [
+                        1898975.0,
+                        1898980.0,
+                    ],
+                    "threshold": [1.0, 1.0],
+                    "avg_cnt": [4, 3],
+                },
+                "scope": [
+                    ["OPEN", 322053621179604992],
+                    ["CLOSE", 322053621200494592],
+                    ["OPEN", 322053621179604992],
+                    ["CLOSE", 322053621200494592],
+                ],
+            },
+        }
+    }
+
+    expected_dataarray = xr.DataArray(
+        [[[]], [[]]],
+        dims=["repetition", "acq_index_0", "trace_index_0"],
+        coords={"acq_index_0": [0], "trace_index_0": []},
+        attrs={"acq_protocol": "TimetagTrace"},
+    )
+
+    xr.testing.assert_identical(
+        acq_manager._get_timetag_trace_data(
+            acq_indices=[0],
+            hardware_retrieved_acquisitions=dummy_data,
+            acquisition_metadata=acq_metadata,
+            acq_duration=10,
+            qblox_acq_index=0,
+            acq_channel=0,
+            sequencer_name="seq0",
+        ),
+        expected_dataarray,
+    )
 
 
 def test_start_baseband(

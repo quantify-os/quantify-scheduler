@@ -4,7 +4,6 @@
 
 from __future__ import annotations
 
-import itertools
 import logging
 import os
 import re
@@ -2484,17 +2483,22 @@ class _QTMAcquisitionManager(_AcquisitionManagerBase):
         *first* pulse recorded in each window. This data is used to calculate the
         relative timetags for all timetags in the trace.
         """
-        parsed_scope_data = []
-        # groupby splits the list on the "OPEN"/"CLOSE" events
-        for open_close, group in itertools.groupby(scope_data, lambda x: x[0] in ("OPEN", "CLOSE")):
-            # We get "False" groups with the events we're interested in, and "True" groups with
-            # OPEN/CLOSE events, which we ignore.
-            if not open_close:
-                parsed_scope_data.append(list(group))
+        parsed_scope_data: list[list[int]] = []
+        for event, time in scope_data:
+            if event == "OPEN":
+                parsed_scope_data.append([])
+            elif event == "CLOSE":
+                pass
+            else:
+                parsed_scope_data[-1].append(time)
+
         timetag_traces = []
-        for ref_timetag, scope_group in zip(timetags, parsed_scope_data):
+        for ref_timetag, timetags_in_window in zip(timetags, parsed_scope_data):
             timetag_traces.append(
-                [(ref_timetag + event[1] - scope_group[0][1]) / 2048 for event in scope_group]
+                [
+                    (ref_timetag + event - timetags_in_window[0]) / 2048
+                    for event in timetags_in_window
+                ]
             )
 
         return timetag_traces
