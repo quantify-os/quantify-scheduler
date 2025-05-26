@@ -6,16 +6,19 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+import ruamel.yaml as ry
 from qcodes.instrument.base import Instrument
 
 from quantify_scheduler.device_under_test.device_element import DeviceElement
 from quantify_scheduler.helpers.importers import export_python_object_to_path_string
+from quantify_scheduler.json_utils import JSONSerializable
+from quantify_scheduler.yaml_utils import YAMLSerializable
 
 if TYPE_CHECKING:
     from quantify_scheduler.backends.graph_compilation import OperationCompilationConfig
 
 
-class Edge(Instrument):
+class Edge(YAMLSerializable, JSONSerializable, Instrument):
     """
     Create an Edge.
 
@@ -37,7 +40,7 @@ class Edge(Instrument):
 
         super().__init__(name=f"{parent_element_name}_{child_element_name}", **kwargs)
 
-    def __getstate__(self) -> dict[str, Any]:  # type: ignore
+    def __json_getstate__(self) -> dict[str, Any]:  # type: ignore
         """
         Serialize :class:`~Edge` into a dictionary.
 
@@ -64,6 +67,36 @@ class Edge(Instrument):
             "data": edge_data,
         }
         return state
+
+    def __getstate__(self) -> dict[str, Any]:  # type: ignore[override]
+        """Get the state of :class:`~Edge` (used for YAML serialization)."""
+        snapshot = self.snapshot()
+
+        edge_data: dict[str, Any] = {
+            "parent_element_name": self._parent_element_name,
+            "child_element_name": self._child_element_name,
+        }
+
+        for submodule_name, submodule_data in snapshot["submodules"].items():
+            edge_data[submodule_name] = {
+                name: data["value"] for name, data in submodule_data["parameters"].items()
+            }
+
+        return edge_data
+
+    @classmethod
+    def from_yaml(cls, constructor: ry.Constructor, node: ry.MappingNode) -> Instrument:
+        """YAML loading logic."""
+        if isinstance(constructor, ry.RoundTripConstructor):
+            data = ry.CommentedMap()
+            constructor.construct_mapping(node, maptyp=data, deep=True)
+        else:
+            data = constructor.construct_mapping(node, deep=True)
+
+        if "parent_element_name" in data:
+            return cls(**data)
+        else:
+            return cls(name=data.pop("name"), **data)
 
     @property
     def parent_device_element(self) -> Instrument:

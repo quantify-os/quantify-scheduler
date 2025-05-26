@@ -53,14 +53,13 @@ from quantify_scheduler.operations.pulse_factories import (
 )
 from quantify_scheduler.operations.pulse_library import (
     IdlePulse,
-    RampPulse,
     ReferenceMagnitude,
     SetClockFrequency,
     SquarePulse,
 )
 from quantify_scheduler.operations.spin_library import SpinInit
 from quantify_scheduler.resources import BasebandClockResource, ClockResource
-from quantify_scheduler.schedules.schedule import Schedule, ScheduleBase
+from quantify_scheduler.schedules.schedule import Schedule
 
 if TYPE_CHECKING:
     from quantify_scheduler.operations.operation import Operation

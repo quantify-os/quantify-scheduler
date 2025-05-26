@@ -409,6 +409,11 @@ class Connectivity(DataStructure):
             graph = list_of_edges
         return graph
 
+    @field_serializer("graph")
+    def serialize_graph(self, graph: Graph) -> list[tuple[Any, Any]]:
+        """Serialize the graph as a list of edges."""
+        return list(graph.edges)
+
     def draw(
         self,
         ax: Axes | None = None,

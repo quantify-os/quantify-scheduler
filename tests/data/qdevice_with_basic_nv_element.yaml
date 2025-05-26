@@ -1,0 +1,99 @@
+!QuantumDevice
+name: quantum_device
+elements:
+  qe0: !BasicElectronicNVElement
+    name: qe0
+    spectroscopy_operation:
+      amplitude: 0.001
+      duration: 8e-06
+      pulse_shape: SquarePulse
+    ports:
+      microwave: qe0:mw
+      optical_control: qe0:optical_control
+      optical_readout: qe0:optical_readout
+    clock_freqs:
+      f01: 3592000000.0
+      spec: 2200000000.0
+      ge0: 470400000000000.0
+      ge1: 470395000000000.0
+      ionization: 564000000000000.0
+    reset:
+      amplitude: 0.001
+      duration: 5e-05
+    charge_reset:
+      amplitude: 0.001
+      duration: 2e-05
+    measure:
+      pulse_amplitude: 0.001
+      pulse_duration: 2e-05
+      acq_duration: 5e-05
+      acq_delay: 0
+      acq_channel: 0
+      time_source: first
+      time_ref: start
+    pulse_compensation:
+      max_compensation_amp: 0.1
+      time_grid: 4e-09
+      sampling_rate: 1000000000.0
+    cr_count:
+      readout_pulse_amplitude: 0.001
+      spinpump_pulse_amplitude: 0.001
+      readout_pulse_duration: 2e-05
+      spinpump_pulse_duration: 2e-05
+      acq_duration: 5e-05
+      acq_delay: 0
+      acq_channel: 0
+    rxy:
+      amp180: 0.5
+      skewness: 0
+      duration: 2e-08
+      pulse_shape: SkewedHermitePulse
+  qe1: !BasicElectronicNVElement
+    name: qe1
+    spectroscopy_operation:
+      amplitude: 0.001
+      duration: 8e-06
+      pulse_shape: SquarePulse
+    ports:
+      microwave: qe1:mw
+      optical_control: qe1:optical_control
+      optical_readout: qe1:optical_readout
+    clock_freqs:
+      f01: 4874000000.0
+      spec: 1400000000.0
+      ge0: 470400000000000.0
+      ge1: 470395000000000.0
+      ionization: 420000000000000.0
+    reset:
+      amplitude: 0.001
+      duration: 5e-05
+    charge_reset:
+      amplitude: 0.001
+      duration: 2e-05
+    measure:
+      pulse_amplitude: 0.001
+      pulse_duration: 2e-05
+      acq_duration: 5e-05
+      acq_delay: 0
+      acq_channel: 1
+      time_source: first
+      time_ref: start
+    pulse_compensation:
+      max_compensation_amp: 0.1
+      time_grid: 4e-09
+      sampling_rate: 1000000000.0
+    cr_count:
+      readout_pulse_amplitude: 0.001
+      spinpump_pulse_amplitude: 0.001
+      readout_pulse_duration: 2e-05
+      spinpump_pulse_duration: 2e-05
+      acq_duration: 5e-05
+      acq_delay: 0
+      acq_channel: 0
+    rxy:
+      amp180: 0.5
+      skewness: 0
+      duration: 2e-08
+      pulse_shape: SkewedHermitePulse
+edges: {}
+cfg_sched_repetitions: 1024

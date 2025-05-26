@@ -63,7 +63,7 @@ class HardwareConfig(ManualParameter):
             If an I/O error occurs during file reading.
 
         """
-        file_path = Path(file_path)  # note that Path(Path(path) == Path(path)
+        file_path = Path(file_path)  # note that Path(Path(path)) == Path(path)
         if file_path.is_dir():
             raise IsADirectoryError(f"{file_path.name} is a directory")
         with file_path.open("r") as file:

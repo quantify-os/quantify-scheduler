@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING, Any
 
 import fastjsonschema
 import numpy as np
+from pydantic import BaseModel
 from qcodes.instrument import Instrument
 
 from quantify_core.data.handling import get_datadir
@@ -227,7 +228,11 @@ class SchedulerJSONDecoder(json.JSONDecoder):
                 return class_type
 
             new_obj = class_type.__new__(class_type)  # type: ignore
-            new_obj.__setstate__(obj)
+            if hasattr(new_obj, "__json_setstate__"):
+                # Handle JSON deserialization separately from YAML.
+                new_obj.__json_setstate__(obj)
+            else:
+                new_obj.__setstate__(obj)
             return new_obj
 
         return obj
@@ -363,54 +368,100 @@ class SchedulerJSONEncoder(json.JSONEncoder):
     string.
     """
 
-    def default(self, o: object) -> object:
+    def default(self, o: object) -> object:  # noqa: PLR0911
         """
         Overloads the json.JSONEncoder default method that returns a serializable
         object. It will try 3 different serialization methods which are, in order,
         check if the object is to be serialized to a string using repr. If not, try
         to use ``__getstate__``. Finally, try to serialize the ``__dict__`` property.
         """
-        if isinstance(
-            o,
-            (  # type: ignore  # (type checker cannot deal with numpy types)
-                complex,
-                np.int32,
-                np.complex128,
-                np.int64,
-                enums.StrEnum,
-                Enum,
-            ),
-        ):
-            return {
-                "deserialization_type": type(o).__name__,
-                "mode": "__init__",
-                "data": str(o),
-            }
-        elif isinstance(o, (np.ndarray,)):
-            return {
-                "deserialization_type": type(o).__name__,
-                "mode": "__init__",
-                "data": list(o),
-            }
-        elif o in DEFAULT_TYPES:
-            assert isinstance(o, type)
-            return {"deserialization_type": o.__name__, "mode": "type"}
-        elif hasattr(o, "__getstate__"):
-            # Pyright does not support verifying this properly.
-            # <https://github.com/microsoft/pyright/issues/7363>
-            return o.__getstate__()  # pyright: ignore[reportAttributeAccessIssue]
-        elif hasattr(o, "__dict__"):
-            return o.__dict__
+        try:
+            if isinstance(
+                o,
+                (  # type: ignore  # (type checker cannot deal with numpy types)
+                    complex,
+                    np.int32,
+                    np.complex128,
+                    np.int64,
+                    enums.StrEnum,
+                    Enum,
+                ),
+            ):
+                return {
+                    "deserialization_type": type(o).__name__,
+                    "mode": "__init__",
+                    "data": str(o),
+                }
+            elif isinstance(o, (np.ndarray,)):
+                return {
+                    "deserialization_type": type(o).__name__,
+                    "mode": "__init__",
+                    "data": list(o),
+                }
+            elif o in DEFAULT_TYPES:
+                assert isinstance(o, type)
+                return {"deserialization_type": o.__name__, "mode": "type"}
+            elif hasattr(o, "__json_getstate__"):
+                # Handle JSON serialization separately from YAML.
+                return o.__json_getstate__()  # pyright: ignore[reportAttributeAccessIssue]
+            elif hasattr(o, "__getstate__") and not isinstance(o, type):
+                # We only call __getstate__ on instances, not on class objects.
+                # Pyright does not support verifying this properly.
+                # <https://github.com/microsoft/pyright/issues/7363>
+                return o.__getstate__()  # pyright: ignore[reportAttributeAccessIssue]
+            elif isinstance(o, type) and hasattr(o, "__module__") and hasattr(o, "__name__"):
+                # Handle class objects by returning their fully qualified name
+                return {
+                    "deserialization_type": "type",
+                    "mode": "type",
+                    "data": f"{o.__module__}.{o.__name__}",
+                }
+            elif isinstance(o, BaseModel):
+                # Special case for pydantic models
+                return o.model_dump()
+            elif hasattr(o, "__dict__"):
+                return o.__dict__
 
-        # Let the base class default method raise the TypeError
-        return json.JSONEncoder.default(self, o)
+            # Try string representation as a last resort
+            return {"string_representation": str(o)}
+        except Exception:
+            # If we hit any serialization error, use a safe fallback
+            return {"unserializable_object": True, "type": str(type(o).__name__)}
 
 
-class JSONSerializableMixin:
+class JSONSerializable:
     """
     Mixin to allow de/serialization of arbitrary objects using :class:`~SchedulerJSONEncoder`
     and :class:`~SchedulerJSONDecoder`.
     """
+
+    def to_dict(self) -> dict[str, Any]:
+        """
+        Convert the object to a dictionary representation.
+
+        Returns
+        -------
+            Dictionary representation of the object.
+
+        """
+        return json.loads(self.to_json())
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> Self:
+        """
+        Convert a dictionary to an instance of the attached class.
+
+        Parameters
+        ----------
+        data
+            The dictionary data to convert.
+
+        Returns
+        -------
+            The deserialized object.
+
+        """
+        return json.loads(json.dumps(data), cls=SchedulerJSONDecoder)
 
     def to_json(self) -> str:
         """

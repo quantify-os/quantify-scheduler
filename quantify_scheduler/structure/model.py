@@ -5,6 +5,7 @@
 from collections.abc import Callable
 from typing import Any
 
+import ruamel.yaml as ry
 from pydantic import BaseModel, ConfigDict
 
 from quantify_scheduler.helpers.importers import (
@@ -41,6 +42,26 @@ class DataStructure(BaseModel):
         validate_assignment=True,
         # run validation when assigning attributes
     )
+
+    @classmethod
+    def to_yaml(cls, representer: ry.Representer, node: BaseModel) -> ry.MappingNode:
+        """Dump the model to a YAML node used by the representer."""
+        return representer.represent_mapping(
+            f"!{cls.__name__}",
+            node.model_dump(
+                exclude_unset=True
+            ),  # NOTE: `exclude_defaults` breaks modules deserialization
+        )
+
+    @classmethod
+    def from_yaml(cls, constructor: ry.Constructor, node: ry.MappingNode) -> "DataStructure":
+        """YAML loading logic."""
+        if isinstance(constructor, ry.RoundTripConstructor):
+            data = ry.CommentedMap()
+            constructor.construct_mapping(node, maptyp=data, deep=True)
+        else:
+            data = constructor.construct_mapping(node, deep=True)
+        return cls.model_validate(data)
 
 
 def deserialize_function(fun: str) -> Callable[..., Any]:

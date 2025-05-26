@@ -29,13 +29,13 @@ from quantify_scheduler.helpers.importers import (
     import_python_object_from_string,
 )
 from quantify_scheduler.json_utils import (
-    JSONSerializableMixin,
+    JSONSerializable,
     SchedulerJSONDecoder,
-    SchedulerJSONEncoder,
 )
+from quantify_scheduler.yaml_utils import YAMLSerializable
 
 
-class QuantumDevice(JSONSerializableMixin, Instrument):
+class QuantumDevice(YAMLSerializable, JSONSerializable, Instrument):
     """
     The QuantumDevice directly represents the device under test (DUT).
 
@@ -137,7 +137,7 @@ class QuantumDevice(JSONSerializableMixin, Instrument):
         # Store refs to prevent them from being garbage collected.
         self._instrument_references = {}
 
-    def __getstate__(self) -> dict[str, Any]:  # type: ignore
+    def __json_getstate__(self) -> dict[str, Any]:  # type: ignore
         """
         Serializes :class:`~QuantumDevice` into a dict containing serialized :class:`~DeviceElement`
         and :class:`~Edge` objects plus ``cfg_sched_repetitions``.
@@ -145,16 +145,15 @@ class QuantumDevice(JSONSerializableMixin, Instrument):
         data: dict[str, Any] = {"name": self.name}
 
         data["elements"] = {
-            element_name: json.dumps(self.get_element(element_name), cls=SchedulerJSONEncoder)
+            element_name: self.get_element(element_name).to_dict()
             for element_name in self.elements()
         }
 
         data["edges"] = {
-            edge_name: json.dumps(self.get_edge(edge_name), cls=SchedulerJSONEncoder)
-            for edge_name in self.edges()
+            edge_name: self.get_edge(edge_name).to_dict() for edge_name in self.edges()
         }
 
-        data["cfg_sched_repetitions"] = str(self.cfg_sched_repetitions())
+        data["cfg_sched_repetitions"] = int(self.cfg_sched_repetitions())
 
         state = {
             "deserialization_type": export_python_object_to_path_string(self.__class__),
@@ -163,7 +162,21 @@ class QuantumDevice(JSONSerializableMixin, Instrument):
 
         return state
 
-    def __setstate__(self, state: dict[str, Any]) -> None:
+    def __getstate__(self) -> dict[str, Any]:  # type: ignore[override]
+        """Get the state of :class:`~QuantumDevice` (used for YAML serialization)."""
+        data: dict[str, Any] = {"name": self.name}
+
+        data["elements"] = {
+            element_name: self.get_element(element_name) for element_name in self.elements()
+        }
+
+        data["edges"] = {edge_name: self.get_edge(edge_name) for edge_name in self.edges()}
+
+        data["cfg_sched_repetitions"] = int(self.cfg_sched_repetitions())
+
+        return data
+
+    def __json_setstate__(self, state: dict[str, Any]) -> None:
         """
         Deserializes a dict of serialized :class:`~DeviceElement` and :class:`~Edge` objects
         into a `QuantumDevice`.
@@ -171,18 +184,46 @@ class QuantumDevice(JSONSerializableMixin, Instrument):
         self.__init__(state["data"]["name"])
 
         for element_name, serialized_element in state["data"]["elements"].items():
-            self._instrument_references[element_name] = json.loads(
-                serialized_element, cls=SchedulerJSONDecoder
-            )
+            if isinstance(serialized_element, DeviceElement):
+                self._instrument_references[element_name] = serialized_element
+            elif isinstance(serialized_element, dict):
+                self._instrument_references[element_name] = DeviceElement.from_dict(
+                    serialized_element
+                )
+            else:
+                self._instrument_references[element_name] = json.loads(
+                    serialized_element, cls=SchedulerJSONDecoder
+                )
             self.add_element(self._instrument_references[element_name])
 
         for edge_name, serialized_edge in state["data"]["edges"].items():
-            self._instrument_references[edge_name] = json.loads(
-                serialized_edge, cls=SchedulerJSONDecoder
-            )
+            if isinstance(serialized_edge, Edge):
+                self._instrument_references[edge_name] = serialized_edge
+            elif isinstance(serialized_edge, dict):
+                self._instrument_references[edge_name] = Edge.from_dict(serialized_edge)
+            else:
+                self._instrument_references[edge_name] = json.loads(
+                    serialized_edge, cls=SchedulerJSONDecoder
+                )
             self.add_edge(self._instrument_references[edge_name])
 
         self.cfg_sched_repetitions(int(state["data"]["cfg_sched_repetitions"]))
+
+    def __setstate__(self, state: dict[str, Any]) -> None:
+        """Set the state of :class:`~QuantumDevice` (used for YAML deserialization)."""
+        self.__init__(state["name"])
+
+        super().__setstate__(state)  # Must be done after the qcodes instance has a name
+
+        for element_name, serialized_element in state["elements"].items():
+            self._instrument_references[element_name] = serialized_element
+            self.add_element(self._instrument_references[element_name])
+
+        for edge_name, serialized_edge in state["edges"].items():
+            self._instrument_references[edge_name] = serialized_edge
+            self.add_edge(self._instrument_references[edge_name])
+
+        self.cfg_sched_repetitions(int(state["cfg_sched_repetitions"]))
 
     def to_json(self) -> str:
         """
@@ -439,7 +480,7 @@ class QuantumDevice(JSONSerializableMixin, Instrument):
         """
         self.elements().remove(name)  # list gets updated in place
 
-    def get_edge(self, name: str) -> Instrument:
+    def get_edge(self, name: str) -> Edge:
         """
         Returns an edge by name.
 
@@ -461,7 +502,7 @@ class QuantumDevice(JSONSerializableMixin, Instrument):
 
         """
         if name in self.edges():
-            return self.find_instrument(name)
+            return self.find_instrument(name)  # type: ignore
         raise KeyError(f"'{name}' is not an edge of {self.name}.")
 
     def add_edge(self, edge: Edge) -> None:

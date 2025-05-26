@@ -1,5 +1,6 @@
 import re
 from copy import deepcopy
+from pathlib import Path
 
 import networkx as nx
 import pytest
@@ -10,18 +11,23 @@ from quantify_scheduler.backends.qblox_backend import (
     ChannelPath,
     QbloxHardwareCompilationConfig,
     _ClusterCompilationConfig,
-    _ClusterModuleCompilationConfig,
     _QCMCompilationConfig,
 )
+from quantify_scheduler.backends.types.common import Connectivity, ModulationFrequencies
 from quantify_scheduler.backends.types.qblox import (
+    ClusterDescription,
     ComplexChannelDescription,
     DigitalChannelDescription,
     QbloxHardwareDistortionCorrection,
+    QbloxHardwareOptions,
+    QCMRFDescription,
     RealChannelDescription,
 )
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
 from quantify_scheduler.operations import Measure, SquarePulse, X
+from quantify_scheduler.structure import Graph
+from quantify_scheduler.yaml_utils import yaml
 
 
 def test_invalid_channel_names_connectivity(
@@ -1159,3 +1165,55 @@ def test_default_channel_description():
     seq_complex_cfg = module_cfgs[4]._extract_sequencer_compilation_configs()[0]
     assert isinstance(seq_complex_cfg.hardware_description, ComplexChannelDescription)
     assert seq_complex_cfg.portclock == "q0:qrm-q0.r3"
+
+
+def test_hardware_compilation_config_yaml_serialization(hardware_cfg_cluster, tmp_path):
+    """Verify that a hardware compilation config can be correctly (de)serialized from/to YAML."""
+    original_cfg = QbloxHardwareCompilationConfig.model_validate(hardware_cfg_cluster)
+    tmp_file = Path(tmp_path, "hardware_cfg_cluster.yaml")
+    with tmp_file.open("w") as f:
+        yaml.dump(original_cfg, f)
+    with tmp_file.open("r") as f:
+        reconstructed_cfg = yaml.load(f)
+
+    # Direct comparison fails because `HardwareCompilationConfig.connectivity.graph`
+    # is not reconstructed in a way that satisfies equality for `networkx.Graph`.
+    # This should not be a problem as long as nodes and edges match.
+    assert original_cfg.model_dump() == reconstructed_cfg.model_dump()
+    assert original_cfg.connectivity.graph.nodes == reconstructed_cfg.connectivity.graph.nodes  # type: ignore
+    assert original_cfg.connectivity.graph.edges == reconstructed_cfg.connectivity.graph.edges  # type: ignore
+
+
+def test_hardware_compilation_config_fixed_yaml_deserialization(
+    hwconfig_with_qcm_rf_yaml, tmp_path
+):
+    """
+    Verify that a hardware compilation config can be correctly deserialized
+    from a specific YAML dump.
+
+    Performs a deep check of every parameter involved to highlight potential regressions.
+    """
+    cfg = yaml.load(hwconfig_with_qcm_rf_yaml)
+    assert isinstance(cfg, QbloxHardwareCompilationConfig)
+
+    # Test pydantic parameters
+    assert cfg.hardware_description == {
+        "cluster0": ClusterDescription(
+            instrument_type="Cluster",
+            ref="internal",
+            modules={1: QCMRFDescription(instrument_type="QCM_RF")},
+        )
+    }
+    assert cfg.hardware_options == QbloxHardwareOptions(
+        modulation_frequencies={
+            "q1:mw-q1.01": ModulationFrequencies(
+                interm_freq=50000000.0,
+            )
+        }
+    )
+
+    # Test graph equality
+    assert isinstance(cfg.connectivity, Connectivity)
+    assert isinstance(cfg.connectivity.graph, Graph)
+    assert list(cfg.connectivity.graph.nodes) == ["cluster0.module1.complex_output_0", "q1:mw"]
+    assert list(cfg.connectivity.graph.edges) == [("cluster0.module1.complex_output_0", "q1:mw")]

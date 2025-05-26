@@ -5,6 +5,7 @@ import pytest
 from tests.fixtures.generic import *
 from tests.fixtures.mock_setup import *
 from tests.fixtures.schedule import *
+from tests.fixtures.static import *
 from tests.scheduler.backends.qblox.fixtures.assembly import *
 from tests.scheduler.backends.qblox.fixtures.hardware_config import *
 from tests.scheduler.backends.qblox.fixtures.mock_api import *

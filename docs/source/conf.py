@@ -547,6 +547,7 @@ nitpick_ignore_regex = [
     ("py:class", r"\"[a-zA-Z]+\""),  # Ignore string literals
     ("py:class", r".*\.Self"),
     ("py:class", r"dataclasses.*"),
+    (".*:.*", r"ruamel.yaml.*"),
 ]
 
 with open("nitpick-exceptions.txt", encoding="utf-8") as nitpick_exceptions:

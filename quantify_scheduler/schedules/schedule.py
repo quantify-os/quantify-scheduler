@@ -25,7 +25,7 @@ from quantify_scheduler.helpers.importers import (
 )
 from quantify_scheduler.json_utils import (
     JSONSchemaValMixin,
-    JSONSerializableMixin,
+    JSONSerializable,
 )
 from quantify_scheduler.operations.control_flow_library import ConditionalOperation, LoopOperation
 from quantify_scheduler.operations.operation import Operation
@@ -48,7 +48,7 @@ Note: collections.OrderedDict can be slow in some cases.
 """
 
 
-class ScheduleBase(JSONSchemaValMixin, JSONSerializableMixin, UserDict, ABC):
+class ScheduleBase(JSONSchemaValMixin, JSONSerializable, UserDict, ABC):
     """
     Interface to be used for :class:`~.Schedule`.
 

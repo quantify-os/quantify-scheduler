@@ -52,6 +52,7 @@ dependencies = [
   "qcodes>=0.32.0",                    # 0.32.0: introduces InstrumentModule
   "scipy",
   "xxhash",
+  "ruamel.yaml>=0.18.0",
 
   # We are using rich in our tutorials
   "rich[jupyter]",

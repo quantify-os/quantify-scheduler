@@ -1,0 +1,16 @@
+!QbloxHardwareCompilationConfig
+hardware_description:
+  cluster0:
+    instrument_type: Cluster
+    ref: internal
+    modules:
+      1:
+        instrument_type: QCM_RF
+hardware_options:
+  modulation_frequencies:
+    q1:mw-q1.01:
+      interm_freq: 50000000.0
+connectivity:
+  graph:
+  - - cluster0.module1.complex_output_0
+    - q1:mw

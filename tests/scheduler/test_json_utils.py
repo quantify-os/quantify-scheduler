@@ -2,10 +2,12 @@ import copy
 import json
 import sys
 import types
+from importlib import resources
 
 import numpy as np
 import pytest
 
+from quantify_scheduler import QuantumDevice
 from quantify_scheduler.helpers.importers import export_python_object_to_path_string
 from quantify_scheduler.json_utils import (
     SchedulerJSONDecoder,
@@ -171,3 +173,15 @@ def test_schedule_to_and_from_json(schedule):
     assert schedule == result
     assert schedule.data == result.data
     assert schedule.__dict__ == result.__dict__
+
+
+def test_quantum_device_json_compatibility():
+    """Verify compatibility of old and new `QuantumDevice` JSON serialization formats."""
+    with (
+        resources.path("tests.data", "qdevice_with_two_qubits_new_format.json") as new_path,
+        resources.path("tests.data", "qdevice_with_two_qubits_old_format.json") as old_path,
+    ):
+        new = QuantumDevice.from_json_file(str(new_path))
+        new.close_all()
+        old = QuantumDevice.from_json_file(str(old_path))
+    assert new.to_json() == old.to_json()

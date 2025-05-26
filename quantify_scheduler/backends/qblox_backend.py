@@ -86,6 +86,7 @@ from quantify_scheduler.schedules.schedule import (
     ScheduleBase,
 )
 from quantify_scheduler.structure.model import DataStructure
+from quantify_scheduler.yaml_utils import yaml
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -743,9 +744,10 @@ def hardware_compile(
     return CompiledSchedule(schedule)
 
 
+@yaml.register_class
 class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
     """
-    Datastructure containing the information needed to compile to the Qblox backend.
+    Data structure containing the information needed to compile to the Qblox backend.
 
     This information is structured in the same way as in the generic
     :class:`~quantify_scheduler.backends.types.common.HardwareCompilationConfig`, but
@@ -755,6 +757,7 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
     config_type: type[QbloxHardwareCompilationConfig] = Field(  # type: ignore
         default="quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
         validate_default=True,
+        exclude=True,
     )
     """
     A reference to the
