@@ -17,7 +17,11 @@ def import_python_object_from_string(
 
     (Based on https://stackoverflow.com/questions/3061/calling-a-function-of-a-module-by-using-its-name-a-string)
     """
-    mod_name, func_name = function_string.rsplit(".", 1)
+    if "." not in function_string:
+        mod_name = "__main__"
+        func_name = function_string
+    else:
+        mod_name, func_name = function_string.rsplit(".", 1)
     mod = importlib.import_module(mod_name)
     func = getattr(mod, func_name)
     return func
