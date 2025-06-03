@@ -2136,12 +2136,11 @@ def test_trace_acquisition_instrument_coordinator(  # noqa: PLR0915
     )
 
     wrapped = _AnalogModuleComponent._set_parameter
-    called_with = None
+
+    called_set_parameter_with = []
 
     def wrapper(*args, **kwargs):
-        nonlocal called_with
-        if "scope_acq_sequencer_select" in args + tuple(kwargs.values()):
-            called_with = args + tuple(kwargs.values())
+        called_set_parameter_with.append(args + tuple(kwargs.values()))
         wrapped(module, *args, **kwargs)
 
     with mocker.patch(
@@ -2155,7 +2154,7 @@ def test_trace_acquisition_instrument_coordinator(  # noqa: PLR0915
             pprint.pprint(compiled_sched.compiled_instructions)
             raise
 
-    assert called_with == (module.instrument, "scope_acq_sequencer_select", 0)
+    assert (module.instrument, "scope_acq_sequencer_select", 0) in called_set_parameter_with
 
     instr_coordinator.start()
     acquired_data = instr_coordinator.retrieve_acquisition()

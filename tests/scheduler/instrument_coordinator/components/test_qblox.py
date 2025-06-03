@@ -2129,7 +2129,7 @@ def test_channel_map(
         hardware_config["hardware_options"] = {
             "modulation_frequencies": {"q5:mw-q5.01": {"interm_freq": 3e5}}
         }
-        freq_01 = 5e9
+        freq_01 = 6e8 if module_type == "QRC" else 5e9
     else:
         freq_01 = 4.33e8
 
@@ -2168,12 +2168,13 @@ def test_channel_map(
 
 
 @pytest.mark.parametrize(
-    ("module_type, channel_name, channel_name_measure, channel_map_parameters"),
+    ("module_type, channel_name, channel_name_measure, sequencer_id, channel_map_parameters"),
     [
         (
             "QRM",
             "complex_output_0",
             ["complex_input_0"],
+            0,
             {
                 "connect_out0": "I",
                 "connect_out1": "Q",
@@ -2185,6 +2186,7 @@ def test_channel_map(
             "QRM",
             "complex_output_0",
             ["real_input_0", "real_input_1"],
+            0,
             {
                 "connect_out0": "I",
                 "connect_out1": "Q",
@@ -2196,6 +2198,7 @@ def test_channel_map(
             "QRM",
             "real_output_0",
             ["real_input_0"],
+            0,
             {
                 "connect_out0": "I",
                 "connect_out1": "off",
@@ -2207,6 +2210,7 @@ def test_channel_map(
             "QRM",
             "real_output_0",
             ["real_input_1"],
+            0,
             {
                 "connect_out0": "I",
                 "connect_out1": "off",
@@ -2218,6 +2222,7 @@ def test_channel_map(
             "QRM",
             "real_output_1",
             ["real_input_0"],
+            0,
             {
                 "connect_out0": "off",
                 "connect_out1": "I",
@@ -2229,6 +2234,7 @@ def test_channel_map(
             "QRM",
             "real_output_1",
             ["real_input_1"],
+            0,
             {
                 "connect_out0": "off",
                 "connect_out1": "I",
@@ -2240,6 +2246,7 @@ def test_channel_map(
             "QRM",
             "real_output_0",
             ["real_input_0", "real_input_1"],
+            0,
             {
                 "connect_out0": "I",
                 "connect_out1": "off",
@@ -2251,6 +2258,7 @@ def test_channel_map(
             "QRM",
             "real_output_1",
             ["real_input_0", "real_input_1"],
+            0,
             {
                 "connect_out0": "off",
                 "connect_out1": "I",
@@ -2262,6 +2270,7 @@ def test_channel_map(
             "QRM_RF",
             "complex_output_0",
             ["complex_input_0"],
+            0,
             {
                 "connect_out0": "IQ",
                 "connect_acq": "in0",
@@ -2271,6 +2280,7 @@ def test_channel_map(
             "QRC",
             "complex_output_1",
             ["complex_input_1"],
+            1,
             {
                 "connect_out1": "IQ",
                 "connect_acq": "in1",
@@ -2283,6 +2293,7 @@ def test_channel_map_measure(
     module_type,
     channel_name,
     channel_name_measure,
+    sequencer_id,
     channel_map_parameters,
 ):
     # Indices according to `make_cluster_component` instrument setup
@@ -2353,7 +2364,7 @@ def test_channel_map_measure(
     module = all_modules[test_module_name]
 
     all_sequencers = {sequencer.name: sequencer for sequencer in module.sequencers}
-    sequencer = all_sequencers[f"{test_module_name}_sequencer0"]
+    sequencer = all_sequencers[f"{test_module_name}_sequencer{sequencer_id}"]
 
     for key, value in channel_map_parameters.items():
         assert sequencer.parameters[key].get() == value
@@ -2425,10 +2436,11 @@ def test_channel_map_off_with_marker_pulse(make_cluster_component, slot_idx, mod
 
 
 @pytest.mark.parametrize(
-    ("module_type, channel_name, lo_parameters"),
+    ("module_type, freq_01, channel_name, lo_parameters"),
     [
         (
             "QCM_RF",
+            5e9,
             "complex_output_0",
             {
                 "out0_lo_en": False,
@@ -2439,6 +2451,7 @@ def test_channel_map_off_with_marker_pulse(make_cluster_component, slot_idx, mod
         ),
         (
             "QCM_RF",
+            5e9,
             "complex_output_1",
             {
                 "out0_lo_en": False,
@@ -2449,6 +2462,7 @@ def test_channel_map_off_with_marker_pulse(make_cluster_component, slot_idx, mod
         ),
         (
             "QRM_RF",
+            5e9,
             "complex_output_0",
             {
                 "out0_in0_lo_en": False,
@@ -2457,50 +2471,54 @@ def test_channel_map_off_with_marker_pulse(make_cluster_component, slot_idx, mod
         ),
         (
             "QRC",
-            "complex_output_0",
-            {
-                "out0_in0_freq": 5e9 - 3e5,
-                "out1_in1_freq": 0,
-                "out2_freq": 0,
-                "out3_freq": 0,
-                "out4_freq": 0,
-                "out5_freq": 0,
-            },
-        ),
-        (
-            "QRC",
-            "complex_output_1",
-            {
-                "out0_in0_freq": 0,
-                "out1_in1_freq": 5e9 - 3e5,
-                "out2_freq": 0,
-                "out3_freq": 0,
-                "out4_freq": 0,
-                "out5_freq": 0,
-            },
-        ),
-        (
-            "QRC",
+            6e8,
             "complex_output_2",
             {
-                "out0_in0_freq": 0,
-                "out1_in1_freq": 0,
-                "out2_freq": 5e9 - 3e5,
-                "out3_freq": 0,
-                "out4_freq": 0,
-                "out5_freq": 0,
+                "in0_freq": 1e9,
+                "in1_freq": 1e9,
+                "out2_freq": 6e8 - 3e5,
+                "out3_freq": 1e9,
+                "out4_freq": 1e9,
+                "out5_freq": 1e9,
             },
         ),
         (
             "QRC",
+            6e8,
+            "complex_output_3",
+            {
+                "in0_freq": 1e9,
+                "in1_freq": 1e9,
+                "out2_freq": 1e9,
+                "out3_freq": 6e8 - 3e5,
+                "out4_freq": 1e9,
+                "out5_freq": 1e9,
+            },
+        ),
+        (
+            "QRC",
+            6e8,
+            "complex_output_4",
+            {
+                "in0_freq": 1e9,
+                "in1_freq": 1e9,
+                "out2_freq": 1e9,
+                "out3_freq": 1e9,
+                "out4_freq": 6e8 - 3e5,
+                "out5_freq": 1e9,
+            },
+        ),
+        (
+            "QRC",
+            6e8,
             "complex_output_5",
             {
-                "out0_in0_freq": 0,
-                "out1_in1_freq": 0,
-                "out2_freq": 0,
-                "out3_freq": 0,
-                "out4_freq": 0,
-                "out5_freq": 5e9 - 3e5,
+                "in0_freq": 1e9,
+                "in1_freq": 1e9,
+                "out2_freq": 1e9,
+                "out3_freq": 1e9,
+                "out4_freq": 1e9,
+                "out5_freq": 6e8 - 3e5,
             },
         ),
     ],
@@ -2508,6 +2526,7 @@ def test_channel_map_off_with_marker_pulse(make_cluster_component, slot_idx, mod
 def test_lo_freq(
     make_cluster_component,
     module_type,
+    freq_01,
     channel_name,
     lo_parameters,
 ):
@@ -2530,7 +2549,6 @@ def test_lo_freq(
         },
     }
 
-    freq_01 = 5e9
     interm_freq = 3e5
     hardware_config["hardware_options"] = {
         "modulation_frequencies": {"q5:mw-q5.01": {"interm_freq": interm_freq, "lo_freq": None}},

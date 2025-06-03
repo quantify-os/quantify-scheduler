@@ -778,12 +778,6 @@ class _AnalogReadoutComponent(_AnalogModuleComponent):
                 seq_name_to_idx_map=self._seq_name_to_idx_map,
                 sequencers=program.get("sequencers"),
             )
-            if scope_mode_sequencer_and_qblox_acq_index is not None:
-                self._set_parameter(
-                    self.instrument,
-                    "scope_acq_sequencer_select",
-                    scope_mode_sequencer_and_qblox_acq_index[0],
-                )
         else:
             self._acquisition_manager = None
 
@@ -1013,6 +1007,16 @@ class _QRMComponent(_AnalogReadoutComponent):
                 )
 
             self._configure_nco_mixer_calibration(seq_idx=seq_idx, settings=sequencer_settings)
+        if (acq_metadata := program.get("acq_metadata")) is not None:
+            scope_mode_sequencer_and_qblox_acq_index = (
+                self._determine_scope_mode_acquisition_sequencer_and_qblox_acq_index(acq_metadata)
+            )
+            if scope_mode_sequencer_and_qblox_acq_index is not None:
+                self._set_parameter(
+                    self.instrument,
+                    "scope_acq_sequencer_select",
+                    scope_mode_sequencer_and_qblox_acq_index[0],
+                )
 
     def _configure_sequencer_settings(self, seq_idx: int, settings: SequencerSettings) -> None:
         assert isinstance(settings, AnalogSequencerSettings)
@@ -1273,6 +1277,42 @@ class _QRCComponent(_RFComponent, _AnalogReadoutComponent):
 
     _hardware_properties = _QRC_PROPERTIES
 
+    def prepare(self, program: dict[str, dict]) -> None:
+        """
+        Uploads the waveforms and programs to the sequencers.
+
+        All the settings that are required are configured. Keep in mind that
+        values set directly through the driver may be overridden (e.g. the
+        offsets will be set according to the specified mixer calibration
+        parameters).
+
+        Parameters
+        ----------
+        program
+            Program to upload to the sequencers.
+            Under the key :code:`"sequencer"` you specify the sequencer specific
+            options for each sequencer, e.g. :code:`"seq0"`.
+            For global settings, the options are under different keys, e.g. :code:`"settings"`.
+
+        """
+        super().prepare(program)
+        if (acq_metadata := program.get("acq_metadata")) is not None:
+            scope_mode_sequencer_and_qblox_acq_index = (
+                self._determine_scope_mode_acquisition_sequencer_and_qblox_acq_index(acq_metadata)
+            )
+            if scope_mode_sequencer_and_qblox_acq_index is not None:
+                scope_mode_sequencer_and_qblox_acq_index = scope_mode_sequencer_and_qblox_acq_index[
+                    0
+                ]
+                # Note, for QRC sometime in the future we might be able to set
+                # different sequencers per scope paths; this is why
+                # for the beta product we handle QRC differently.
+                self._set_parameter(
+                    self.instrument,
+                    "scope_acq_sequencer_select",
+                    scope_mode_sequencer_and_qblox_acq_index,
+                )
+
     def _configure_global_settings(self, settings: BaseModuleSettings) -> None:
         """
         Configures all settings that are set globally for the whole instrument.
@@ -1298,9 +1338,10 @@ class _QRCComponent(_RFComponent, _AnalogReadoutComponent):
         # For QRC, there are no LO frequencies, only output frequencies.
 
         for i in range(2):
-            if (freq := getattr(settings, f"lo{i}_freq")) is not None:
-                self._set_parameter(self.instrument, f"out{i}_in{i}_freq", freq)
+            if (freq := getattr(settings, f"in{i}_freq")) is not None:
+                self._set_parameter(self.instrument, f"in{i}_freq", freq)
 
+        # For the beta QRC product, we do not have a 0, 1 output channel frequencies.
         for i in range(2, 6):
             if (freq := getattr(settings, f"lo{i}_freq")) is not None:
                 self._set_parameter(self.instrument, f"out{i}_freq", freq)
