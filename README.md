@@ -30,6 +30,7 @@ that are distributed to control hardware, after compiling these schedules into c
 
 | quantify-scheduler |                      qblox-instruments                       |                               Cluster firmware                                |
 |--------------------|:------------------------------------------------------------:|:-----------------------------------------------------------------------------:|
+| v0.24.0            | [0.17.0](https://pypi.org/project/qblox-instruments/0.17.0/) | [0.12.0](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.12.0) |
 | v0.23.0            | [0.16.0](https://pypi.org/project/qblox-instruments/0.16.0/) | [0.11.0](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.11.0) |
 | v0.22.2            | [0.15.0](https://pypi.org/project/qblox-instruments/0.15.0/) | [0.10.0](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.10.0) |
 |                    | [0.14.2](https://pypi.org/project/qblox-instruments/0.14.2/) | [0.9.2](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.9.2) |

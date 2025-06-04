@@ -1,5 +1,22 @@
 # Changelog
 
+## Release v0.24.0 (2025-06-04)
+
+### 🐛 Bug Fixes
+- Allow >100 µs integration time when measuring spin qubits ([!1248](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1248) by [@Nicolas Piot](https://gitlab.com/npiot))
+- Allow offsets on unrelated ports when using pulse compensation ([!1247](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1247) by [@Nicolas Piot](https://gitlab.com/npiot))
+- Update QTM api changes from qblox-instruments v0.17.0 ([!1250](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1250) by [@Robert Sokolewicz](https://gitlab.com/rsokolewicz) and [!1251](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1251) by [@Gábor Oszkár Dénes](https://gitlab.com/gdenes))
+- ``InstrumentCoordinator`` now returns an empty DataArray when no timetags are recorded in ``TimetagTrace`` acquisitions ([!1238](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1238) by [@Thomas Middelburg](https://gitlab.com/ThomasMiddelburg))
+
+### ♻️ Refactoring
+- Chore: clean up StrEnum ([!1241](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1241) by [@Thomas Middelburg](https://gitlab.com/ThomasMiddelburg))
+
+### 🔧 Other
+- Fix: windows tests require garbage collection on weakref qcodes behavior ([!1240](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1240) by [@Gábor Oszkár Dénes](https://gitlab.com/gdenes))
+- Feat: add Qblox custom sequencer allocation logic ([!1237](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1237) by [@Gábor Oszkár Dénes](https://gitlab.com/gdenes))
+- Chore: prevent networkx FutureWarning (QTFY-724) ([!1221](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1221) by [@Robert Sokolewicz](https://gitlab.com/rsokolewicz))
+
+
 ## Release v0.23.0 (2025-04-01)
 
 ### 🐛 Bug Fixes and Closed Issues
