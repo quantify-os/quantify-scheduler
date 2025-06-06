@@ -45,6 +45,9 @@ def set_up_mock_transmon_setup() -> dict:
     q3 = BasicTransmonElement("q3")
     q4 = BasicTransmonElement("q4")
 
+    # Ensure the readout pulse is not replaced by offsets on Qblox backend for testing purposes.
+    q0.measure.pulse_duration(50e-9)
+
     edge_q0_q2 = CompositeSquareEdge(parent_element_name=q0.name, child_element_name=q2.name)
     edge_q1_q2 = CompositeSquareEdge(parent_element_name=q1.name, child_element_name=q2.name)
 

@@ -2726,7 +2726,6 @@ class TestAssemblyValid:
         compiled_ssro_sched = compiler.compile(sched, compile_config_basic_transmon_qblox_hardware)
 
         self._validate_assembly(compiled_schedule=compiled_ssro_sched, cluster=cluster)
-
         qrm_name = f"{cluster.name}_module4"
         test_name = request.node.name[len("test_") :]
         self._validate_seq_instructions(
@@ -3765,7 +3764,7 @@ start:
         wait 60 # auto generated wait (60 ns)
         reset_ph
         set_awg_gain 8192,0 # setting gain for SquarePulse
-        play 0,0,4 # play SquarePulse (300 ns)
+        play 0,0,4 # play SquarePulse (50 ns)
         wait 96 # auto generated wait (96 ns)
         acquire 0,0,4
         wait 996 # auto generated wait (996 ns)
@@ -3774,7 +3773,6 @@ start:
     loop R0,@start
 stop
 """
-
         self._compare_sequence(compiled, reference_sequence_qcm_rf, "qcm_rf")
         self._compare_sequence(compiled, reference_sequence_qrm_rf, "qrm_rf")
 

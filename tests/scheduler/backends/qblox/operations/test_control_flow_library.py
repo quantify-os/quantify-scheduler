@@ -114,7 +114,7 @@ def test_conditional_playback_compiles(
     num_real_time_operations = 5
 
     assert np.isclose(
-        int(wait_duration) + num_real_time_operations * 4 + 4,
+        int(wait_duration) + num_real_time_operations * 4 + 12,
         conditional_duration * 1e9,  # type: ignore
     )
 

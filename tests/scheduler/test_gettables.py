@@ -344,7 +344,8 @@ def test_profiling(mock_setup_basic_transmon_with_standard_params, tmp_test_data
 
     # Test if all steps have been measured and have a value > 0
     log = profiled_gettable.log_profile()
-    TestCase().assertAlmostEqual(log["schedule"][0], 0.2062336)
+
+    TestCase().assertAlmostEqual(log["schedule"][0], 0.2059776)
     verif_keys = [
         "schedule",
         "compile",

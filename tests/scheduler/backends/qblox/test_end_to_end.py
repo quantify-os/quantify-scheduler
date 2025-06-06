@@ -44,13 +44,12 @@ def test_zero_duration_parameter_operations(
         sched,
         config=quantum_device.generate_compilation_config(),
     )
-
     assert_equal_q1asm(
         compiled_sched.compiled_instructions["cluster0"]["cluster0_module2"]["sequencers"][
             "seq0"
         ].sequence["program"],
         """
- set_mrk 1 # set markers to 1
+ set_mrk 1 # set markers to 1 (init)
  wait_sync 4
  upd_param 4
  wait 4 # latency correction of 4 + 0 ns
@@ -67,13 +66,17 @@ start:
  upd_param 4
  wait 96 # auto generated wait (96 ns)
  set_ph_delta 333333333 # increment nco phase by 120.00 deg
+ set_awg_offs 16384,0 # setting offset for SquarePulse
+ upd_param 4
+ wait 92 # auto generated wait (92 ns)
+ set_awg_offs 0,0 # setting offset for SquarePulse
  set_awg_gain 16384,0 # setting gain for SquarePulse
- play 0,0,4 # play SquarePulse (100 ns)
- wait 96 # auto generated wait (96 ns)
+ play 0,0,4 # play SquarePulse (4 ns)
  loop R0,@start
  stop
 """,
     )
+
     assert_equal_q1asm(
         compiled_sched.compiled_instructions["cluster0"]["cluster0_module2"]["sequencers"][
             "seq1"
@@ -130,37 +133,39 @@ def test_zero_duration_parameter_operations_with_loops(
         sched,
         config=quantum_device.generate_compilation_config(),
     )
-
     assert_equal_q1asm(
         compiled_sched.compiled_instructions["cluster0"]["cluster0_module2"]["sequencers"][
             "seq0"
         ].sequence["program"],
         """
- set_mrk 1 # set markers to 1
- wait_sync 4
- upd_param 4
- wait 4 # latency correction of 4 + 0 ns
- move 1,R0 # iterator for loop with label start
+ set_mrk 1 # set markers to 1 (init)
+wait_sync 4
+upd_param 4
+wait 4 # latency correction of 4 + 0 ns
+move 1,R0 # iterator for loop with label start
 start:
- reset_ph
- upd_param 4
- reset_ph
- set_freq 0 # set nco frequency to 0.000000e+00 Hz
- upd_param 4
- move 3,R1 # iterator for loop with label loop11
+reset_ph
+upd_param 4
+reset_ph
+set_freq 0 # set nco frequency to 0.000000e+00 Hz
+upd_param 4
+move 3,R1 # iterator for loop with label loop11
 loop11:
- set_ph_delta 333333333 # increment nco phase by 120.00 deg
- set_awg_gain 16384,0 # setting gain for SquarePulse
- play 0,0,4 # play SquarePulse (100 ns)
- wait 96 # auto generated wait (96 ns)
- loop R1,@loop11
- set_awg_offs 16384,16384 # setting offset for VoltageOffset
- upd_param 4
- wait 96 # auto generated wait (96 ns)
- set_awg_offs 0,0 # setting offset for VoltageOffset
- upd_param 4
- loop R0,@start
- stop
+set_ph_delta 333333333 # increment nco phase by 120.00 deg
+set_awg_offs 16384,0 # setting offset for SquarePulse
+upd_param 4
+wait 92 # auto generated wait (92 ns)
+set_awg_offs 0,0 # setting offset for SquarePulse
+set_awg_gain 16384,0 # setting gain for SquarePulse
+play 0,0,4 # play SquarePulse (4 ns)
+loop R1,@loop11
+set_awg_offs 16384,16384 # setting offset for VoltageOffset
+upd_param 4
+wait 96 # auto generated wait (96 ns)
+set_awg_offs 0,0 # setting offset for VoltageOffset
+upd_param 4
+loop R0,@start
+stop
 """,
     )
 

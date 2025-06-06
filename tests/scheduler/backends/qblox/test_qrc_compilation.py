@@ -66,9 +66,13 @@ start:
  upd_param 4
  wait 40 # auto generated wait (40 ns)
  reset_ph
+ set_awg_offs 8192,0 # setting offset for SquarePulse
+ upd_param 4
+ wait 292 # auto generated wait (292 ns)
+ set_awg_offs 0,0 # setting offset for SquarePulse
  set_awg_gain 8192,0 # setting gain for SquarePulse
- play 0,0,4 # play SquarePulse (40 ns)
- wait 996 # auto generated wait (996 ns)
+ play 0,0,4 # play SquarePulse (4 ns)
+ wait 700 # auto generated wait (700 ns)
  acquire 0,0,4
  wait 4996 # auto generated wait (4996 ns)
  loop R0,@start
