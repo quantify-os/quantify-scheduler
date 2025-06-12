@@ -2283,7 +2283,7 @@ def test_channel_map(
             1,
             {
                 "connect_out1": "IQ",
-                "connect_acq": "in1",
+                "connect_acq": "in0",
             },
         ),
     ],
