@@ -119,7 +119,7 @@ class QASMProgram:
         in the acq_metadata.
         """
         # This function is a temporary solution.
-        # Proper solution: SE-298.
+        # TODO: QTFY-300 for proper solution.
         assert self.acq_metadata is not None
         for (
             qblox_acq_index,
@@ -191,7 +191,7 @@ class QASMProgram:
         """
         # Translating the acquisition channel to qblox acquisition index
         # is intended as a temporary solution.
-        # TODO: Proper solution: SE-298.
+        # TODO: Proper solution: QTFY-300.
         instruction = args[0]
         if self.acq_metadata and (
             instruction

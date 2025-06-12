@@ -529,6 +529,9 @@ nitpick_ignore = [
     ("py:class", "ipywidgets.Tab"),
     ("py:class", "widgets.Tab"),
     ("py:class", "SequencerIndex"),
+    ("py:class", "QbloxAcquisitionHardwareMapping"),
+    ("py:class", "QbloxAcquisitionIndex"),
+    ("py:class", "QbloxAcquisitionBinMapping"),
 ]  # Tuple[str, str], ignore certain warnings
 
 

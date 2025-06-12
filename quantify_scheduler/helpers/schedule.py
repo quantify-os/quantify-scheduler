@@ -169,7 +169,7 @@ def extract_acquisition_metadata_from_acquisition_protocols(
     acq_channels_metadata: dict[int, AcquisitionChannelMetadata] = {}
 
     # Generating hardware indices this way is intended as a temporary solution.
-    # Proper solution: SE-298.
+    # TODO: https://gitlab.com/groups/quantify-os/-/epics/5 for proper solution.
     acq_channel_to_numeric_key: dict[Hashable, int] = {}
     numeric_key_counter = count()
 

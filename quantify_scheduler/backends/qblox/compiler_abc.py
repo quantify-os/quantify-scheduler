@@ -48,6 +48,7 @@ from quantify_scheduler.backends.qblox.operation_handling.virtual import (
     UpdateParameterStrategy,
 )
 from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
+from quantify_scheduler.backends.qblox.qblox_acq_index_manager import QbloxAcquisitionIndexManager
 from quantify_scheduler.backends.types.common import ThresholdedTriggerCountMetadata
 from quantify_scheduler.backends.types.qblox import (
     ClusterModuleDescription,
@@ -58,6 +59,7 @@ from quantify_scheduler.backends.types.qblox import (
 )
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.helpers.schedule import (
+    _is_binned_type_protocol,
     extract_acquisition_metadata_from_acquisition_protocols,
 )
 
@@ -201,6 +203,8 @@ class SequencerCompiler(ABC):
         self.latency_correction = sequencer_cfg.latency_correction
 
         self.distortion_correction = sequencer_cfg.distortion_correction
+
+        self._qblox_acq_index_manager = QbloxAcquisitionIndexManager()
 
     @property
     def connected_output_indices(self) -> tuple[int, ...]:
@@ -526,6 +530,8 @@ class SequencerCompiler(ABC):
 
         return metadata_dict
 
+    # TODO: QTFY-300, remove this function,
+    # and use QbloxAcquisitionIndexManager.acq_declaration_dict to generate this.
     def _generate_acq_declaration_dict(
         self,
         repetitions: int,
@@ -693,7 +699,7 @@ class SequencerCompiler(ABC):
         qasm.emit(q1asm_instructions.WAIT_SYNC, constants.MIN_TIME_BETWEEN_OPERATIONS)
         qasm.emit(q1asm_instructions.UPDATE_PARAMETERS, constants.MIN_TIME_BETWEEN_OPERATIONS)
 
-        self._initialize_append_mode_registers(qasm, ordered_op_strategies)
+        self._initialize_acquisition_qblox_values(qasm, ordered_op_strategies)
 
         # Program body. The operations must be ordered such that real-time IO operations
         # always come after any other operations. E.g., an offset instruction should
@@ -853,7 +859,7 @@ class SequencerCompiler(ABC):
             key=lambda op: helpers.to_grid_time(op.operation_info.timing),
         )
 
-    def _initialize_append_mode_registers(
+    def _initialize_acquisition_qblox_values(
         self, qasm: QASMProgram, op_strategies: list[IOperationStrategy]
     ) -> None:
         """
@@ -875,24 +881,56 @@ class SequencerCompiler(ABC):
             # Help the type checker.
             assert isinstance(op_strategy, AcquisitionStrategyPartial)
 
-            if op_strategy.operation_info.data["bin_mode"] != BinMode.APPEND:
-                continue
+            acq_data = op_strategy.operation_info.data
+            acq_channel = acq_data["acq_channel"]
+            protocol: str = acq_data["protocol"]
 
-            channel = op_strategy.operation_info.data["acq_channel"]
-            if channel in channel_to_reg:
-                acq_bin_idx_reg = channel_to_reg[channel]
-            else:
-                acq_bin_idx_reg = self.register_manager.allocate_register()
-                channel_to_reg[channel] = acq_bin_idx_reg
-
-                qasm.emit(
-                    q1asm_instructions.MOVE,
-                    0,
-                    acq_bin_idx_reg,
-                    comment=f"Initialize acquisition bin_idx for "
-                    f"ch{op_strategy.operation_info.data['acq_channel']}",
+            # TODO: QTFY-300, store and utilize the generated
+            # Qblox acquisition index and bin in the operation strategies.
+            if _is_binned_type_protocol(protocol):
+                _qblox_acq_index, _qblox_acq_bin_offset = (
+                    self._qblox_acq_index_manager.allocate_bins(
+                        acq_channel, acq_data["acq_index"], self.name
+                    )
                 )
-            op_strategy.bin_idx_register = acq_bin_idx_reg
+            elif protocol in (
+                "TriggerCount",
+                "ThresholdedTriggerCount",
+                "DualThresholdedTriggerCount",
+            ):
+                _qblox_acq_index = self._qblox_acq_index_manager.allocate_qblox_index(
+                    acq_channel, self.name, True
+                )
+            elif protocol in "Trace":
+                _qblox_acq_index = self._qblox_acq_index_manager.allocate_qblox_index(
+                    acq_channel, self.name, False
+                )
+                _qblox_acq_bin_offset = 0
+            elif protocol == "TimetagTrace":
+                _qblox_acq_index = self._qblox_acq_index_manager.allocate_qblox_index(
+                    acq_channel, self.name, True
+                )
+                _qblox_acq_bin_offset = 0
+            else:
+                raise ValueError(
+                    f"Unsupported acquisition protocol '{protocol}' "
+                    f"for acquisition channel '{acq_channel}', "
+                    f"{op_strategy.operation_info!r}."
+                )
+
+            if acq_data["bin_mode"] == BinMode.APPEND:
+                if acq_channel not in channel_to_reg:
+                    acq_bin_idx_reg = self.register_manager.allocate_register()
+                    channel_to_reg[acq_channel] = acq_bin_idx_reg
+
+                    qasm.emit(
+                        q1asm_instructions.MOVE,
+                        0,
+                        acq_bin_idx_reg,
+                        comment=f"Initialize acquisition bin_idx for "
+                        f"ch{op_strategy.operation_info.data['acq_channel']}",
+                    )
+                op_strategy.bin_idx_register = channel_to_reg[acq_channel]
 
     def _get_latency_correction_ns(self, latency_correction: float) -> int:
         if latency_correction == 0:
@@ -1297,6 +1335,8 @@ class SequencerCompiler(ABC):
         if self.parent.supports_acquisition:
             acq_declaration_dict = {}
             if acq_metadata is not None:
+                # TODO: QTFY-300, generate acquisition declaration dict differently
+                # acq_declaration_dict = self._qblox_acq_index_manager.acq_declaration_dict().
                 acq_declaration_dict = self._generate_acq_declaration_dict(
                     repetitions=repetitions,
                     acq_metadata=acq_metadata,
