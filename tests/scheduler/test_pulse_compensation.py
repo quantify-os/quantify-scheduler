@@ -1,4 +1,6 @@
 import math
+from typing import Union
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -8,11 +10,13 @@ from quantify_scheduler.backends.graph_compilation import (
 )
 from quantify_scheduler.operations.control_flow_library import (
     ConditionalOperation,
+    ControlFlowOperation,
     LoopOperation,
 )
 from quantify_scheduler.operations.gate_library import (
     X,
 )
+from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.operations.pulse_compensation_library import (
     PulseCompensation,
 )
@@ -23,7 +27,6 @@ from quantify_scheduler.operations.pulse_library import (
 )
 from quantify_scheduler.pulse_compensation import (
     _determine_compensation_pulse,
-    process_compensation_pulses,
 )
 from quantify_scheduler.resources import BasebandClockResource
 
@@ -79,16 +82,25 @@ def test_determine_compensation_pulse():
     )
 
 
+class UnsupportedControlFlowOperation(ControlFlowOperation):
+    def __init__(self, name):
+        super().__init__(name)
+
+    @property
+    def body(self) -> Operation:
+        return MagicMock()
+
+    @body.setter
+    def body(self, value: Union[Operation, Schedule]) -> None:
+        pass
+
+    def __str__(self) -> str:
+        return "UnsupportedControlFlowOperation"
+
+
 @pytest.mark.parametrize(
     "operation, expected_error",
     [
-        (
-            SquarePulse(amp=0.8, duration=1e-8, port="q0:gt", clock="q0.01"),
-            "Error calculating compensation pulse amplitude for "
-            "'SquarePulse"
-            "(amp=0.8,duration=1e-08,port='q0:gt',clock='q0.01',reference_magnitude=None,t0=0)'. "
-            "Clock must be the baseband clock. ",
-        ),
         (
             VoltageOffset(offset_path_I=1, offset_path_Q=1, port="q0:gt"),
             "Error calculating compensation pulse amplitude for "
@@ -99,12 +111,24 @@ def test_determine_compensation_pulse():
             "in a pulse compensation structure. ",
         ),
         (
-            ConditionalOperation(body=X("q0"), qubit_name="q0"),
-            "Error calculating compensation pulse amplitude for "
-            "'ConditionalOperation(body=X(qubit='q0'),qubit_name='q0'"
-            ",t0=0.0,hardware_buffer_time=0.0)'. "
+            UnsupportedControlFlowOperation(name="test"),
+            "Error calculating compensation pulse amplitude for 'UnsupportedControlFlowOperation'. "
             "This control flow operation type is not allowed "
             "in a pulse compensation structure. ",
+        ),
+        (
+            ConditionalOperation(
+                body=SquarePulse(
+                    amp=0.6,
+                    duration=4e-9,
+                    clock=BasebandClockResource.IDENTITY,
+                    port="q0:gt",
+                ),
+                qubit_name="q0",
+            ),
+            "Error calculating compensation pulse amplitude for 'SquarePulse(amp=0.6,"
+            "duration=4e-09,port='q0:gt',clock='cl0.baseband',reference_magnitude=None,t0=0)'. "
+            "Operation is not allowed within a conditional operation. ",
         ),
     ],
 )
@@ -115,6 +139,15 @@ def test_determine_compensation_pulse_error(operation, expected_error):
     max_compensation_amp = {
         "q0:gt": 0.6,
     }
+    if isinstance(operation, ConditionalOperation):
+        schedule.add(
+            operation=SquarePulse(
+                amp=0.6,
+                duration=4e-9,
+                clock=BasebandClockResource.IDENTITY,
+                port="q0:gt",
+            ),
+        )
 
     with pytest.raises(ValueError) as exception:
         _determine_compensation_pulse(schedule, max_compensation_amp, 4e-9, sampling_rate=1e9)

@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, overload
 from quantify_scheduler.compilation import _determine_absolute_timing
 from quantify_scheduler.helpers.waveforms import area_pulse
 from quantify_scheduler.operations.control_flow_library import (
+    ConditionalOperation,
     ControlFlowOperation,
     LoopOperation,
 )
@@ -66,6 +67,7 @@ def _determine_sum_and_end_of_all_pulses(
     sampling_rate: float,
     time_offset: float,
     ports: set[str],
+    is_conditional: bool,
 ) -> dict[Port, SumEnd]:
     """
     Calculates the sum (or integral) of the amplitudes of all pulses in the operation,
@@ -83,6 +85,8 @@ def _determine_sum_and_end_of_all_pulses(
         Time offset for the operation with regards to the start of the whole schedule.
     ports
         Set of ports for which we need to calculate the pulse compensations.
+    is_conditional
+        Boolean variable to identify if a conditional operation is encountered during recursion.
 
     Returns
     -------
@@ -98,14 +102,14 @@ def _determine_sum_and_end_of_all_pulses(
             abs_time = schedulable["abs_time"]
             inner_operation = operation.operations[schedulable["operation_id"]]
             new_pulses_sum_end: dict[Port, SumEnd] = _determine_sum_and_end_of_all_pulses(
-                inner_operation, sampling_rate, time_offset + abs_time, ports
+                inner_operation, sampling_rate, time_offset + abs_time, ports, is_conditional
             )
             pulses_sum_end = _merge_sum_and_end(pulses_sum_end, new_pulses_sum_end)
         return pulses_sum_end
     elif isinstance(operation, ControlFlowOperation):
         if isinstance(operation, LoopOperation):
             body_pulses_sum_end: dict[Port, SumEnd] = _determine_sum_and_end_of_all_pulses(
-                operation.body, sampling_rate, time_offset, ports
+                operation.body, sampling_rate, time_offset, ports, is_conditional
             )
             repetitions = operation.data["control_flow_info"]["repetitions"]
             assert repetitions != 0
@@ -116,12 +120,20 @@ def _determine_sum_and_end_of_all_pulses(
                     end=(repetitions - 1) * operation.body.duration + body_sum_end.end,
                 )
             return looped_pulses_sum_end
+
+        elif isinstance(operation, ConditionalOperation):
+            body_pulses_sum_end: dict[Port, SumEnd] = _determine_sum_and_end_of_all_pulses(
+                operation.body, sampling_rate, time_offset, ports, is_conditional=True
+            )
+            return body_pulses_sum_end
+
         else:
             raise ValueError(
                 f"Error calculating compensation pulse amplitude for '{operation}'. "
                 f"This control flow operation type is not allowed "
                 f"in a pulse compensation structure. "
             )
+
     elif operation.has_voltage_offset and any(
         port in ports for (port, _) in operation.get_used_port_clocks()
     ):
@@ -134,11 +146,12 @@ def _determine_sum_and_end_of_all_pulses(
         pulses_sum_end: dict[Port, SumEnd] = {}
         for pulse_info in operation["pulse_info"]:
             port: Port = pulse_info["port"]
-            if port in ports:
-                if pulse_info["clock"] != BasebandClockResource.IDENTITY:
+
+            if port in ports and pulse_info["clock"] == BasebandClockResource.IDENTITY:
+                if is_conditional:
                     raise ValueError(
                         f"Error calculating compensation pulse amplitude for '{operation}'. "
-                        f"Clock must be the baseband clock. "
+                        f"Operation is not allowed within a conditional operation. "
                     )
                 new_pulse_sum_end: dict[Port, SumEnd] = {
                     port: SumEnd(
@@ -206,7 +219,7 @@ def _determine_compensation_pulse(
     )
     ports: set[str] = set(max_compensation_amp.keys())
     pulses_sum_end: dict[Port, SumEnd] = _determine_sum_and_end_of_all_pulses(
-        operation_with_abs_times, sampling_rate, 0, ports
+        operation_with_abs_times, sampling_rate, 0, ports, False
     )
 
     for port, pulse_sum_end in pulses_sum_end.items():
