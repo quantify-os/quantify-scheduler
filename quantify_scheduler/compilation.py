@@ -7,12 +7,20 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Literal, overload
 
+import networkx as nx
+
 from quantify_scheduler.backends.qblox.operations.inline_q1asm import InlineQ1ASM
+from quantify_scheduler.enums import SchedulingStrategy
 from quantify_scheduler.json_utils import load_json_schema, validate_json
 from quantify_scheduler.operations.control_flow_library import (
     ControlFlowOperation,
 )
-from quantify_scheduler.schedules.schedule import Schedule, ScheduleBase
+from quantify_scheduler.schedules.schedule import (
+    Schedulable,
+    Schedule,
+    ScheduleBase,
+    TimingConstraint,
+)
 
 if TYPE_CHECKING:
     from quantify_scheduler.backends.graph_compilation import (
@@ -81,7 +89,7 @@ def _determine_absolute_timing(
     Raises
     ------
     NotImplementedError
-        If the scheduling strategy is not "asap"
+        If the scheduling strategy is not SchedulingStrategy.ASAP
 
     """
     time_unit = time_unit or "physical"
@@ -106,6 +114,11 @@ def _determine_absolute_timing_schedule(
     time_unit: Literal["physical", "ideal", None],
     config: CompilationConfig | None,
 ) -> Schedule:
+    scheduling_strategy = _determine_scheduling_strategy(config)
+
+    if not schedule.schedulables:
+        raise ValueError(f"schedule '{schedule.name}' contains no schedulables.")
+
     for op_key in schedule.operations:
         if isinstance(schedule.operations[op_key], Schedule):
             if schedule.operations[op_key].get("duration", None) is None:
@@ -138,52 +151,173 @@ def _determine_absolute_timing_schedule(
                 f" Operation data: {schedule.operations[op_key]!r}"
             )
 
-    scheduling_strategy = "asap"
-    if config is not None and config.device_compilation_config is not None:
-        scheduling_strategy = config.device_compilation_config.scheduling_strategy
+    _make_timing_constraints_explicit(schedule, scheduling_strategy)
+    references_graph = _populate_references_graph(schedule)
+    _validate_schedulable_references(schedule, references_graph)
 
-    if scheduling_strategy != "asap":
-        raise NotImplementedError(
-            f"{_determine_absolute_timing.__name__} does not currently support "
-            f"{scheduling_strategy=}. Please change to 'asap' scheduling strategy "
-            "in the `DeviceCompilationConfig`."
-        )
+    schedulables_sorted_by_reference = nx.topological_sort(references_graph)
+    for i, schedulable_name in enumerate(schedulables_sorted_by_reference):
+        i: int
+        schedulable_name: str
+        schedulable: Schedulable = schedule.schedulables[schedulable_name]
+        timing_constraints: list[TimingConstraint] = schedulable.data["timing_constraints"]
+        operation: Operation | Schedule = schedule.operations[schedulable.data["operation_id"]]
 
-    if not schedule.schedulables:
-        raise ValueError(f"schedule '{schedule.name}' contains no schedulables.")
+        if i == 0:
+            schedulable.data["abs_time"] = 0.0
+        else:
+            schedulable.data["abs_time"] = _get_start_time(
+                schedule, timing_constraints[0], operation, time_unit
+            )
 
-    schedulable_iterator = iter(schedule.schedulables.values())
-
-    # The first schedulable by starts at time 0, and cannot have relative timings
-    last_schedulable = next(schedulable_iterator)
-    last_schedulable["abs_time"] = 0
-
-    for schedulable in schedulable_iterator:
-        curr_op = schedule.operations[schedulable["operation_id"]]
-
-        for t_constr in schedulable["timing_constraints"]:
-            t_constr["ref_schedulable"] = t_constr["ref_schedulable"] or str(last_schedulable)
-            abs_time = _get_start_time(schedule, t_constr, curr_op, time_unit)
-
-            if "abs_time" not in schedulable or abs_time > schedulable["abs_time"]:
-                schedulable["abs_time"] = abs_time
-        last_schedulable = schedulable
-
+    schedule = _normalize_absolute_timing(schedule)
     schedule["duration"] = schedule.get_schedule_duration()
     if time_unit == "ideal":
         schedule["depth"] = schedule["duration"] + 1
     return schedule
 
 
+def _determine_scheduling_strategy(config: CompilationConfig | None = None) -> SchedulingStrategy:
+    if config is not None and config.device_compilation_config is not None:
+        return config.device_compilation_config.scheduling_strategy
+
+    return SchedulingStrategy.ASAP
+
+
+def _validate_schedulable_references(schedule: Schedule, references_graph: nx.DiGraph) -> None:
+    """Check the schedulable references for circular references."""
+    for node in references_graph.nodes:
+        if node not in schedule.schedulables:
+            raise ValueError(f"Node {node} not found in schedulables.")
+
+    if not nx.is_directed_acyclic_graph(references_graph):
+        raise TypeError(
+            "`schedulable_references` is not a Directed Acyclic Graph. This is most likely "
+            "caused by a circular reference in the Timing Constraints."
+        )
+
+
+def _populate_references_graph(schedule: Schedule) -> nx.DiGraph:
+    """Add nodes and edges to the graph containing schedulable references."""
+    graph = nx.DiGraph()
+
+    # Add nodes
+    graph.add_nodes_from(schedule.schedulables.keys())
+
+    # Add edges
+    for schedulable_name, schedulable in schedule.schedulables.items():
+        schedulable_name: str
+        schedulable: Schedulable
+
+        graph.add_edges_from(
+            (timing_constraint.ref_schedulable, schedulable_name)
+            for timing_constraint in schedulable.data["timing_constraints"]
+            if timing_constraint.ref_schedulable is not None
+        )
+
+    return graph
+
+
+def _make_timing_constraints_explicit(schedule: Schedule, strategy: SchedulingStrategy) -> None:
+    default_schedulable_by_schedulable: list[tuple[str, str | None]] = (
+        _determine_default_ref_schedulables_by_schedulable(schedule, strategy)
+    )
+
+    for (
+        schedulable_name,
+        default_reference_schedulable_name,
+    ) in default_schedulable_by_schedulable:
+        schedulable_name: str
+        default_reference_schedulable_name: str | None
+
+        _make_timing_constraints_explicit_for_schedulable(
+            schedule=schedule,
+            schedulable_name=schedulable_name,
+            default_reference_schedulable_name=default_reference_schedulable_name,
+            strategy=strategy,
+        )
+
+
+def _make_timing_constraints_explicit_for_schedulable(
+    schedule: Schedule,
+    schedulable_name: str,
+    default_reference_schedulable_name: str | None,
+    strategy: SchedulingStrategy,
+) -> None:
+    schedulable: Schedulable = schedule.schedulables[schedulable_name]
+    given_timing_constraints: list[TimingConstraint] = schedulable.data["timing_constraints"]
+
+    # Support only one timing constraint for now
+    if len(given_timing_constraints) != 1:
+        raise NotImplementedError("Only exactly one timing constraint per Schedulable supported.")
+
+    timing_constraint: TimingConstraint = given_timing_constraints[0]
+
+    if timing_constraint.ref_schedulable is None:
+        timing_constraint.ref_schedulable = default_reference_schedulable_name
+
+    if timing_constraint.ref_pt is None:
+        timing_constraint.ref_pt = _determine_default_ref_pt(strategy)
+
+    if timing_constraint.ref_pt_new is None:
+        timing_constraint.ref_pt_new = _determine_default_ref_pt_new(strategy)
+
+    if timing_constraint.rel_time is None:
+        timing_constraint.rel_time = 0.0
+
+
+def _determine_default_ref_pt(strategy: SchedulingStrategy) -> Literal["start", "end"]:
+    if strategy == SchedulingStrategy.ASAP:
+        return "end"
+
+    if strategy == SchedulingStrategy.ALAP:
+        return "start"
+
+    raise ValueError(f"Cannot determine default `ref_pt`. Unknown scheduling strategy: {strategy}")
+
+
+def _determine_default_ref_pt_new(strategy: SchedulingStrategy) -> Literal["start", "end"]:
+    if strategy == SchedulingStrategy.ASAP:
+        return "start"
+
+    if strategy == SchedulingStrategy.ALAP:
+        return "end"
+
+    raise ValueError(
+        f"Cannot determine default `ref_pt_new`. Unknown scheduling strategy: {strategy}"
+    )
+
+
+def _determine_default_ref_schedulables_by_schedulable(
+    schedule: Schedule, strategy: SchedulingStrategy
+) -> list[tuple[str, str | None]]:
+    schedulable_names: list[str] = list(schedule.schedulables)
+
+    if strategy == SchedulingStrategy.ASAP:
+        default_schedulable_names: list[str | None] = [None] + list(schedule.schedulables)[:-1]
+    elif strategy == SchedulingStrategy.ALAP:
+        default_schedulable_names: list[str | None] = list(schedule.schedulables)[1:] + [None]
+    else:
+        raise ValueError(f"Scheduling strategy {strategy} not one of `ASAP` or `ALAP`.")
+
+    return [
+        (schedulable_name, default_schedulable_name)
+        for schedulable_name, default_schedulable_name in zip(
+            schedulable_names, default_schedulable_names
+        )
+    ]
+
+
 def _get_start_time(
     schedule: Schedule,
-    t_constr: dict[str, str | float],
+    t_constr: TimingConstraint,
     curr_op: Operation | Schedule,
     time_unit: Literal["physical", "ideal", None],
 ) -> float:
-    # this assumes the reference op exists. This is ensured in schedule.add
-    ref_schedulable = schedule.schedulables[str(t_constr["ref_schedulable"])]
-    ref_op = schedule.operations[ref_schedulable["operation_id"]]
+    assert t_constr.ref_schedulable is not None
+
+    ref_schedulable: Schedulable = schedule.schedulables[t_constr.ref_schedulable]
+    ref_op: Operation | Schedule = schedule.operations[ref_schedulable["operation_id"]]
 
     # duration = 1 is useful when e.g., drawing a circuit diagram.
     if time_unit == "physical":
@@ -198,7 +332,7 @@ def _get_start_time(
     # "physical"
     assert duration_ref_op is not None
 
-    ref_pt = t_constr["ref_pt"] or "end"
+    ref_pt = t_constr.ref_pt or "end"
     if ref_pt == "start":
         t0 = ref_schedulable["abs_time"]
     elif ref_pt == "center":
@@ -218,13 +352,13 @@ def _get_start_time(
         )
     assert duration_new_op is not None
 
-    ref_pt_new = t_constr["ref_pt_new"] or "start"
+    ref_pt_new = t_constr.ref_pt_new or "start"
     if ref_pt_new == "start":
-        abs_time = t0 + t_constr["rel_time"]
+        abs_time = t0 + t_constr.rel_time
     elif ref_pt_new == "center":
-        abs_time = t0 + t_constr["rel_time"] - duration_new_op / 2
+        abs_time = t0 + t_constr.rel_time - duration_new_op / 2
     elif ref_pt_new == "end":
-        abs_time = t0 + t_constr["rel_time"] - duration_new_op
+        abs_time = t0 + t_constr.rel_time - duration_new_op
     else:
         raise NotImplementedError(f'Timing "{ref_pt_new=}" not supported by backend.')
     return abs_time
@@ -264,3 +398,13 @@ def validate_config(config: dict, scheme_fn: str) -> bool:
     scheme = load_json_schema(__file__, scheme_fn)
     validate_json(config, scheme)
     return True
+
+
+def plot_schedulable_references_graph(schedule: Schedule) -> None:
+    """
+    Show the schedulable reference graph.
+
+    Can be used as a debugging tool to spot any circular references.
+    """
+    graph = _populate_references_graph(schedule)
+    nx.draw(graph, with_labels=True)

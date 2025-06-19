@@ -9,7 +9,6 @@ from copy import deepcopy
 from typing import (
     TYPE_CHECKING,
     Any,
-    Literal,
     NoReturn,
 )
 
@@ -20,6 +19,7 @@ from pydantic import Field, field_serializer, field_validator
 from quantify_scheduler.backends.types.common import (
     HardwareCompilationConfig,
 )
+from quantify_scheduler.enums import SchedulingStrategy
 from quantify_scheduler.helpers.importers import export_python_object_to_path_string
 from quantify_scheduler.operations.operation import (
     Operation,
@@ -180,7 +180,7 @@ class DeviceCompilationConfig(DataStructure):
     operations can be applied, and the operations that can be applied to them and how
     to compile these.
     """
-    scheduling_strategy: Literal["asap", "alap"] = "asap"
+    scheduling_strategy: SchedulingStrategy = SchedulingStrategy.ASAP
     """
     The scheduling strategy used when determining the absolute timing of each
     operation of the schedule.

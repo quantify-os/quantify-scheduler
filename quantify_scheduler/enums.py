@@ -92,3 +92,10 @@ class DualThresholdedTriggerCountLabels(StrEnum):  # type: ignore
     MID = "mid"
     HIGH = "high"
     INVALID = "invalid"
+
+
+class SchedulingStrategy(StrEnum):
+    """Default scheduling strategy to use when no timing constraints are defined."""
+
+    ASAP = "asap"
+    ALAP = "alap"

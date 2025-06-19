@@ -84,42 +84,6 @@ def test_schedule_bell():
     assert Schedule.is_valid(sched)
 
 
-def test_schedule_add_timing_constraints():
-    sched = Schedule("my exp")
-    test_lab = "test label"
-    x90_label = sched.add(Rxy(theta=90, phi=0, qubit="q0"), label=test_lab)["label"]
-    assert x90_label == test_lab
-
-    with pytest.raises(ValueError, match="must be unique"):
-        x90_label = sched.add(Rxy(theta=90, phi=0, qubit="q0"), label=test_lab)["label"]
-
-    uuid_label = sched.add(Rxy(theta=90, phi=0, qubit="q0"))["label"]
-    assert uuid_label != x90_label
-
-    # not specifying a label should work
-    sched.add(Rxy(theta=90, phi=0, qubit="q0"), ref_op=None)
-
-    # specifying existing label should work
-    sched.add(Rxy(theta=90, phi=0, qubit="q0"), ref_op=x90_label)
-
-    # specifying non-existing label should raise an error
-    with pytest.raises(ValueError, match="does not exist"):
-        sched.add(Rxy(theta=90, phi=0, qubit="q0"), ref_op="non-existing-operation")
-
-    # specifying schedulable that is not part of the schedule should raise an error
-    different_sched = Schedule("not my exp")
-    # This schedulable is intentionally given a label that also exists in `sched`
-    schedulable = different_sched.add(Rxy(theta=90, phi=0, qubit="q0"), label=test_lab)
-    with pytest.raises(ValueError, match="does not exist"):
-        sched.add(Rxy(theta=90, phi=0, qubit="q0"), ref_op=schedulable)
-
-    op = Rxy(theta=90, phi=0, qubit="q0")
-    with pytest.raises(ValueError, match="does not exist"):
-        sched.add(Rxy(theta=90, phi=0, qubit="q0"), ref_op=op)
-
-    assert Schedule.is_valid(sched)
-
-
 def test_gates_valid():
     init_all = Reset("q0", "q1")  # instantiates
     rxy_operation = Rxy(theta=124, phi=23.9, qubit="q5")

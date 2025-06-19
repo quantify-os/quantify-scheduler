@@ -1,12 +1,18 @@
 from copy import deepcopy
 
+import networkx as nx
 import numpy as np
 import pytest
 
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.backends.circuit_to_device import ConfigKeyError
-from quantify_scheduler.compilation import _determine_absolute_timing, _normalize_absolute_timing
-from quantify_scheduler.enums import BinMode
+from quantify_scheduler.compilation import (
+    _determine_absolute_timing,
+    _normalize_absolute_timing,
+    _populate_references_graph,
+    _validate_schedulable_references,
+)
+from quantify_scheduler.enums import BinMode, SchedulingStrategy
 from quantify_scheduler.operations.acquisition_library import (
     SSBIntegrationComplex,
     Trace,
@@ -98,28 +104,57 @@ def test_determine_absolute_timing_ideal_clock():
         _ = _determine_absolute_timing(schedule=bad_sched, time_unit="ideal")
 
 
-def test_determine_absolute_timing_alap_raises(
-    mock_setup_basic_transmon_with_standard_params, basic_schedule
+def test_determine_absolute_timing_alap(
+    mock_setup_basic_transmon_with_standard_params, schedule_with_measurement
 ):
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
-    quantum_device.scheduling_strategy("alap")
-    assert quantum_device.scheduling_strategy() == "alap"
+    quantum_device.scheduling_strategy(SchedulingStrategy.ALAP)
+    assert quantum_device.scheduling_strategy() == SchedulingStrategy.ALAP
 
-    # Assert that an implementation error is raised for alap scheduling_strategy
-    with pytest.raises(NotImplementedError):
-        _determine_absolute_timing(
-            schedule=basic_schedule,
-            time_unit="ideal",
-            config=quantum_device.generate_compilation_config(),
-        )
+    schedule = _determine_absolute_timing(
+        schedule=schedule_with_measurement,
+        time_unit="ideal",
+        config=quantum_device.generate_compilation_config(),
+    )
+    assert isinstance(schedule, Schedule)
+
+    references_graph = _populate_references_graph(schedule)
+    schedulable_iterator = nx.topological_sort(references_graph)
+    root_schedulable = next(schedulable_iterator)
+
+    assert root_schedulable == "measure"
+
+
+def test_determine_absolute_timing_asap(
+    mock_setup_basic_transmon_with_standard_params, schedule_with_measurement
+):
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
+    quantum_device.scheduling_strategy(SchedulingStrategy.ASAP)
+    assert quantum_device.scheduling_strategy() == SchedulingStrategy.ASAP
+
+    schedule = _determine_absolute_timing(
+        schedule=schedule_with_measurement,
+        time_unit="ideal",
+        config=quantum_device.generate_compilation_config(),
+    )
+    assert isinstance(schedule, Schedule)
+
+    references_graph = _populate_references_graph(schedule)
+    schedulable_iterator = nx.topological_sort(references_graph)
+    root_schedulable = next(schedulable_iterator)
+
+    assert root_schedulable == "reset"
 
 
 def test_missing_ref_op():
     sched = Schedule("test")
     q0, q1 = ("q0", "q1")
     ref_label_1 = "test_label"
+    sched.add(operation=CNOT(qC=q0, qT=q1), ref_op=ref_label_1)
+    graph = _populate_references_graph(sched)
+
     with pytest.raises(ValueError):
-        sched.add(operation=CNOT(qC=q0, qT=q1), ref_op=ref_label_1)
+        _validate_schedulable_references(sched, graph)
 
 
 def test_compile_transmon_program(mock_setup_basic_transmon_with_standard_params):

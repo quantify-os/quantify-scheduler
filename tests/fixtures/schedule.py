@@ -125,9 +125,9 @@ def make_schedule_with_measurement() -> Callable[[str], Schedule]:
 
     def _make_schedule_with_measurement(qubit: str):
         schedule = Schedule(f"Schedule with measurement {qubit}")
-        schedule.add(Reset(qubit))
+        schedule.add(Reset(qubit), label="reset")
         schedule.add(X90(qubit))
-        schedule.add(Measure(qubit))
+        schedule.add(Measure(qubit), label="measure")
         return schedule
 
     return _make_schedule_with_measurement

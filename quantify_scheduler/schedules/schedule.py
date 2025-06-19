@@ -210,7 +210,7 @@ class ScheduleBase(JSONSchemaValMixin, JSONSerializable, UserDict, ABC):
         figsize: tuple[int, int] | None = None,
         ax: Axes | None = None,
         plot_backend: Literal["mpl"] = "mpl",
-    ) -> tuple[Figure, Axes | list[Axes]]:
+    ) -> tuple[Figure | None, Axes | list[Axes]]:
         """
         Create a circuit diagram visualization of the schedule using the specified plotting backend.
 
@@ -679,6 +679,12 @@ class ScheduleBase(JSONSchemaValMixin, JSONSerializable, UserDict, ABC):
             data["schedulables"] = {k: v for k, v in data["schedulables"]}
         self.data = data
 
+    @classmethod
+    def is_valid(cls, schedule: ScheduleBase) -> bool:
+        """Check if schedule adheres to JSON schema."""
+        super().is_valid(schedule)  # type: ignore
+        return True
+
 
 class Schedule(ScheduleBase):
     """
@@ -774,7 +780,10 @@ class Schedule(ScheduleBase):
             "ref_pt_new" of the operation that is added.
         ref_op
             reference schedulable. If set to :code:`None`, will default
-            to the last added operation.
+            based on the chosen :code:`SchedulingStrategy`. If ASAP is chosen, the
+            previously added schedulable is the reference schedulable. If ALAP is chose,
+            the reference schedulable is the schedulable added immediately after this
+            schedulable.
         ref_pt
             reference point in reference operation must be one of
             :code:`"start"`, :code:`"center"`, :code:`"end"`, or :code:`None`; in case
@@ -811,21 +820,6 @@ class Schedule(ScheduleBase):
         if label in self.schedulables:
             raise ValueError(f"Schedulable name '{label}' must be unique.")
 
-        # ensure that reference schedulable exists in current schedule
-        if (
-            ref_op is not None
-            and (ref_op not in self.schedulables)
-            and (not any([ref_op is op for op in self.schedulables.values()]))
-        ):
-            raise ValueError(
-                f"Reference schedulable '{ref_op}' does not exist in this schedule. Please "
-                "ensure that `ref_op` corresponds to a label, for example\n\n"
-                "    schedule.add(operationA, label='my_label')\n"
-                "    schedule.add(operationB, ref_op='my_label')\n\n"
-                "or a schedulable that has been added to the schedule, for example\n\n"
-                "    my_operation = schedule.add(operationA)\n"
-                "    schedule.add(operationB, ref_op=my_operation)."
-            )
         if control_flow is not None:
             return self._add(
                 control_flow.create_operation(operation),
@@ -969,12 +963,12 @@ class Schedulable(JSONSchemaValMixin, UserDict):
         if ref_schedulable is not None:
             ref_schedulable = str(ref_schedulable)
 
-        timing_constr = {
-            "rel_time": rel_time,
-            "ref_schedulable": ref_schedulable,
-            "ref_pt_new": ref_pt_new,
-            "ref_pt": ref_pt,
-        }
+        timing_constr = TimingConstraint(
+            rel_time=rel_time,
+            ref_schedulable=ref_schedulable,
+            ref_pt_new=ref_pt_new,
+            ref_pt=ref_pt,
+        )
         self["timing_constraints"].append(timing_constr)
 
     def __hash__(self) -> int:
@@ -996,6 +990,40 @@ class Schedulable(JSONSchemaValMixin, UserDict):
 
     def __setstate__(self, state: dict[str, Any]) -> None:
         self.data = state["data"]
+
+
+@dataclasses.dataclass
+class TimingConstraint:
+    """Datastructure to store the information on a Timing Constraint."""
+
+    ref_schedulable: str
+    """The schedulable against which `ref_pt` and `rel_time` are defined."""
+    ref_pt: Literal["start", "center", "end"]
+    """The point on `ref_schedulable` against which `rel_time` is defined."""
+    ref_pt_new: Literal["start", "center", "end"]
+    """The point on the to be added schedulable against which `rel_time` is defined."""
+    rel_time: float
+    """The time between `ref_pt` and `ref_pt_new`."""
+
+    @property
+    def data(self) -> dict:
+        """Representation of this TimingConstraint as a dictionary."""
+        return dataclasses.asdict(self)
+
+    def __getitem__(self, key: str) -> str | Literal["start", "center", "end"]:
+        return self.data[key]
+
+    def __hash__(self) -> int:
+        return make_hash(self.data)
+
+    def __getstate__(self) -> dict[str, Any]:
+        return {
+            "deserialization_type": export_python_object_to_path_string(self.__class__),
+            "data": self.data,
+        }
+
+    def __setstate__(self, state: dict[str, Any]) -> None:
+        self.__init__(**state["data"])
 
 
 @dataclasses.dataclass

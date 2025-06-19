@@ -8,6 +8,10 @@ import pytest
 from quantify_scheduler.backends.graph_compilation import SerialCompiler
 from quantify_scheduler.backends.qblox import constants
 from quantify_scheduler.backends.qblox.operations.gate_library import ConditionalReset
+from quantify_scheduler.compilation import (
+    _populate_references_graph,
+    _validate_schedulable_references,
+)
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
 from quantify_scheduler.json_utils import SchedulerJSONDecoder, SchedulerJSONEncoder
@@ -60,21 +64,79 @@ def test_schedule_add_schedulables() -> None:
     # specifying existing label should work
     sched.add(Rxy(theta=90, phi=0, qubit="q0"), ref_op=x90_label)
 
-    # specifying non-existing label should raise an error
-    with pytest.raises(ValueError):
-        sched.add(Rxy(theta=90, phi=0, qubit="q0"), ref_op="non-existing-operation")
+    # All schedulables should be valid
+    for schedulable in sched.schedulables.values():
+        assert Schedulable.is_valid(schedulable)
 
-    # specifying a Schedulable that is not in the Schedule should raise an error
+    graph = _populate_references_graph(sched)
+    _validate_schedulable_references(sched, graph)
+    assert Schedule.is_valid(sched)
+
+
+def test_schedule_add_schedulables_one_missing() -> None:
+    sched = Schedule("my exp")
+    test_lab = "test label"
+    x90_label = sched.add(Rxy(theta=90, phi=0, qubit="q0"), label=test_lab)["label"]
+    assert x90_label == test_lab
+
     with pytest.raises(ValueError):
-        new_sched = Schedule("redundant")
-        new_schedulable = new_sched.add(Rxy(theta=15.4, phi=42.6, qubit="q0"))
-        sched.add(Rxy(theta=90, phi=0, qubit="q0"), ref_op=new_schedulable)
+        x90_label = sched.add(Rxy(theta=90, phi=0, qubit="q0"), label=test_lab)["label"]
+
+    uuid_label = sched.add(Rxy(theta=90, phi=0, qubit="q0"))["label"]
+    assert uuid_label != x90_label
+
+    # not specifying a label should work
+    sched.add(Rxy(theta=90, phi=0, qubit="q0"), ref_op=None)
+
+    # specifying existing label should work
+    sched.add(Rxy(theta=90, phi=0, qubit="q0"), ref_op=x90_label)
+
+    # specifying non-existing label should work
+    sched.add(Rxy(theta=90, phi=0, qubit="q0"), ref_op="non-existing-operation")
 
     # All schedulables should be valid
     for schedulable in sched.schedulables.values():
         assert Schedulable.is_valid(schedulable)
 
-    assert Schedule.is_valid(sched)
+    # The schedule should not be valid
+    graph = _populate_references_graph(sched)
+    with pytest.raises(ValueError):
+        _validate_schedulable_references(sched, graph)
+        Schedule.is_valid(sched)
+
+
+def test_schedule_add_schedulables_missing_reference() -> None:
+    sched = Schedule("my exp")
+    test_lab = "test label"
+    x90_label = sched.add(Rxy(theta=90, phi=0, qubit="q0"), label=test_lab)["label"]
+    assert x90_label == test_lab
+
+    with pytest.raises(ValueError):
+        x90_label = sched.add(Rxy(theta=90, phi=0, qubit="q0"), label=test_lab)["label"]
+
+    uuid_label = sched.add(Rxy(theta=90, phi=0, qubit="q0"))["label"]
+    assert uuid_label != x90_label
+
+    # not specifying a label should work
+    sched.add(Rxy(theta=90, phi=0, qubit="q0"), ref_op=None)
+
+    # specifying existing label should work
+    sched.add(Rxy(theta=90, phi=0, qubit="q0"), ref_op=x90_label)
+
+    # specifying a Schedulable that is not in the Schedule should work
+    new_sched = Schedule("redundant")
+    new_schedulable = new_sched.add(Rxy(theta=15.4, phi=42.6, qubit="q0"))
+    sched.add(Rxy(theta=90, phi=0, qubit="q0"), ref_op=new_schedulable)
+
+    # All schedulables should be valid
+    for schedulable in sched.schedulables.values():
+        assert Schedulable.is_valid(schedulable)
+
+    # The schedule should not be valid
+    graph = _populate_references_graph(sched)
+    with pytest.raises(ValueError):
+        _validate_schedulable_references(sched, graph)
+        Schedule.is_valid(sched)
 
 
 def test_rxy_angle_modulo() -> None:
