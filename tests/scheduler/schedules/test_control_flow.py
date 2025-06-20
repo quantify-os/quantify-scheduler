@@ -170,23 +170,3 @@ def test_nested_conditional_control_flow_raises_runtime_warning():
             acq_metadata=None,
             repetitions=1,
         )
-
-
-def test_deprecated_control_flow_loop_warns():
-    schedule = Schedule("Test")
-    with pytest.warns(
-        FutureWarning,
-        match="Using the `control_flow` argument in `Schedule.add` is deprecated, "
-        "and will be removed from the public interface",
-    ):
-        schedule.add(X("q0"), control_flow=Loop(3))
-
-
-def test_deprecated_control_flow_conditional_warns():
-    schedule = Schedule("Test")
-    with pytest.warns(
-        FutureWarning,
-        match="Using the `control_flow` argument in `Schedule.add` is deprecated, "
-        "and will be removed from the public interface",
-    ):
-        schedule.add(X("q0"), control_flow=Conditional("q0"))

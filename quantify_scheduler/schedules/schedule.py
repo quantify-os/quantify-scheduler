@@ -5,7 +5,6 @@
 from __future__ import annotations
 
 import dataclasses
-import warnings
 from abc import ABC
 from collections import UserDict
 from collections.abc import Hashable, MutableMapping
@@ -35,8 +34,6 @@ if TYPE_CHECKING:
     import plotly.graph_objects as go
     from matplotlib.axes import Axes
     from matplotlib.figure import Figure
-
-    from quantify_scheduler.operations.control_flow_library import ControlFlowSpec
 
 DictOrdered = dict
 """
@@ -764,7 +761,6 @@ class Schedule(ScheduleBase):
         ref_pt: Literal["start", "center", "end"] | None = None,
         ref_pt_new: Literal["start", "center", "end"] | None = None,
         label: str | None = None,
-        control_flow: ControlFlowSpec | None = None,
     ) -> Schedulable:
         """
         Add an operation or a subschedule to the schedule.
@@ -799,11 +795,6 @@ class Schedule(ScheduleBase):
         label
             a unique string that can be used as an identifier when adding operations.
             if set to `None`, a random hash will be generated instead.
-        control_flow
-            Virtual operation describing if the operation should be subject to control
-            flow (loop, conditional, ...). See
-            :ref:`control flow reference documentation <sec-control-flow>`
-            for a detailed explanation.
 
         Returns
         -------
@@ -814,23 +805,13 @@ class Schedule(ScheduleBase):
         if label is None:
             label = str(uuid4())
 
-        self._validate_add_arguments(operation, label, control_flow)
+        self._validate_add_arguments(operation, label)
 
         # ensure the schedulable name is unique
         if label in self.schedulables:
             raise ValueError(f"Schedulable name '{label}' must be unique.")
 
-        if control_flow is not None:
-            return self._add(
-                control_flow.create_operation(operation),
-                rel_time,
-                ref_op,
-                ref_pt,
-                ref_pt_new,
-                label,
-            )
-        else:
-            return self._add(operation, rel_time, ref_op, ref_pt, ref_pt_new, label)
+        return self._add(operation, rel_time, ref_op, ref_pt, ref_pt_new, label)
 
     def _add(
         self,
@@ -858,20 +839,12 @@ class Schedule(ScheduleBase):
         self,
         operation: Operation | Schedule,
         label: str,
-        control_flow: Operation | None,
     ) -> None:
         if not isinstance(operation, (Operation, Schedule)):
             raise ValueError(
                 f"Attempting to add operation to schedule. "
                 f"The provided object '{operation=}' is not"
                 " an instance of Operation or Schedule"
-            )
-        if control_flow is not None:
-            warnings.warn(
-                "Using the `control_flow` argument in `Schedule.add` is deprecated, and "
-                "will be removed from the public interface in quantify-scheduler >= 0.23.0. "
-                "Please add control flow operations directly to the schedule instead.",
-                FutureWarning,
             )
 
         # ensure the schedulable name is unique
@@ -906,7 +879,7 @@ class Schedulable(JSONSchemaValMixin, UserDict):
 
     schema_filename = "schedulable.json"
 
-    def __init__(self, name: str, operation_id: str, control_flow: Operation | None = None) -> None:
+    def __init__(self, name: str, operation_id: str) -> None:
         super().__init__()
 
         self["name"] = name
@@ -915,8 +888,6 @@ class Schedulable(JSONSchemaValMixin, UserDict):
 
         # the next lines are to prevent breaking the existing API
         self["label"] = name
-        if control_flow is not None:
-            self["control_flow"] = control_flow
 
     def add_timing_constraint(
         self,
