@@ -824,11 +824,6 @@ class AnalogModuleCompiler(ClusterModuleCompiler, ABC):
                     self._configure_dc_latency_comp_for_output(output, dc_comp)
 
     def _configure_dc_latency_comp_for_output(self, output: int, dc_comp: int) -> None:
-        self._settings.distortion_corrections[output].bt.config = (
-            QbloxFilterConfig.DELAY_COMP
-            if dc_comp & DistortionCorrectionLatencyEnum.BT
-            else QbloxFilterConfig.BYPASSED
-        )
         for i, mask in enumerate(
             [
                 DistortionCorrectionLatencyEnum.EXP0,
@@ -847,11 +842,6 @@ class AnalogModuleCompiler(ClusterModuleCompiler, ABC):
         )
 
     def _configure_dc_latency_comp_for_marker(self, output: int, dc_comp: int) -> None:
-        self._settings.distortion_corrections[output].bt.marker_delay = (
-            QbloxFilterMarkerDelay.DELAY_COMP
-            if dc_comp & DistortionCorrectionLatencyEnum.BT
-            else QbloxFilterMarkerDelay.BYPASSED
-        )
         for i, mask in enumerate(
             [
                 DistortionCorrectionLatencyEnum.EXP0,
@@ -1003,11 +993,6 @@ class BasebandModuleCompiler(AnalogModuleCompiler, ABC):
         """
 
     def _configure_dc_latency_comp_for_marker(self, output: int, dc_comp: int) -> None:
-        self._settings.distortion_corrections[output].bt.marker_delay = (
-            QbloxFilterMarkerDelay.DELAY_COMP
-            if dc_comp & DistortionCorrectionLatencyEnum.BT
-            else QbloxFilterMarkerDelay.BYPASSED
-        )
         for i, mask in enumerate(
             [
                 DistortionCorrectionLatencyEnum.EXP0,
@@ -1240,11 +1225,6 @@ class RFModuleCompiler(AnalogModuleCompiler, ABC):
 
     def _configure_dc_latency_comp_for_marker(self, output: int, dc_comp: int) -> None:
         output += 2  # In RF modules, the two marker indices are 2 & 3.
-        self._settings.distortion_corrections[output].bt.marker_delay = (
-            QbloxFilterMarkerDelay.DELAY_COMP
-            if dc_comp & DistortionCorrectionLatencyEnum.BT
-            else QbloxFilterMarkerDelay.BYPASSED
-        )
         for i, mask in enumerate(
             [
                 DistortionCorrectionLatencyEnum.EXP0,

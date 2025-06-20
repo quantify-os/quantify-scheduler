@@ -35,8 +35,6 @@ class DistortionCorrectionLatencyEnum(int, Enum):
 
     NO_DELAY_COMP = 0
     """Setting for no distortion correction delay compensation"""
-    BT = 1
-    """Setting for delay compensation equal to bias tee correction"""
     EXP0 = 2
     """Setting for delay compensation equal to exponential overshoot or undershoot correction"""
     EXP1 = 4

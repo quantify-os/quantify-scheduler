@@ -4602,11 +4602,6 @@ def test_distortion_correction_latency_compensation():
 
     ideal_corrections = [
         DistortionSettings(
-            bt=QbloxRealTimeFilter(
-                coeffs=None,
-                config=QbloxFilterConfig.BYPASSED,
-                marker_delay=QbloxFilterMarkerDelay.BYPASSED,
-            ),
             exp0=QbloxRealTimeFilter(
                 coeffs=None,
                 config=QbloxFilterConfig.DELAY_COMP,
@@ -4667,11 +4662,6 @@ def test_distortion_correction_latency_compensation():
             ),
         ),
         DistortionSettings(
-            bt=QbloxRealTimeFilter(
-                coeffs=None,
-                config=QbloxFilterConfig.BYPASSED,
-                marker_delay=QbloxFilterMarkerDelay.BYPASSED,
-            ),
             exp0=QbloxRealTimeFilter(
                 coeffs=None,
                 config=QbloxFilterConfig.DELAY_COMP,
@@ -4732,11 +4722,6 @@ def test_distortion_correction_latency_compensation():
             ),
         ),
         DistortionSettings(
-            bt=QbloxRealTimeFilter(
-                coeffs=None,
-                config=QbloxFilterConfig.BYPASSED,
-                marker_delay=QbloxFilterMarkerDelay.BYPASSED,
-            ),
             exp0=QbloxRealTimeFilter(
                 coeffs=None,
                 config=QbloxFilterConfig.DELAY_COMP,
@@ -4797,11 +4782,6 @@ def test_distortion_correction_latency_compensation():
             ),
         ),
         DistortionSettings(
-            bt=QbloxRealTimeFilter(
-                coeffs=None,
-                config=QbloxFilterConfig.BYPASSED,
-                marker_delay=QbloxFilterMarkerDelay.BYPASSED,
-            ),
             exp0=QbloxRealTimeFilter(
                 coeffs=None,
                 config=QbloxFilterConfig.DELAY_COMP,
@@ -4838,11 +4818,6 @@ def test_distortion_correction_latency_compensation():
 
     ideal_corrections = [
         DistortionSettings(
-            bt=QbloxRealTimeFilter(
-                coeffs=None,
-                config=QbloxFilterConfig.BYPASSED,
-                marker_delay=QbloxFilterMarkerDelay.BYPASSED,
-            ),
             exp0=QbloxRealTimeFilter(
                 coeffs=None,
                 config=QbloxFilterConfig.DELAY_COMP,
@@ -4870,11 +4845,6 @@ def test_distortion_correction_latency_compensation():
             ),
         ),
         DistortionSettings(
-            bt=QbloxRealTimeFilter(
-                coeffs=None,
-                config=QbloxFilterConfig.BYPASSED,
-                marker_delay=QbloxFilterMarkerDelay.BYPASSED,
-            ),
             exp0=QbloxRealTimeFilter(
                 coeffs=None,
                 config=QbloxFilterConfig.DELAY_COMP,
@@ -4902,11 +4872,6 @@ def test_distortion_correction_latency_compensation():
             ),
         ),
         DistortionSettings(
-            bt=QbloxRealTimeFilter(
-                coeffs=None,
-                config=QbloxFilterConfig.BYPASSED,
-                marker_delay=QbloxFilterMarkerDelay.BYPASSED,
-            ),
             exp0=QbloxRealTimeFilter(
                 coeffs=None,
                 config=QbloxFilterConfig.DELAY_COMP,
@@ -4934,11 +4899,6 @@ def test_distortion_correction_latency_compensation():
             ),
         ),
         DistortionSettings(
-            bt=QbloxRealTimeFilter(
-                coeffs=None,
-                config=QbloxFilterConfig.BYPASSED,
-                marker_delay=QbloxFilterMarkerDelay.BYPASSED,
-            ),
             exp0=QbloxRealTimeFilter(
                 coeffs=None,
                 config=QbloxFilterConfig.DELAY_COMP,

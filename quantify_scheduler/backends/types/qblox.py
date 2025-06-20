@@ -304,8 +304,6 @@ class QbloxRealTimeFilter(DataClassJsonMixin):
 class DistortionSettings(DataClassJsonMixin):
     """Distortion correction settings for all Qblox modules."""
 
-    bt: QbloxRealTimeFilter = dataclasses_field(default_factory=QbloxRealTimeFilter)
-    """The bias tee correction filter."""
     exp0: QbloxRealTimeFilter = dataclasses_field(default_factory=QbloxRealTimeFilter)
     """The exponential overshoot correction 1 filter."""
     exp1: QbloxRealTimeFilter = dataclasses_field(default_factory=QbloxRealTimeFilter)
@@ -1598,8 +1596,6 @@ class SequencerOptions(DataStructure):
 class QbloxHardwareDistortionCorrection(HardwareDistortionCorrection):
     """A hardware distortion correction specific to the Qblox backend."""
 
-    bt_coeffs: Optional[list[float]] = None
-    """Coefficient of the bias tee correction."""
     exp0_coeffs: Optional[list[float]] = None
     """Coefficients of the exponential overshoot/undershoot correction 1."""
     exp1_coeffs: Optional[list[float]] = None
