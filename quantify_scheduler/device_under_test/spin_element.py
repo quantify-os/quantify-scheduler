@@ -193,12 +193,17 @@ class DispersiveMeasurementSpin(DispersiveMeasurement):
     def __init__(
         self, parent: InstrumentBase, name: str, *, gate_pulse_amp: float = 0, **kwargs
     ) -> None:
+        # Pop integration_time from kwargs to avoid triggering the parent validator
+        integration_time = kwargs.pop("integration_time", None)
+
         super().__init__(parent=parent, name=name, **kwargs)
 
         # TODO: this should be refactored when we redesign how quantify supports different qubits.
         # See QTFY-738.
         self.integration_time.remove_validator()
         self.integration_time.add_validator(vals=validators.Numbers(min_value=0, max_value=10e-3))
+        if integration_time is not None:
+            self.integration_time(integration_time)
 
         self.gate_pulse_amp = ManualParameter(
             name="gate_pulse_amp",
