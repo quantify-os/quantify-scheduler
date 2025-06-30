@@ -77,6 +77,7 @@ from quantify_scheduler.backends.types.qblox import (
 from quantify_scheduler.compilation import _determine_absolute_timing
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
+from quantify_scheduler.enums import BinMode
 from quantify_scheduler.helpers.collections import (
     find_all_port_clock_combinations,
     find_inner_dicts_containing_key,
@@ -2803,6 +2804,33 @@ def test_acq_declaration_dict_append_mode(
     # the only key corresponds to channel 0
     assert set(acquisitions.keys()) == {"0"}
     assert acquisitions["0"] == {"num_bins": 3 * 2 * 256, "index": 0}
+
+
+def test_acq_declaration_dict_append_mode_with_different_channel(
+    compile_config_basic_transmon_qblox_hardware_cluster,
+):
+    repetitions = 256
+    loop_repetitions = 3
+
+    sched = Schedule()
+    sched.add(Measure("q0", acq_channel="ch0", bin_mode=BinMode.APPEND))
+    sched.add(Measure("q0", acq_channel=0, bin_mode=BinMode.APPEND))
+    outer_sched = Schedule("outer", repetitions=repetitions)
+    outer_sched.add(LoopOperation(body=sched, repetitions=loop_repetitions))
+    compiler = SerialCompiler(name="compiler")
+    compiled_ssro_sched = compiler.compile(
+        outer_sched, compile_config_basic_transmon_qblox_hardware_cluster
+    )
+
+    qrm0_seq_instructions = compiled_ssro_sched["compiled_instructions"]["cluster0"][
+        "cluster0_module3"
+    ]["sequencers"]["seq0"].sequence
+
+    acquisitions = qrm0_seq_instructions["acquisitions"]
+    # the only key corresponds to channel 0
+    assert set(acquisitions.keys()) == {"0", "1"}
+    assert acquisitions["0"] == {"num_bins": repetitions * loop_repetitions, "index": 0}
+    assert acquisitions["1"] == {"num_bins": repetitions * loop_repetitions, "index": 1}
 
 
 def test_acq_declaration_dict_bin_avg_mode(

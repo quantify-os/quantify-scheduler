@@ -192,7 +192,7 @@ class SequencerCompiler(ABC):
         self.port = port
         self.clock = clock
         self.op_strategies: list[IOperationStrategy] = []
-        self._num_acquisitions = 0
+        self._num_acq_per_channel: dict[Hashable, int] = {}
 
         self.static_hw_properties = static_hw_properties
 
@@ -598,7 +598,7 @@ class SequencerCompiler(ABC):
 
             # Add the acquisition metadata to the acquisition declaration dict
             if acq_metadata.bin_mode == BinMode.APPEND:
-                num_bins = repetitions * self._num_acquisitions
+                num_bins = repetitions * self._num_acq_per_channel.get(acq_channel, 0)
             elif acq_metadata.bin_mode in (BinMode.AVERAGE, BinMode.SUM):
                 num_bins = max(acq_indices) + 1
             elif acq_metadata.bin_mode == BinMode.DISTRIBUTION:
@@ -826,7 +826,11 @@ class SequencerCompiler(ABC):
                 return self.ParseOperationStatus.EXITED_CONTROL_FLOW
             else:
                 if operation.operation_info.is_acquisition:
-                    self._num_acquisitions += acquisition_multiplier
+                    acq_channel = operation.operation_info.data.get("acq_channel")
+                    if acq_channel not in self._num_acq_per_channel:
+                        self._num_acq_per_channel[acq_channel] = acquisition_multiplier
+                    else:
+                        self._num_acq_per_channel[acq_channel] += acquisition_multiplier
                 qasm.conditional_manager.update(operation)
                 self._insert_qasm(operation, qasm)
 
