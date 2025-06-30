@@ -3250,23 +3250,50 @@ def test_q1asm_stitched_pulses(mock_setup_basic_nv_qblox_hardware):
     )
 
 
-def test_auto_compile_long_square_pulses(
+@pytest.mark.parametrize(
+    "pulse_class, long_pulse_func, pulse_kwargs, long_pulse_extra_kwargs",
+    [
+        (
+            SquarePulse,
+            long_square_pulse,
+            dict(
+                amp=0.2,
+                duration=2.5e-6,
+                t0=1e-6,
+            ),
+            dict(),  # no extras for long_square_pulse
+        ),
+        (
+            RampPulse,
+            long_ramp_pulse,
+            dict(
+                amp=0.2,
+                duration=4e-6,
+                offset=-1.0,
+                t0=2e-6,
+            ),
+            dict(
+                part_duration_ns=int(constants.STITCHED_PULSE_PART_DURATION_NS),
+            ),
+        ),
+    ],
+)
+def test_auto_compile_long_pulses(
     mock_setup_basic_nv_qblox_hardware,
+    pulse_class,
+    long_pulse_func,
+    pulse_kwargs,
+    long_pulse_extra_kwargs,
 ):
-    sched = Schedule("long_square_pulse_schedule")
+    sched = Schedule(f"{pulse_class.__name__}_schedule")
     port = "qe0:optical_readout"
     clock = "qe0.ge0"
     sched.add_resource(ClockResource(name=clock, freq=470.4e12))
-    square_pulse = SquarePulse(
-        amp=0.2,
-        duration=2.5e-6,
-        port=port,
-        clock=clock,
-        t0=1e-6,
-    )
-    # copy to check later if the compilation does not affect the original operation
-    saved_pulse = copy.deepcopy(square_pulse)
-    sched.add(square_pulse)
+
+    pulse = pulse_class(port=port, clock=clock, **pulse_kwargs)
+    saved_pulse = copy.deepcopy(pulse)
+    sched.add(pulse)
+
     quantum_device = mock_setup_basic_nv_qblox_hardware["quantum_device"]
     compiler = SerialCompiler(name="compiler")
     compiled_sched = compiler.compile(
@@ -3274,18 +3301,17 @@ def test_auto_compile_long_square_pulses(
         config=quantum_device.generate_compilation_config(),
     )
 
-    assert (
-        list(compiled_sched.operations.values())[0]["pulse_info"]
-        == long_square_pulse(
-            amp=0.2,
-            duration=2.5e-6,
-            port=port,
-            clock=clock,
-            t0=1e-6,
-        )["pulse_info"]
-    )
+    compiled_pulse_info = list(compiled_sched.operations.values())[0]["pulse_info"]
 
-    assert square_pulse == saved_pulse
+    expected_pulse_info = long_pulse_func(
+        port=port,
+        clock=clock,
+        **pulse_kwargs,
+        **long_pulse_extra_kwargs,
+    )["pulse_info"]
+
+    assert compiled_pulse_info == expected_pulse_info
+    assert pulse == saved_pulse
 
 
 def test_long_acquisition(
@@ -3364,7 +3390,7 @@ def test_too_long_waveform_raises2(
             D_amp=-0.2,
             phase=90,
             port="q0:res",
-            duration=constants.MAX_SAMPLE_SIZE_WAVEFORMS // 4 * 1e-9,
+            duration=constants.MAX_SAMPLE_SIZE_WAVEFORMS // 2 * 1e-9,
             clock="q0.ro",
             t0=4e-9,
         )
@@ -3372,7 +3398,7 @@ def test_too_long_waveform_raises2(
     sched.add(
         SoftSquarePulse(
             amp=0.5,
-            duration=constants.MAX_SAMPLE_SIZE_WAVEFORMS // 4 * 1e-9,
+            duration=constants.MAX_SAMPLE_SIZE_WAVEFORMS // 2 * 1e-9,
             port="q0:res",
             clock="q0.ro",
         )

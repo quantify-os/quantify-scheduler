@@ -51,7 +51,12 @@ stitched waveform. See
 :func:`~quantify_scheduler.backends.qblox.operations.pulse_factories.long_ramp_pulse` for an
 example."""
 PULSE_STITCHING_DURATION = 100e-9
-"""Duration of the individual pulses when pulse stitching is used."""
+"""
+Duration of the individual pulses when pulse stitching is used.
+Only applies to square pulses.
+"""
+PULSE_STITCHING_DURATION_RAMP = 2000e-9
+"""Duration of the individual pulses when RampPulse is concerted to long_ramp_pulse."""
 DEFAULT_MIXER_PHASE_ERROR_DEG = 0.0
 """Default phase shift in the instruments for mixer corrections.
 """

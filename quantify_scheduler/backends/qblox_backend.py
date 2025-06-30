@@ -34,7 +34,7 @@ from quantify_scheduler.backends.qblox.helpers import (
     _generate_new_style_hardware_compilation_config,
     assign_pulse_and_acq_info_to_devices,
 )
-from quantify_scheduler.backends.qblox.operations import long_square_pulse
+from quantify_scheduler.backends.qblox.operations import long_ramp_pulse, long_square_pulse
 from quantify_scheduler.backends.qblox.operations.pulse_library import (
     LatchReset,
 )
@@ -93,87 +93,140 @@ if TYPE_CHECKING:
 
     from quantify_scheduler.operations.operation import Operation
 
+from typing import Callable
 
-def _replace_long_square_pulses_recursively(
+
+@dataclass(frozen=True)
+class LongPulseReplacementSpec:
+    """
+    Specification for replacing long waveform pulses using a factory function.
+
+    This dataclass encapsulates the criteria and behavior for identifying and replacing
+    specific waveform types (e.g., square, ramp) based on their waveform function name
+    and minimum duration.
+
+    """
+
+    wf_func_name: str
+    "The name of the waveform function to match, e.g., quantify_scheduler.waveforms.square."
+
+    min_duration: float
+    "The minimum duration (in seconds) a pulse must have to be eligible for replacement."
+
+    pulse_factory: Callable
+    "A function that generates the replacement pulse, e.g., `long_square_pulse`."
+
+    extra_kwargs: Callable[[dict], dict]
+    """A callable that receives the original pulse_info dictionary and returns
+        additional keyword arguments to be passed to the `pulse_factory`."""
+
+    def match(self, pulse_info: dict) -> bool:
+        """Checks whether the pulse_info matches with the current spec."""
+        return (
+            pulse_info.get("wf_func", "") == self.wf_func_name
+            and pulse_info["duration"] >= self.min_duration
+        )
+
+
+def _replace_long_pulses_recursively(
     operation: Operation | Schedule,
+    specs: list[LongPulseReplacementSpec],
 ) -> Operation | None:
     """
-    Generate a dict referring to long square pulses to replace in the schedule.
-
-    This function generates a mapping (dict) from the keys in the
-    :meth:`~quantify_scheduler.schedules.schedule.ScheduleBase.operations` dict to a
-    list of indices, which refer to entries in the `"pulse_info"` list that describe a
-    square pulse.
+    Recursively replace long waveform pulses defined by multiple specs.
 
     Parameters
     ----------
     operation
-        An operation, possibly containing long square pulses.
+        An operation or schedule possibly containing long pulses.
+    specs
+        A list of LongPulseReplacementSpec, each describing one waveform type to replace.
+
+    Returns
+    -------
+    Operation | None
+        Replacing operation if applicable. None if no replacement was required.
 
     """
     if isinstance(operation, ScheduleBase):
         for inner_operation_id, inner_operation in operation.operations.items():
-            replacing_operation = _replace_long_square_pulses_recursively(inner_operation)
+            replacing_operation = _replace_long_pulses_recursively(inner_operation, specs)
             if replacing_operation:
                 operation.operations[inner_operation_id] = replacing_operation
         return None
+
     elif isinstance(operation, ControlFlowOperation):
-        replacing_operation = _replace_long_square_pulses_recursively(operation.body)
+        replacing_operation = _replace_long_pulses_recursively(operation.body, specs)
         if replacing_operation:
             operation.body = replacing_operation
         return None
-    else:
-        square_pulse_idx_to_replace: list[int] = []
-        for i, pulse_info in enumerate(operation.data["pulse_info"]):
-            if (
-                pulse_info.get("wf_func", "") == "quantify_scheduler.waveforms.square"
-                and pulse_info["duration"] >= constants.PULSE_STITCHING_DURATION
-            ):
-                square_pulse_idx_to_replace.append(i)
-        replacing_operation = _replace_long_square_pulses(operation, square_pulse_idx_to_replace)
-        if replacing_operation:
-            return replacing_operation
-        return None
+
+    elif any(
+        spec.match(pulse_info) for pulse_info in operation.data["pulse_info"] for spec in specs
+    ):
+        pulse_info = operation.data["pulse_info"]
+        for i in reversed(range(len(pulse_info))):
+            for spec in specs:
+                if spec.match(pulse_info[i]):
+                    new_pulse = spec.pulse_factory(
+                        amp=pulse_info[i]["amp"],
+                        duration=pulse_info[i]["duration"],
+                        port=pulse_info[i]["port"],
+                        clock=pulse_info[i]["clock"],
+                        t0=pulse_info[i]["t0"],
+                        reference_magnitude=pulse_info[i]["reference_magnitude"],
+                        **spec.extra_kwargs(pulse_info[i]),
+                    )
+                    pulse_info.pop(i)
+                    operation.add_pulse(new_pulse)
+
+                    # We assume there is only one matching specification,
+                    # and we need this break because **updating** the pulse_info list
+                    # **while we iterate** it only works for one spec for now.
+                    break
+        return operation
+
+    return None
 
 
-def _replace_long_square_pulses(
-    operation: Operation,
-    square_pulse_idx_to_replace: list[int],
-) -> Operation | None:
+def compile_long_pulses_to_awg_offsets(  # noqa: D417
+    schedule: Schedule,
+    config: DataStructure | dict,  # noqa: ARG001
+) -> Schedule:
     """
-    Replace any square pulses indicated by pulse_idx_map by a ``long_square_pulse``.
+    Replace square and ramp pulses in the schedule with stitched long pulses using AWG offsets.
 
     Parameters
     ----------
-    operation
-        Operation to be replaced.
-    square_pulse_idx_to_replace
-        A list of indices in the pulse info to be replaced.
+    schedule : Schedule
+        A schedule possibly containing long square or ramp pulses.
 
     Returns
     -------
-    operation
-        The operation to be replaced. If returns ``None``, the operation does
-        not need to be replaced in the schedule or control flow.
-    square_pulse_idx_to_replace
-        The pulse indices that need to be replaced in the operation.
+    schedule : Schedule
+        Modified schedule with long pulses replaced using AWG offsets.
 
     """
-    square_pulse_idx_to_replace.sort()
+    specs = [
+        LongPulseReplacementSpec(
+            wf_func_name="quantify_scheduler.waveforms.square",
+            min_duration=constants.PULSE_STITCHING_DURATION,
+            pulse_factory=long_square_pulse,
+            extra_kwargs=lambda info: {},  # noqa: ARG005
+        ),
+        LongPulseReplacementSpec(
+            wf_func_name="quantify_scheduler.waveforms.ramp",
+            min_duration=constants.PULSE_STITCHING_DURATION_RAMP,
+            pulse_factory=long_ramp_pulse,
+            extra_kwargs=lambda info: {
+                "offset": info["offset"],
+                "part_duration_ns": int(constants.PULSE_STITCHING_DURATION_RAMP * 1e9),
+            },
+        ),
+    ]
 
-    while square_pulse_idx_to_replace:
-        idx = square_pulse_idx_to_replace.pop()
-        pulse_info = operation.data["pulse_info"].pop(idx)
-        new_square_pulse = long_square_pulse(
-            amp=pulse_info["amp"],
-            duration=pulse_info["duration"],
-            port=pulse_info["port"],
-            clock=pulse_info["clock"],
-            t0=pulse_info["t0"],
-            reference_magnitude=pulse_info["reference_magnitude"],
-        )
-        operation.add_pulse(new_square_pulse)
-    return None
+    _ = _replace_long_pulses_recursively(schedule, specs)
+    return schedule
 
 
 def _all_conditional_acqs_and_control_flows_and_latch_reset(
@@ -621,44 +674,6 @@ def compile_conditional_playback(  # noqa: D417
     return schedule
 
 
-def compile_long_square_pulses_to_awg_offsets(  # noqa: D417
-    schedule: Schedule,
-    config: DataStructure | dict,  # noqa: ARG001
-) -> Schedule:
-    """
-    Replace square pulses in the schedule with long square pulses.
-
-    Introspects operations in the schedule to find square pulses with a duration
-    longer than
-    :class:`~quantify_scheduler.backends.qblox.constants.PULSE_STITCHING_DURATION`. Any
-    of these square pulses are converted to
-    :func:`~quantify_scheduler.backends.qblox.operations.pulse_factories.long_square_pulse`,
-    which consist of AWG voltage offsets.
-
-    If any operations are to be replaced, a deepcopy will be made of the schedule, which
-    is returned by this function. Otherwise the original unmodified schedule will be
-    returned.
-
-    Parameters
-    ----------
-    schedule : Schedule
-        A :class:`~quantify_scheduler.schedules.schedule.Schedule`, possibly containing
-        long square pulses.
-
-    Returns
-    -------
-    schedule : Schedule
-        The schedule with square pulses longer than
-        :class:`~quantify_scheduler.backends.qblox.constants.PULSE_STITCHING_DURATION`
-        replaced by
-        :func:`~quantify_scheduler.backends.qblox.operations.pulse_factories.long_square_pulse`.
-        If no replacements were done, this is the original unmodified schedule.
-
-    """
-    _replace_long_square_pulses_recursively(schedule)
-    return schedule
-
-
 def hardware_compile(
     schedule: Schedule,
     config: CompilationConfig,
@@ -795,8 +810,8 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
             compilation_func=stack_pulses,
         ),
         SimpleNodeConfig(
-            name="compile_long_square_pulses_to_awg_offsets",
-            compilation_func=compile_long_square_pulses_to_awg_offsets,
+            name="compile_long_pulses_to_awg_offsets",
+            compilation_func=compile_long_pulses_to_awg_offsets,
         ),
         SimpleNodeConfig(
             name="qblox_compile_conditional_playback",
