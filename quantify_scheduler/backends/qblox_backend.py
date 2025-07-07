@@ -96,6 +96,13 @@ if TYPE_CHECKING:
 from typing import Callable
 
 
+class QbloxModuleNotFoundError(KeyError):
+    """Exception raised when a module is not defined in the hardware description."""
+
+    def __str__(self) -> str:
+        return str(self.args[0])  # Because KeyError are weird
+
+
 @dataclass(frozen=True)
 class LongPulseReplacementSpec:
     """
