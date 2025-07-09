@@ -442,9 +442,7 @@ def _set_conditional_info_map(
     compilation_config: CompilationConfig,
 ) -> None:
     if isinstance(operation, ScheduleBase):
-        schedulables = list(operation.schedulables.values())
-        for schedulable in schedulables:
-            inner_operation = operation.operations[schedulable["operation_id"]]
+        for inner_operation in operation.operations.values():
             _set_conditional_info_map(
                 operation=inner_operation,
                 conditional_info_map=conditional_info_map,
@@ -1179,9 +1177,9 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
                     mixer_path, mixer_lo = get_module_and_lo_for_mixer(mixer)
                     path = ChannelPath.from_path(mixer_path)
                     cluster_lo_to_path[path.cluster_name][mixer_lo] = path
-                    for clock in port_to_clocks[port]:
+                    for clock in clocks:
                         # NV center hack:
-                        fixed_clock = get_optical_clock(mixer, port_to_clocks[port]) or clock
+                        fixed_clock = get_optical_clock(mixer, clocks) or clock
                         cluster_pc_to_path[path.cluster_name][f"{port}-{fixed_clock}"] = path
 
         for cluster_name, pc_to_path in cluster_pc_to_path.items():
@@ -1929,8 +1927,7 @@ def _add_clock_freqs_to_set_clock_frequency(
         operation = schedule
 
     if isinstance(operation, ScheduleBase):
-        for schedulable in operation.schedulables.values():
-            inner_operation = operation.operations[schedulable["operation_id"]]
+        for inner_operation in operation.operations.values():
             _add_clock_freqs_to_set_clock_frequency(operation=inner_operation, schedule=operation)
     elif isinstance(operation, ControlFlowOperation):
         _add_clock_freqs_to_set_clock_frequency(operation=operation.body, schedule=schedule)
