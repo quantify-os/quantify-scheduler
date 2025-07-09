@@ -25,6 +25,7 @@ from quantify_scheduler.operations.control_flow_library import (
 from quantify_scheduler.operations.gate_library import (
     CNOT,
     CZ,
+    X90,
     H,
     Measure,
     Reset,
@@ -717,3 +718,56 @@ def test_negative_absolute_timing_is_normalized_with_subschedule():
     subschedulables = schedule.operations[operation_id].schedulables.values()
     abs_times = [schedulable["abs_time"] for schedulable in subschedulables]
     np.testing.assert_almost_equal(abs_times, np.array([3, 0]))
+
+
+def test_multiple_timing_constraints_asap(
+    mock_setup_basic_transmon_with_standard_params,
+):
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
+    quantum_device.scheduling_strategy(SchedulingStrategy.ASAP)
+    assert quantum_device.scheduling_strategy() == SchedulingStrategy.ASAP
+
+    # Create a schedule with multiple timing constraints
+    sched = Schedule("Test schedule with multiple timing constraints")
+
+    for acq_idx, theta in enumerate(np.linspace(0, 360, 21)):
+        sched.add(Reset("q0", "q2"))
+        x0 = sched.add(X90("q0"))
+        sched.add(X90("q2"), ref_pt="start")  # Start at the same time as the other X90
+        cz = sched.add(CZ("q0", "q2"))
+        cz.add_timing_constraint(ref_schedulable=x0)  # Required in case x1 is longer than x0
+        sched.add(Rxy(theta=theta, phi=0, qubit="q0"))
+
+        sched.add(Measure("q0", acq_index=acq_idx), label=f"M q0 {theta:.2f} deg")
+        sched.add(
+            Measure("q2", acq_index=acq_idx),
+            label=f"M q2 {theta:.2f} deg",
+            ref_pt="start",  # Start at the same time as the other measure
+        )
+    # Setting rxy pulse durations to check for correct scheduling
+    mock_setup_basic_transmon_with_standard_params["q0"].rxy.duration(40e-9)
+    mock_setup_basic_transmon_with_standard_params["q2"].rxy.duration(20e-9)
+
+    # Compile the schedule
+    compiler = SerialCompiler(name="compiler")
+    compiled_sched = compiler.compile(
+        schedule=sched, config=quantum_device.generate_compilation_config()
+    )
+    # Timing table of the compiled schedule
+    timing_table = compiled_sched.timing_table.data
+
+    # Extract the absolute times of CZ operations and the X90 operations
+    cz_abs_time = [
+        row["abs_time"]
+        for i, row in timing_table.iterrows()
+        if row["operation"] == "CZ(qC='q0',qT='q2')"
+    ]
+    x90_abs_time = [
+        row["abs_time"]
+        for i, row in timing_table.iterrows()
+        if row["operation"] == "X90(qubit='q0')"
+    ]
+    # Based on the timing constraints, the CZ operation should start 40ns after the X90 operation
+    assert cz_abs_time[0] - x90_abs_time[0] == pytest.approx(40e-9), (
+        "CZ operation should start 40ns after the X90 operation"
+    )

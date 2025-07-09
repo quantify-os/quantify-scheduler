@@ -165,6 +165,11 @@ def _determine_absolute_timing_schedule(
 
         if i == 0:
             schedulable.data["abs_time"] = 0.0
+        elif scheduling_strategy == SchedulingStrategy.ASAP:
+            for timing_constraint in timing_constraints:
+                abs_time = _get_start_time(schedule, timing_constraint, operation, time_unit)
+                if "abs_time" not in schedulable or abs_time > schedulable["abs_time"]:
+                    schedulable.data["abs_time"] = abs_time
         else:
             schedulable.data["abs_time"] = _get_start_time(
                 schedule, timing_constraints[0], operation, time_unit
@@ -248,7 +253,7 @@ def _make_timing_constraints_explicit_for_schedulable(
     given_timing_constraints: list[TimingConstraint] = schedulable.data["timing_constraints"]
 
     # Support only one timing constraint for now
-    if len(given_timing_constraints) != 1:
+    if strategy == SchedulingStrategy.ALAP and len(given_timing_constraints) != 1:
         raise NotImplementedError("Only exactly one timing constraint per Schedulable supported.")
 
     timing_constraint: TimingConstraint = given_timing_constraints[0]
