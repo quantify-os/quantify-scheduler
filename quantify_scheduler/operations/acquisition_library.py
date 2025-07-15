@@ -445,7 +445,7 @@ class ThresholdedAcquisition(Acquisition):
                 "acq_channel": acq_channel,
                 "acq_index": acq_index,
                 "bin_mode": bin_mode,
-                "acq_return_type": np.int32,
+                "acq_return_type": float if bin_mode == BinMode.AVERAGE else np.int32,
                 "protocol": "ThresholdedAcquisition",
                 "feedback_trigger_label": feedback_trigger_label,
                 "acq_threshold": acq_threshold,
@@ -775,7 +775,9 @@ class WeightedThresholdedAcquisition(NumericalSeparatedWeightedIntegration):
         self.data["acquisition_info"][0]["feedback_trigger_label"] = feedback_trigger_label
         self.data["acquisition_info"][0]["acq_threshold"] = acq_threshold
         self.data["acquisition_info"][0]["acq_rotation"] = acq_rotation
-        self.data["acquisition_info"][0]["acq_return_type"] = np.int32
+        self.data["acquisition_info"][0]["acq_return_type"] = (
+            float if bin_mode == BinMode.AVERAGE else np.int32
+        )
         self._update()
 
 
