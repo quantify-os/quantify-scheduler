@@ -1130,23 +1130,31 @@ class CompiledSchedule(ScheduleBase):
         return self._hardware_waveform_dict
 
     def __getstate__(self) -> dict[str, Any]:
-        # We need custom serialization/deserialization here,
-        # because JSON does not allow the keys of "acq_channels_data" to
-        # be anything other than strings. So we store this dict as
-        # a list of dicts. If "acq_channels_data" is `{k1: v1, k2: v2}`,
-        # then the serialized version is
-        # `[{"key": k1, "value": v1}, {"key": k2, "value": v2}]`.
-        if "acq_channels_data" in self.data:
-            serialized_acq_channels_data = [
-                dict(key=k, value=v) for k, v in self.data["acq_channels_data"].items()
-            ]
-            # Shallow copy everything,
-            # and replace acq_channels_data with the serialized version.
-            data = copy(self.data)
-            data["acq_channels_data"] = serialized_acq_channels_data
-            return data
-        else:
-            return self.data
+        # Create copy because we might change data,
+        # but only a shallow copy to save performance.
+        state = super().__getstate__()
+        state["data"] = copy(state["data"])
+        state["data"]["compiled_instructions"] = copy(state["data"]["compiled_instructions"])
+        compiled_instructions = state["data"]["compiled_instructions"]
+        for component_key, component in self.compiled_instructions.items():
+            if "acq_channels_data" in component:
+                # Acquisition channels data should be generated
+                # for all backends, but for now it's strictly
+                # added to the instrument coordinator components.
+                # We need custom serialization/deserialization here,
+                # because JSON does not allow the keys of "acq_channels_data" to
+                # be anything other than strings. So we store this dict as
+                # a list of dicts. If "acq_channels_data" is `{k1: v1, k2: v2}`,
+                # then the serialized version is
+                # `[{"key": k1, "value": v1}, {"key": k2, "value": v2}]`.
+                serialized_acq_channels_data = [
+                    dict(key=k, value=v) for k, v in component["acq_channels_data"].items()
+                ]
+                compiled_instructions[component_key] = copy(compiled_instructions[component_key])
+                compiled_instructions[component_key]["acq_channels_data"] = (
+                    serialized_acq_channels_data
+                )
+        return state
 
     def __setstate__(self, state: dict[str, Any]) -> None:
         # We need custom serialization/deserialization here,
@@ -1157,12 +1165,15 @@ class CompiledSchedule(ScheduleBase):
         ) -> AcquisitionChannelData:
             return v if isinstance(v, AcquisitionChannelData) else AcquisitionChannelData(**v)
 
-        if "acq_channels_data" in state:
-            deserialized_acq_channels = {
-                elem["key"]: _acq_channel_data(elem["value"]) for elem in state["acq_channels_data"]
-            }
-            state["acq_channels_data"] = deserialized_acq_channels
-        self.data = state
+        data = state["data"]
+        for component in data["compiled_instructions"].values():
+            if "acq_channels_data" in component:
+                deserialized_acq_channels = {
+                    elem["key"]: _acq_channel_data(elem["value"])
+                    for elem in component["acq_channels_data"]
+                }
+                component["acq_channels_data"] = deserialized_acq_channels
+        super().__setstate__(state)
 
 
 @dataclasses.dataclass

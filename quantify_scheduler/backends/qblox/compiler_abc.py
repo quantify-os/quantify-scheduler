@@ -59,7 +59,8 @@ from quantify_scheduler.backends.types.qblox import (
 )
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.helpers.schedule import (
-    _is_binned_type_protocol,
+    _is_acquisition_binned_append,
+    _is_acquisition_binned_average,
     extract_acquisition_metadata_from_acquisition_protocols,
 )
 
@@ -699,7 +700,7 @@ class SequencerCompiler(ABC):
         qasm.emit(q1asm_instructions.WAIT_SYNC, constants.MIN_TIME_BETWEEN_OPERATIONS)
         qasm.emit(q1asm_instructions.UPDATE_PARAMETERS, constants.MIN_TIME_BETWEEN_OPERATIONS)
 
-        self._initialize_acquisition_qblox_values(qasm, ordered_op_strategies)
+        self._initialize_acquisition_qblox_values(qasm, ordered_op_strategies, repetitions)
 
         # Program body. The operations must be ordered such that real-time IO operations
         # always come after any other operations. E.g., an offset instruction should
@@ -864,7 +865,7 @@ class SequencerCompiler(ABC):
         )
 
     def _initialize_acquisition_qblox_values(
-        self, qasm: QASMProgram, op_strategies: list[IOperationStrategy]
+        self, qasm: QASMProgram, op_strategies: list[IOperationStrategy], repetitions: int
     ) -> None:
         """
         Adds the instructions to initialize the registers needed to use the append
@@ -876,6 +877,8 @@ class SequencerCompiler(ABC):
             The program to add the instructions to.
         op_strategies:
             An operations list including all the acquisitions to consider.
+        repetitions:
+            Schedule repetitions.
 
         """
         channel_to_reg: dict[str, str] = {}
@@ -888,33 +891,52 @@ class SequencerCompiler(ABC):
             acq_data = op_strategy.operation_info.data
             acq_channel = acq_data["acq_channel"]
             protocol: str = acq_data["protocol"]
+            bin_mode: BinMode = acq_data["bin_mode"]
 
             # TODO: QTFY-300, store and utilize the generated
             # Qblox acquisition index and bin in the operation strategies.
-            if _is_binned_type_protocol(protocol):
+            if _is_acquisition_binned_average(protocol, bin_mode) or _is_acquisition_binned_append(
+                protocol, bin_mode
+            ):
+                thresholded_trigger_count_metadata = (
+                    ThresholdedTriggerCountMetadata(
+                        acq_data["thresholded_trigger_count"]["threshold"],
+                        acq_data["thresholded_trigger_count"]["condition"],
+                    )
+                    if protocol == "ThresholdedTriggerCount"
+                    else None
+                )
                 _qblox_acq_index, _qblox_acq_bin_offset = (
                     self._qblox_acq_index_manager.allocate_bins(
-                        acq_channel, acq_data["acq_index"], self.name
+                        acq_channel,
+                        acq_data["acq_index"],
+                        self.name,
+                        thresholded_trigger_count_metadata,
+                        repetitions if bin_mode == BinMode.APPEND else None,
                     )
                 )
-            elif protocol in (
+            elif bin_mode == BinMode.DISTRIBUTION and protocol in (
                 "TriggerCount",
                 "ThresholdedTriggerCount",
                 "DualThresholdedTriggerCount",
             ):
                 _qblox_acq_index = self._qblox_acq_index_manager.allocate_qblox_index(
-                    acq_channel, self.name, True
+                    acq_channel, self.name
                 )
+                _qblox_acq_bin_offset = 0
             elif protocol in "Trace":
-                _qblox_acq_index = self._qblox_acq_index_manager.allocate_qblox_index(
-                    acq_channel, self.name, False
+                _qblox_acq_index, _qblox_acq_bin_offset = (
+                    self._qblox_acq_index_manager.allocate_trace(acq_channel, self.name)
                 )
-                _qblox_acq_bin_offset = 0
-            elif protocol == "TimetagTrace":
-                _qblox_acq_index = self._qblox_acq_index_manager.allocate_qblox_index(
-                    acq_channel, self.name, True
+            elif bin_mode == BinMode.APPEND and protocol == "TimetagTrace":
+                _qblox_acq_index, _qblox_acq_offset = (
+                    self._qblox_acq_index_manager.allocate_timetagtrace(
+                        acq_channel,
+                        acq_data["acq_index"],
+                        self.name,
+                        repetitions,
+                    )
                 )
-                _qblox_acq_bin_offset = 0
             else:
                 raise ValueError(
                     f"Unsupported acquisition protocol '{protocol}' "

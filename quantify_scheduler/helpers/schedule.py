@@ -8,6 +8,7 @@ from itertools import count
 from typing import TYPE_CHECKING, Any
 
 from quantify_core.utilities import deprecated
+from quantify_scheduler.enums import BinMode
 from quantify_scheduler.helpers.collections import make_hash, without
 from quantify_scheduler.operations.control_flow_library import ControlFlowOperation
 from quantify_scheduler.schedules.schedule import (
@@ -235,13 +236,44 @@ def _extract_port_clocks_used(operation: Operation | Schedule) -> set[tuple]:
     return operation.get_used_port_clocks()
 
 
-def _is_binned_type_protocol(protocol: str) -> bool:
-    return protocol in (
-        "SSBIntegrationComplex",
-        "WeightedIntegratedSeparated",
-        "NumericalSeparatedWeightedIntegration",
-        "NumericalWeightedIntegration",
-        "ThresholdedAcquisition",
-        "WeightedThresholdedAcquisition",
-        "Timetag",
+def _is_acquisition_binned_average(protocol: str, bin_mode: BinMode) -> bool:
+    return (
+        protocol
+        in (
+            "SSBIntegrationComplex",
+            "WeightedIntegratedSeparated",
+            "NumericalSeparatedWeightedIntegration",
+            "NumericalWeightedIntegration",
+            "ThresholdedAcquisition",
+            "WeightedThresholdedAcquisition",
+            "Timetag",
+        )
+        and bin_mode == BinMode.AVERAGE
+    ) or (
+        protocol
+        in (
+            "TriggerCount",
+            "ThresholdedTriggerCount",
+            "DualThresholdedTriggerCount",
+        )
+        and bin_mode == BinMode.SUM
+    )
+
+
+def _is_acquisition_binned_append(protocol: str, bin_mode: BinMode) -> bool:
+    return (
+        protocol
+        in (
+            "SSBIntegrationComplex",
+            "WeightedIntegratedSeparated",
+            "NumericalSeparatedWeightedIntegration",
+            "NumericalWeightedIntegration",
+            "ThresholdedAcquisition",
+            "WeightedThresholdedAcquisition",
+            "Timetag",
+            "TriggerCount",
+            "ThresholdedTriggerCount",
+            "DualThresholdedTriggerCount",
+        )
+        and bin_mode == BinMode.APPEND
     )

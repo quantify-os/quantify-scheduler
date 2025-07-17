@@ -68,6 +68,7 @@ from quantify_scheduler.instrument_coordinator.utility import (
     parameter_value_same_as_cache,
     search_settable_param,
 )
+from quantify_scheduler.schedules.schedule import AcquisitionChannelsData
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Hashable
@@ -2862,8 +2863,14 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
 
         self._set_parameter(self.instrument, "reference_source", cluster_settings.reference_source)
 
+        # See QTFY-848.
+        # Removing acq_channels_data and repetitions from program,
+        # and later (in a subsequent change) we will use it to process acquisition data.
+        _acq_channels_data = program.get("acq_channels_data", AcquisitionChannelsData())
+        _repetitions = program.get("repetitions", 1)
         self._program = ClusterComponent._Program(
-            module_programs=without(program, ["settings"]), settings=cluster_settings
+            module_programs=without(program, ["settings", "acq_channels_data", "repetitions"]),
+            settings=cluster_settings,
         )
         for name, comp_options in self._program.module_programs.items():
             if name not in self._cluster_modules:

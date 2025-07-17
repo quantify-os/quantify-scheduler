@@ -604,13 +604,10 @@ def test_inconsistent_acq_protocol_for_acq_channel_warns(
 
     compiler = SerialCompiler("")
 
-    with (
-        pytest.warns(
-            RuntimeWarning,
-            match="Found different acquisition protocols \\('Trace' and 'SSBIntegrationComplex'\\) "
-            "for acq_channel '0'. Make sure there is only one protocol for each acq_channel.",
-        ),
-        pytest.raises(Exception),
+    with pytest.raises(
+        ValueError,
+        match="Found different acquisition protocols \\('Trace' and 'SSBIntegrationComplex'\\) "
+        "for acq_channel '0'. Make sure there is only one protocol for each acq_channel.",
     ):
         compiler.compile(
             schedule=schedule,
@@ -643,13 +640,10 @@ def test_inconsistent_bin_mode_for_acq_channel_warns(
 
     compiler = SerialCompiler("")
 
-    with (
-        pytest.warns(
-            RuntimeWarning,
-            match="Found different bin modes \\('average' and 'append'\\) "
-            "for acq_channel '0'. Make sure there is only one bin mode for each acq_channel.",
-        ),
-        pytest.raises(Exception),
+    with pytest.raises(
+        ValueError,
+        match="Found different bin modes \\('average' and 'append'\\) "
+        "for acq_channel '0'. Make sure there is only one bin mode for each acq_channel.",
     ):
         compiler.compile(
             schedule=schedule,
@@ -664,14 +658,11 @@ def test_multiple_trace_acquisition_raises(
     sched.add(Trace(duration=100e-9, port="q0:res", clock="q0.01"))
     sched.add(Trace(duration=100e-9, port="q0:res", clock="q0.01"))
 
-    with (
-        pytest.warns(
-            RuntimeWarning,
-            match="Multiple acquisitions found for acq_channel '0' "
-            "which has a trace acquisition. "
-            "Only one trace acquisition is allowed for each acq_channel.",
-        ),
-        pytest.raises(Exception),
+    with pytest.raises(
+        ValueError,
+        match="Multiple acquisitions found for acq_channel '0' "
+        "which has a trace acquisition. "
+        "Only one trace acquisition is allowed for each acq_channel.",
     ):
         compiler = SerialCompiler(name="compiler")
         _ = compiler.compile(

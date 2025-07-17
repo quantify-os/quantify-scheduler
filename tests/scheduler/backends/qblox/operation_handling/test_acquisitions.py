@@ -1821,8 +1821,8 @@ def test_same_index_in_module_and_cluster_measurement_error(
     # Generate compiled schedule
     compiler = SerialCompiler(name="compiler")
 
-    with pytest.warns(
-        RuntimeWarning,
+    with pytest.raises(
+        ValueError,
         match="Found invalid acq_index=0 for acq_channel=0. "
         "Make sure that each explicitly defined acq_index starts at 0, and increments by 1 "
         "for each new acquisition within the same acquisition channel, ordered by time.",

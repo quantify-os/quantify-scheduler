@@ -757,8 +757,16 @@ def hardware_compile(
     schedule["compiled_instructions"].update(compiled_instructions)
     schedule["compiled_instructions"] = CompiledInstructions(schedule["compiled_instructions"])
 
-    # Add the acquisition channel data to the schedule data structure.
-    schedule["acq_channels_data"] = acq_channels_data
+    # See QTFY-848.
+    # The acq_channels_data and repetitions is the same for all instrument coordinator components,
+    # but currently it is not possible to change the backend independent parts.
+    # In order to propagate this to every instrument coordinator component,
+    # we add the same data to all of them.
+    for component_name, component in schedule["compiled_instructions"].items():
+        if component_name != "generic":
+            # Add the acquisition channel data to the component data structure.
+            component["acq_channels_data"] = acq_channels_data
+            component["repetitions"] = schedule.repetitions
 
     # Mark the schedule as a compiled schedule.
     return CompiledSchedule(schedule)

@@ -775,8 +775,9 @@ def test_incorrect_multiple_trace_acq(mock_setup_basic_nv, assert_equal_q1asm):
         RuntimeError,
         match=re.escape(
             "Only one acquisition channel per port-clock can be specified, "
-            "if the Trace acquisition protocol is used.\n"
-            "Acquisition channels [0, 1] were found on port-clock qe1:optical_readout-qe1.ge0."
+            "if the 'Trace' acquisition protocol is used. "
+            "Attempted to compile for acquisition channel '1' "
+            "on sequencer 'seq4'."
         ),
     ):
         compiler.compile(schedule=schedule, config=quantum_device.generate_compilation_config())
@@ -981,8 +982,9 @@ def test_multiple_acq_channel_timetagtrace(mock_setup_basic_nv, assert_equal_q1a
         RuntimeError,
         match=re.escape(
             "Only one acquisition channel per port-clock can be specified, if the "
-            "TimetagTrace acquisition protocol is used.\nAcquisition channels [0, 1] "
-            "were found on port-clock qe1:optical_readout-qe1.ge0."
+            "'TimetagTrace' acquisition protocol is used. "
+            "Attempted to compile for acquisition channel '1' "
+            "on sequencer 'seq4'."
         ),
     ):
         _ = compiler.compile(schedule=schedule, config=quantum_device.generate_compilation_config())
@@ -1258,6 +1260,7 @@ def test_timetag_fine_delay_error_between_op(mock_setup_basic_nv):
             time_ref=TimeRef.TIMESTAMP,
             fine_start_delay=1750e-12,
             fine_end_delay=0,
+            acq_index=0,
         ),
         rel_time=100e-9,
     )
@@ -1271,6 +1274,7 @@ def test_timetag_fine_delay_error_between_op(mock_setup_basic_nv):
             time_ref=TimeRef.TIMESTAMP,
             fine_start_delay=50e-12,
             fine_end_delay=0,
+            acq_index=1,
         ),
         rel_time=4e-9,
     )

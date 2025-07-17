@@ -492,14 +492,7 @@ def test_trace_and_binned(mock_setup_basic_transmon_with_standard_params):
     assert expected_schedulable_label_to_acq_index == schedulable_label_to_acq_index
 
 
-@pytest.mark.parametrize(
-    "bin_mode",
-    [
-        BinMode.DISTRIBUTION,
-        BinMode.APPEND,
-    ],
-)
-def test_trigger_count(mock_setup_basic_transmon_with_standard_params, bin_mode):
+def test_trigger_count_distribution(mock_setup_basic_transmon_with_standard_params):
     quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
 
     schedulables: list[Schedulable] = []
@@ -511,7 +504,7 @@ def test_trigger_count(mock_setup_basic_transmon_with_standard_params, bin_mode)
             TriggerCount(
                 acq_channel=1,
                 acq_index=0,
-                bin_mode=bin_mode,
+                bin_mode=BinMode.DISTRIBUTION,
                 port="q0:res",
                 clock="q0.ro",
                 duration=1e-6,
@@ -524,7 +517,7 @@ def test_trigger_count(mock_setup_basic_transmon_with_standard_params, bin_mode)
             TriggerCount(
                 acq_channel=1,
                 acq_index=0,
-                bin_mode=bin_mode,
+                bin_mode=BinMode.DISTRIBUTION,
                 port="q0:res",
                 clock="q0.ro",
                 duration=1e-6,
@@ -545,12 +538,118 @@ def test_trigger_count(mock_setup_basic_transmon_with_standard_params, bin_mode)
         1: AcquisitionChannelData(
             acq_index_dim_name="acq_index_1",
             protocol="TriggerCount",
-            bin_mode=bin_mode,
+            bin_mode=BinMode.DISTRIBUTION,
             coords={},
         ),
     }
 
     expected_schedulable_label_to_acq_index = {}
+
+    assert expected_acq_channels_data == acq_channels_data
+    assert expected_schedulable_label_to_acq_index == schedulable_label_to_acq_index
+
+
+def test_trigger_count_append(mock_setup_basic_transmon_with_standard_params):
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
+
+    schedulables: list[Schedulable] = []
+
+    schedule = Schedule("Test schedule", repetitions=3)
+
+    schedulables.append(
+        schedule.add(
+            TriggerCount(
+                acq_channel=1,
+                acq_index=0,
+                bin_mode=BinMode.APPEND,
+                port="q0:res",
+                clock="q0.ro",
+                duration=1e-6,
+            )
+        )
+    )
+
+    compiler = SerialCompiler("test")
+    partially_compiled_sched = compiler.compile(
+        schedule=schedule, config=quantum_device.generate_compilation_config()
+    )
+
+    acq_channels_data, schedulable_label_to_acq_index = generate_acq_channels_data(
+        partially_compiled_sched
+    )
+
+    expected_acq_channels_data = {
+        1: AcquisitionChannelData(
+            acq_index_dim_name="acq_index_1",
+            protocol="TriggerCount",
+            bin_mode=BinMode.APPEND,
+            coords=[{}],
+        ),
+    }
+
+    expected_schedulable_label_to_acq_index = {
+        ((schedulables[0]["name"],), 0): [0],
+    }
+
+    assert expected_acq_channels_data == acq_channels_data
+    assert expected_schedulable_label_to_acq_index == schedulable_label_to_acq_index
+
+
+def test_trigger_count_sum(mock_setup_basic_transmon_with_standard_params):
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
+
+    schedulables: list[Schedulable] = []
+
+    schedule = Schedule("Test schedule", repetitions=3)
+
+    schedulables.append(
+        schedule.add(
+            TriggerCount(
+                acq_channel=1,
+                acq_index=0,
+                bin_mode=BinMode.SUM,
+                port="q0:res",
+                clock="q0.ro",
+                duration=1e-6,
+            )
+        )
+    )
+
+    schedulables.append(
+        schedule.add(
+            TriggerCount(
+                acq_channel=1,
+                acq_index=1,
+                bin_mode=BinMode.SUM,
+                port="q0:res",
+                clock="q0.ro",
+                duration=1e-6,
+            )
+        )
+    )
+
+    compiler = SerialCompiler("test")
+    partially_compiled_sched = compiler.compile(
+        schedule=schedule, config=quantum_device.generate_compilation_config()
+    )
+
+    acq_channels_data, schedulable_label_to_acq_index = generate_acq_channels_data(
+        partially_compiled_sched
+    )
+
+    expected_acq_channels_data = {
+        1: AcquisitionChannelData(
+            acq_index_dim_name="acq_index_1",
+            protocol="TriggerCount",
+            bin_mode=BinMode.SUM,
+            coords=[{}, {}],
+        ),
+    }
+
+    expected_schedulable_label_to_acq_index = {
+        ((schedulables[0]["name"],), 0): 0,
+        ((schedulables[1]["name"],), 0): 1,
+    }
 
     assert expected_acq_channels_data == acq_channels_data
     assert expected_schedulable_label_to_acq_index == schedulable_label_to_acq_index

@@ -1275,21 +1275,18 @@ def test_acquisitions_max_index_raises(
     sched.add(Measure("q0", acq_index=0))
     sched.add(Measure("q0", acq_index=0))
 
-    with pytest.raises(ValueError) as error:
+    with pytest.raises(
+        ValueError,
+        match="Found invalid acq_index=0 for acq_channel=0. "
+        "Make sure that each explicitly defined acq_index "
+        "starts at 0, and increments by 1 for each new acquisition "
+        "within the same acquisition channel, ordered by time.",
+    ):
         compiler = SerialCompiler(name="compiler")
         _ = compiler.compile(
             sched,
             config=compile_config_basic_transmon_qblox_hardware_cluster,
         )
-
-    assert (
-        error.value.args[0] == "Found 0 as the highest index out of "
-        "2 for channel 0, indicating "
-        "an acquisition index was skipped or an acquisition index was repeated. "
-        "Please make sure the used indices increment by 1 starting from 0. "
-        "Problem occurred for port q0:res with clock q0.ro, "
-        "which corresponds to seq0 of cluster0_module3."
-    )
 
 
 def test_acquisitions_same_index_raises(
@@ -1308,12 +1305,10 @@ def test_acquisitions_same_index_raises(
         )
 
     assert (
-        error.value.args[0] == "Found 2 unique indices out of "
-        "3 for channel 0, indicating "
-        "an acquisition index was skipped or an acquisition index was repeated. "
-        "Please make sure the used indices increment by 1 starting from 0. "
-        "Problem occurred for port q0:res with clock q0.ro, "
-        "which corresponds to seq0 of cluster0_module3."
+        error.value.args[0] == "Found invalid acq_index=2 for acq_channel=0. "
+        "Make sure that each explicitly defined acq_index "
+        "starts at 0, and increments by 1 for each new acquisition "
+        "within the same acquisition channel, ordered by time."
     )
 
 
@@ -1819,12 +1814,9 @@ def test_multiple_trace_acquisition_error(
             config=compile_config_basic_transmon_qblox_hardware_cluster,
         )
     assert str(exception.value) == (
-        "Both sequencer '0' and '1' "
-        "of 'cluster0_module3' attempts to perform scope mode acquisitions. "
-        "Only one sequencer per device can "
-        "trigger raw trace capture.\n\nPlease ensure that "
-        "only one port-clock combination performs "
-        "raw trace acquisition per instrument."
+        "Multiple acquisitions found for acq_channel '0' "
+        "which has a trace acquisition. "
+        "Only one trace acquisition is allowed for each acq_channel."
     )
 
 
