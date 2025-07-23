@@ -1,5 +1,31 @@
 # Changelog
 
+## Release v0.25.0 (2025-07-23)
+
+### 🐛 Bug Fixes and Closed Issues
+- Correct return type of `ThresholdedAcquisition` ([!1282](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1282) by [@Thomas Middelburg](https://gitlab.com/ThomasMiddelburg))
+- Spin device element integration time default argument ([!1270](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1270) by [@Nicolas Piot](https://gitlab.com/npiot))
+- Append acquisitions on same portclock reserves too much Qblox bins ([!1271](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1271) by [@Nicolas Piot](https://gitlab.com/npiot))
+
+### 🚀 Features
+- Schedule time reference to support ALAP ([!1242](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1242) by [@Tim Vroomans](https://gitlab.com/TimVroomans))
+- Allow multiple timing constraint for ASAP scheduling strategy ([!1274](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1274) by [@Gábor Oszkár Dénes](https://gitlab.com/gdenes))
+- Pulse compensation with conditionals allowed in some cases ([!1264](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1264) by [@Christos Samouchos](https://gitlab.com/christos.samouchos))
+- Make pulse compensation not to run out of waveform memory ([!1255](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1255) by [@Christos Samouchos](https://gitlab.com/christos.samouchos))
+- Compile ramp pulses to stitched pulses ([!1268](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1268) by [@Nicolas Piot](https://gitlab.com/npiot))
+- Traverse operations instead of schedulables if time is not required ([!1277](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1277) by [@Daniel J. Weigand](https://gitlab.com/djweigand))
+
+### 🔧 Other
+- DOC-558: add ic.stop() in the code field in Compiling To Hardware! ([!1276](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1276) by [@Qingzhen Wang](https://gitlab.com/qwang7))
+- Chore: reintroduce QbloxModuleNotFoundError ([!1272](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1272) by [@Nicolas Piot](https://gitlab.com/npiot))
+- Chore: remove deprecated control_flow in Schedule.add ([!1266](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1266) by [@Gábor Oszkár Dénes](https://gitlab.com/gdenes))
+- Feat: add new hardware acquisition mappings ([!1230](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1230) by [@Gábor Oszkár Dénes](https://gitlab.com/gdenes))
+- Fix: Fix tests for plot optimization ([!1283](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1283) by [@Christos Samouchos](https://gitlab.com/christos.samouchos))
+- Multiple timing constraints for ALAP scheduling ([#495](https://gitlab.com/quantify-os/quantify-scheduler/-/issues/495) by [@Olga Lebiga](https://gitlab.com/olebiga))
+- Add back support for multiple timing constraints ([#494](https://gitlab.com/quantify-os/quantify-scheduler/-/issues/494) by [@Timo van Abswoude](https://gitlab.com/Timo_van_Abswoude))
+- Adjust acquisition redesign related features ([!1263](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1263) by [@Gábor Oszkár Dénes](https://gitlab.com/gdenes))
+
+
 ## Release v0.24.0 (2025-06-04)
 
 ### 🐛 Bug Fixes

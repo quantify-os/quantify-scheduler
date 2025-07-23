@@ -1,5 +1,74 @@
 # Release Notes
 
+## Release v0.25.0 (2025-07-23)
+
+Support for ALAP scheduling, improved pulse compensation and a few bug fixes.
+
+- [ALAP scheduling](#alap-scheduling)
+- [Improved pulse compensation](#improved-pulse-compensation)
+- [Fix `ThresholdedAcquisition` with `binMode.AVERAGE` returns 0](#fix-thresholdedacquisition-with-binmodeaverage-returns-0)
+
+see the [changelog](https://gitlab.com/quantify-os/quantify-scheduler/-/blob/main/CHANGELOG.md) for more details.
+
+### ALAP scheduling
+
+Users can now use `ALAP` to construct their schedules. E.g.
+
+```{code-block} python
+# Some minimal schedule
+schedule = Schedule("test")
+schedule.add(
+    gate_library.Reset("q0"),
+    label="Reset",
+)
+schedule.add(
+    gate_library.X("q0"),
+    label="X",
+)
+schedule.add(
+    gate_library.Measure("q0"),
+    label="Measure"
+)
+
+# Update timing constraints for ALAP scheduling
+schedule.schedulables["Reset"]["timing_constraints"][0].update({
+    "ref_schedulable": "X",
+    "ref_pt_new": "end",
+    "ref_pt": "start"
+})
+schedule.schedulables["X"]["timing_constraints"][0].update({
+    "ref_schedulable": "Measure",
+    "ref_pt_new": "end",
+    "ref_pt": "start"
+})
+```
+
+In this example, even though the gates were added in the order `Reset`, `X` and `Measure`, the `Reset` gate will be scheduled first, followed by the `X` gate, and finally the `Measure` gate.
+
+
+### Improved pulse compensation
+
+Pulse compensation now supports conditionals, and is more robust against running out of waveform memory.
+
+e.g.
+
+```{code-block} python
+ref_schedule = Schedule()
+ref_schedule.add(X("q0"))
+ref_schedule.add(ConditionalOperation(X("q0"), "q0"))
+
+schedule.add(PulseCompensation(body=ref_schedule))
+```
+
+will compile successfully. Additionally, we improved the compiler to prevent running out of waveform memory. 
+
+
+
+### Fix `ThresholdedAcquisition` with `binMode.AVERAGE` returns 0
+
+When using the `ThresholdedAcquisition` protocol together with `binMode.AVERAGE`, the returned data would be always mapped to 0, instead of return the actual averaged values. This has now been fixed.
+
+
 ## Release v0.23.0 (2025-04-01)
 
 Bugfixes, new features, and more! Some of the highlights include:
