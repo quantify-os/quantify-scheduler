@@ -172,6 +172,8 @@ instrument_coordinator.prepare(compiled_schedule)
 instrument_coordinator.start()
 instrument_coordinator.wait_done(timeout_sec=10)
 acquisition = instrument_coordinator.retrieve_acquisition()
+instrument_coordinator.stop()
+
 ```
 
 The acquisition data shows one timetag, in this case around 73 ns. This value can differ depending on cable length.
@@ -238,6 +240,7 @@ instrument_coordinator.start()
 instrument_coordinator.wait_done(timeout_sec=10)
 
 acquisition = instrument_coordinator.retrieve_acquisition()
+instrument_coordinator.stop()
 ```
 
 As expected, we record 4 timetags. The first one is roughly around the same value as the single timetag recorded above, and the other ones are 1000, 3000, and 6000 ns later, respectively.
@@ -299,6 +302,7 @@ instrument_coordinator.start()
 instrument_coordinator.wait_done(timeout_sec=10)
 
 acquisition = instrument_coordinator.retrieve_acquisition()
+instrument_coordinator.stop()
 ```
 
 The result is a trace of the pulses sent by the QCM, digitized by the QTM.

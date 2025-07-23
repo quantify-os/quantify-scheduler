@@ -207,6 +207,8 @@ ic.start()
 # Wait for the experiment to finish or for a timeout
 ic.wait_done(timeout_sec=10)
 
+# Stops all running instruments and any active components. Must be run before starting a new experiment.
+ic.stop()
 
 ```
 

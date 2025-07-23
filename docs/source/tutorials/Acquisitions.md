@@ -250,6 +250,8 @@ instrument_coordinator.start()
 instrument_coordinator.wait_done(timeout_sec=10)
 
 acquisition = instrument_coordinator.retrieve_acquisition()
+instrument_coordinator.stop()
+
 ```
 
 ```{code-cell} ipython3
@@ -379,6 +381,7 @@ instrument_coordinator.start()
 instrument_coordinator.wait_done(timeout_sec=10)
 
 acquisition = instrument_coordinator.retrieve_acquisition()
+instrument_coordinator.stop()
 ```
 
 ```{code-cell} ipython3
@@ -482,6 +485,7 @@ instrument_coordinator.start()
 instrument_coordinator.wait_done(timeout_sec=10)
 
 acquisition = instrument_coordinator.retrieve_acquisition()
+instrument_coordinator.stop()
 ```
 
 ```{code-cell} ipython3
@@ -621,6 +625,7 @@ instrument_coordinator.start()
 instrument_coordinator.wait_done(timeout_sec=10)
 
 acquisition = instrument_coordinator.retrieve_acquisition()
+instrument_coordinator.stop()
 ```
 
 ```{code-cell} ipython3
@@ -744,6 +749,7 @@ instrument_coordinator.start()
 instrument_coordinator.wait_done(timeout_sec=10)
 
 acquisition = instrument_coordinator.retrieve_acquisition()
+instrument_coordinator.stop()
 ```
 
 we might obtain the following data:
@@ -805,6 +811,7 @@ instrument_coordinator.start()
 instrument_coordinator.wait_done(timeout_sec=10)
 
 acquisition = instrument_coordinator.retrieve_acquisition()
+instrument_coordinator.stop()
 acquisition
 ```
 
@@ -995,6 +1002,7 @@ instrument_coordinator.start()
 instrument_coordinator.wait_done(timeout_sec=10)
 
 acquisition = instrument_coordinator.retrieve_acquisition()
+instrument_coordinator.stop()
 ```
 
 ```{code-cell} ipython3
@@ -1175,6 +1183,7 @@ instrument_coordinator.start()
 instrument_coordinator.wait_done(timeout_sec=10)
 
 acquisition = instrument_coordinator.retrieve_acquisition()
+instrument_coordinator.stop()
 ```
 
 ```{code-cell} ipython3
@@ -1348,6 +1357,7 @@ instrument_coordinator.start()
 instrument_coordinator.wait_done(timeout_sec=10)
 
 acquisition = instrument_coordinator.retrieve_acquisition()
+instrument_coordinator.stop()
 ```
 
 ```{code-cell} ipython3
@@ -1459,6 +1469,7 @@ instrument_coordinator.start()
 instrument_coordinator.wait_done(timeout_sec=10)
 
 acquisition = instrument_coordinator.retrieve_acquisition()
+instrument_coordinator.stop()
 ```
 
 ```{code-cell} ipython3
@@ -1515,6 +1526,7 @@ instrument_coordinator.start()
 instrument_coordinator.wait_done(timeout_sec=10)
 
 acquisition = instrument_coordinator.retrieve_acquisition()
+instrument_coordinator.stop()
 ```
 
 ```{code-cell} ipython3
