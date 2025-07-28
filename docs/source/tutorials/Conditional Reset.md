@@ -206,10 +206,10 @@ def get_dummy_binned_acquisition_data(
 ):
     angle = 2 * np.pi * theta / (360)
     threshold *= 1000 # different normalization (integration length) on qblox instruments
-    if real * np.cos(angle) + imag * np.sin(angle) > -threshold:
-        thres = 0
-    else:
+    if real * np.cos(angle) - imag * np.sin(angle) > threshold:
         thres = 1
+    else:
+        thres = 0
     return DummyBinnedAcquisitionData(data=(real, imag), thres=thres, avg_cnt=0)
 
 
