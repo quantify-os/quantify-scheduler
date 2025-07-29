@@ -217,6 +217,7 @@ gettable = ScheduleGettable(
     real_imag=False,
     batched=True,
     num_channels=2,
+    max_batch_size=60,
 )
 
 quantum_device.cfg_sched_repetitions(1)

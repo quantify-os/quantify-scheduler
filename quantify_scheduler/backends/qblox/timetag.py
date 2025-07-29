@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 import warnings
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from quantify_scheduler.backends.qblox import constants, q1asm_instructions
 from quantify_scheduler.backends.qblox.compiler_abc import SequencerCompiler
@@ -23,7 +23,6 @@ from quantify_scheduler.backends.qblox.operation_handling.pulses import (
 from quantify_scheduler.backends.qblox.operation_handling.virtual import (
     TimestampStrategy,
 )
-from quantify_scheduler.backends.types.common import ThresholdedTriggerCountMetadata
 from quantify_scheduler.backends.types.qblox import (
     OpInfo,
     StaticHardwareProperties,
@@ -44,7 +43,6 @@ if TYPE_CHECKING:
     )
     from quantify_scheduler.backends.qblox.qasm_program import QASMProgram
     from quantify_scheduler.backends.qblox_backend import _SequencerCompilationConfig
-    from quantify_scheduler.schedules.schedule import AcquisitionMetadata
 
 
 class TimetagSequencerCompiler(SequencerCompiler):
@@ -268,7 +266,6 @@ class TimetagSequencerCompiler(SequencerCompiler):
     def _prepare_acq_settings(
         self,
         acquisitions: list[IOperationStrategy],
-        acq_metadata: AcquisitionMetadata,
     ) -> None:
         """
         Sets sequencer settings that are specific to certain acquisitions.
@@ -278,23 +275,40 @@ class TimetagSequencerCompiler(SequencerCompiler):
         ----------
         acquisitions
             List of the acquisitions assigned to this sequencer.
-        acq_metadata
-            Acquisition metadata.
 
         """
         if len(acquisitions) == 0:
             # no acquisitions, so we do nothing.
             return
+        unique_protocols: set = {acq.operation_info.data["protocol"] for acq in acquisitions}
 
-        if acq_metadata.acq_protocol == "Trace":
+        # For these protocols, we set some protocol dependent hardware settings,
+        # and these settings are incompatible; we forbid incompatible protocols.
+        if ("Trace" in unique_protocols) and ("TimetagTrace" in unique_protocols):
+            raise ValueError(
+                f"Acquisition protocols Trace and TimeTagTrace are incompatible "
+                f"on the same port-clock ({self.port}-{self.clock}) for QTM."
+            )
+        if (
+            ("TriggerCount" in unique_protocols)
+            + ("ThresholdedTriggerCount" in unique_protocols)
+            + ("DualThresholdedTriggerCount" in unique_protocols)
+        ) > 1:
+            raise ValueError(
+                f"Acquisition protocols TriggerCount, ThresholdedTriggerCount "
+                f"and DualThresholdedTriggerCount are incompatible "
+                f"on the same port-clock ({self.port}-{self.clock}) for QTM."
+            )
+
+        if "Trace" in unique_protocols:
             self._settings.scope_trace_type = TimetagTraceType.SCOPE
             # Trace acquisitions have bin mode FIRST, meaning only the first acquisition
             # has any effect. Therefore we take the duration from the first acquisition.
             self._settings.trace_acq_duration = round(acquisitions[0].operation_info.duration * 1e9)
-        elif acq_metadata.acq_protocol == "TimetagTrace":
+        elif "TimetagTrace" in unique_protocols:
             self._settings.scope_trace_type = TimetagTraceType.TIMETAG
 
-        if acq_metadata.acq_protocol in ("Timetag", "TimetagTrace"):
+        if ("Timetag" in unique_protocols) or ("TimetagTrace" in unique_protocols):
             self._settings.time_source = self._get_unique_value_or_raise(
                 values=(acq.operation_info.data["time_source"] for acq in acquisitions),
                 setting_name="time_source",
@@ -308,14 +322,13 @@ class TimetagSequencerCompiler(SequencerCompiler):
                 setting_name="time_ref_channel",
             )
 
-        if acq_metadata.acq_protocol == "ThresholdedTriggerCount":
-            self._prepare_thresholded_trigger_count_settings(acquisitions, acq_metadata)
-
-        if acq_metadata.acq_protocol == "DualThresholdedTriggerCount":
+        if "ThresholdedTriggerCount" in unique_protocols:
+            self._prepare_thresholded_trigger_count_settings(acquisitions)
+        elif "DualThresholdedTriggerCount" in unique_protocols:
             self._prepare_dual_thresholded_trigger_count_settings(acquisitions)
 
     def _prepare_thresholded_trigger_count_settings(
-        self, acquisitions: list[IOperationStrategy], acq_metadata: AcquisitionMetadata
+        self, acquisitions: list[IOperationStrategy]
     ) -> None:
         threshold = self._get_unique_value_or_raise(
             values=(
@@ -357,11 +370,6 @@ class TimetagSequencerCompiler(SequencerCompiler):
             self._settings.thresholded_acq_trigger_write_address_low = 0
         else:
             raise ValueError(f"Trigger condition {condition} is not supported.")
-
-        for acq_ch_metadata in acq_metadata.acq_channels_metadata.values():
-            acq_ch_metadata.thresholded_trigger_count = ThresholdedTriggerCountMetadata(
-                threshold=threshold, condition=condition
-            )
 
     def _prepare_dual_thresholded_trigger_count_settings(
         self, acquisitions: list[IOperationStrategy]
@@ -467,44 +475,3 @@ class TimetagSequencerCompiler(SequencerCompiler):
     def _insert_qasm(self, op_strategy: IOperationStrategy, qasm_program: QASMProgram) -> None:
         """Get Q1ASM instruction(s) from ``op_strategy`` and insert them into ``qasm_program``."""
         op_strategy.insert_qasm(qasm_program)
-
-    def _generate_acq_declaration_dict(
-        self,
-        repetitions: int,
-        acq_metadata: AcquisitionMetadata,
-    ) -> dict[str, Any]:
-        """
-        Generates the "acquisitions" entry of the program json. It contains declaration
-        of the acquisitions along with the number of bins and the corresponding index.
-
-        Overrides the superclass implementation to check additionally that only one
-        acquisition channel is used if Trace or TimetagTrace acquisitions are present.
-
-        Parameters
-        ----------
-        repetitions
-            The number of times to repeat execution of the schedule.
-        acq_metadata
-            Acquisition metadata.
-
-        Returns
-        -------
-        :
-            The "acquisitions" entry of the program json as a dict. The keys correspond
-            to the names of the acquisitions (i.e. the acq_channel in the scheduler).
-
-        """
-        # This restriction is necessary because there will be only one set of trace data
-        # per sequencer, regardless of acquisition channels.
-        if (
-            acq_metadata.acq_protocol in ("Trace", "TimetagTrace")
-            and len(acq_metadata.acq_channels_metadata) > 1
-        ):
-            raise RuntimeError(
-                "Only one acquisition channel per port-clock can be specified, if the "
-                f"{acq_metadata.acq_protocol} acquisition protocol is used.\n"
-                "Acquisition channels "
-                f"{list(acq_metadata.acq_channels_metadata.keys())} were "
-                f"found on port-clock {self.port}-{self.clock}."
-            )
-        return super()._generate_acq_declaration_dict(repetitions, acq_metadata)

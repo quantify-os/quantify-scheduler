@@ -79,7 +79,6 @@ def test_generate_qasm_empty_program_qtm(assert_equal_q1asm):
             ordered_op_strategies=[],
             total_sequence_time=120e-9,
             align_qasm_fields=False,
-            acq_metadata=None,
             repetitions=1,
         ),
         """ wait_sync 4
@@ -933,26 +932,27 @@ def test_multiple_timetagtrace_acq(mock_setup_basic_nv, assert_equal_q1asm):
         """ wait_sync 4
  upd_param 4
  move 0,R0 # Initialize acquisition bin_idx for ch0
+ move 1,R1 # Initialize acquisition bin_idx for ch0
  wait 4 # latency correction of 4 + 0 ns
- move 1,R1 # iterator for loop with label start
+ move 1,R2 # iterator for loop with label start
 start:
  wait 4
  set_scope_en 1
- move 0,R2
- acquire_timetags 0,R0,1,R2,4 # Enable timetag acquisition of acq_channel:0, store in bin:R0
+ move 0,R3
+ acquire_timetags 0,R0,1,R3,4 # Enable timetag acquisition of acq_channel:0, store in bin:R0
  wait 15992 # auto generated wait (15992 ns)
- acquire_timetags 0,R0,0,R2,4 # Disable timetag acquisition of acq_channel:0, store in bin:R0
+ acquire_timetags 0,R0,0,R3,4 # Disable timetag acquisition of acq_channel:0, store in bin:R0
  add R0,1,R0 # Increment bin_idx for ch0 by 1
  set_scope_en 0
  wait 20 # auto generated wait (20 ns)
  set_scope_en 1
- move 0,R2
- acquire_timetags 0,R0,1,R2,4 # Enable timetag acquisition of acq_channel:0, store in bin:R0
+ move 0,R3
+ acquire_timetags 0,R1,1,R3,4 # Enable timetag acquisition of acq_channel:0, store in bin:R1
  wait 15992 # auto generated wait (15992 ns)
- acquire_timetags 0,R0,0,R2,4 # Disable timetag acquisition of acq_channel:0, store in bin:R0
- add R0,1,R0 # Increment bin_idx for ch0 by 1
+ acquire_timetags 0,R1,0,R3,4 # Disable timetag acquisition of acq_channel:0, store in bin:R1
+ add R1,1,R1 # Increment bin_idx for ch0 by 1
  set_scope_en 0
- loop R1,@start
+ loop R2,@start
  stop
 """,
     )

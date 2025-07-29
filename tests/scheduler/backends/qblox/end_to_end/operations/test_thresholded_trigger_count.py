@@ -338,9 +338,14 @@ def test_thresholded_trigger_count_acquisition_qtm(
 
     threshold_passed = np.array([1, 1, 1, 1, 0, 1, 0, 1, 1, 1])
     dataarray = xr.DataArray(
-        [threshold_passed],
+        threshold_passed.reshape(-1, 1),
         dims=["repetition", "acq_index_0"],
-        coords={"repetition": [0], "acq_index_0": range(len(threshold_passed))},
+        coords={
+            "loop_repetition_0": ("acq_index_0", [np.nan]),
+            "acq_index_legacy_0": ("acq_index_0", [0]),
+            "repetition": range(len(threshold_passed)),
+            "acq_index_0": [0],
+        },
         attrs={"acq_protocol": "ThresholdedTriggerCount"},
     )
     expected_dataset = xr.Dataset({0: dataarray})
@@ -348,7 +353,7 @@ def test_thresholded_trigger_count_acquisition_qtm(
     quantum_device = mock_setup_basic_nv["quantum_device"]
     quantum_device.hardware_config(EXAMPLE_QBLOX_HARDWARE_CONFIG_NV_CENTER)
 
-    sched = Schedule("digital_pulse_and_acq")
+    sched = Schedule("digital_pulse_and_acq", repetitions=10)
     sched.add(MarkerPulse(duration=40e-9, port="qe1:switch"))
     sched.add(
         ThresholdedTriggerCount(
@@ -431,9 +436,14 @@ def test_thresholded_trigger_count_acquisition_qrm(
 
     threshold_passed = np.array([1, 1, 1, 1, 0, 1, 0, 1, 1, 1])
     dataarray = xr.DataArray(
-        [threshold_passed],
+        threshold_passed.reshape(-1, 1),
         dims=["repetition", "acq_index_0"],
-        coords={"repetition": [0], "acq_index_0": range(len(threshold_passed))},
+        coords={
+            "loop_repetition_0": ("acq_index_0", [np.nan]),
+            "acq_index_legacy_0": ("acq_index_0", [0]),
+            "repetition": range(len(threshold_passed)),
+            "acq_index_0": [0],
+        },
         attrs={"acq_protocol": "ThresholdedTriggerCount"},
     )
     expected_dataset = xr.Dataset({0: dataarray})
@@ -441,7 +451,7 @@ def test_thresholded_trigger_count_acquisition_qrm(
     quantum_device = mock_setup_basic_nv["quantum_device"]
     quantum_device.hardware_config(EXAMPLE_QBLOX_HARDWARE_CONFIG_NV_CENTER)
 
-    sched = Schedule("digital_pulse_and_acq")
+    sched = Schedule("digital_pulse_and_acq", repetitions=10)
     sched.add(
         ThresholdedTriggerCount(
             duration=1e-6,

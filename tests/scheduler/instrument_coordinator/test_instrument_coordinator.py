@@ -24,7 +24,11 @@ from quantify_scheduler.instrument_coordinator import (
 from quantify_scheduler.instrument_coordinator.components import base as base_component
 from quantify_scheduler.instrument_coordinator.components.qblox import ClusterComponent
 from quantify_scheduler.operations.gate_library import Measure, Reset, X
-from quantify_scheduler.schedules.schedule import CompiledSchedule, Schedule
+from quantify_scheduler.schedules.schedule import (
+    AcquisitionChannelsData,
+    CompiledSchedule,
+    Schedule,
+)
 from tests.scheduler.backends.test_qblox_backend import (
     dummy_cluster,
 )

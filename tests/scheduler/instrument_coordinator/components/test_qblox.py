@@ -29,6 +29,7 @@ from quantify_scheduler.backends.graph_compilation import SerialCompiler
 from quantify_scheduler.backends.qblox.operation_handling.bin_mode_compat import (
     IncompatibleBinModeError,
 )
+from quantify_scheduler.backends.qblox.qblox_acq_index_manager import QbloxAcquisitionIndexBin
 from quantify_scheduler.backends.types.qblox import TimetagSequencerSettings
 from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.device_under_test.transmon_element import BasicTransmonElement
@@ -52,7 +53,12 @@ from quantify_scheduler.operations.pulse_library import (
     SquarePulse,
 )
 from quantify_scheduler.resources import ClockResource
-from quantify_scheduler.schedules.schedule import AcquisitionMetadata, Schedule
+from quantify_scheduler.schedules.schedule import (
+    AcquisitionChannelData,
+    AcquisitionChannelsData,
+    AcquisitionMetadata,
+    Schedule,
+)
 from quantify_scheduler.schemas.examples import utils
 
 EXAMPLE_QBLOX_HARDWARE_CONFIG_NV_CENTER = utils.load_json_example_scheme(
@@ -329,8 +335,8 @@ def test_reset_qcodes_settings(
     compiled_schedule = SerialCompiler(name="compiler").compile(schedule=schedule, config=config)
     prog = compiled_schedule["compiled_instructions"][cluster_name]
 
-    qcm.prepare(prog[qcm_name])
-    qrm.prepare(prog[qrm_name])
+    qcm.prepare(prog[qcm_name], AcquisitionChannelsData(), 1)
+    qrm.prepare(prog[qrm_name], AcquisitionChannelsData(), 1)
 
     # Assert
     qcm_offset = defaultdict(lambda: 0.0)
@@ -467,9 +473,10 @@ def test_init_qcodes_settings(
     config = quantum_device.generate_compilation_config()
     compiled_schedule = SerialCompiler(name="compiler").compile(schedule=schedule, config=config)
     prog = compiled_schedule["compiled_instructions"]
+    acq_channels_data = prog["cluster0"]["acq_channels_data"]
 
-    qcm.prepare(prog[cluster_name][qcm_name])
-    qrm.prepare(prog[cluster_name][qrm_name])
+    qcm.prepare(prog[cluster_name][qcm_name], acq_channels_data, 1)
+    qrm.prepare(prog[cluster_name][qrm_name], acq_channels_data, 1)
 
     # Assert
     qcm_offset = defaultdict(lambda: 0.0)
@@ -797,7 +804,9 @@ def test_prepare_exception(make_cluster_component):
     for module_name in cluster._cluster_modules:
         # Act
         with pytest.raises(KeyError) as execinfo:
-            cluster._cluster_modules[module_name].prepare(invalid_config)
+            cluster._cluster_modules[module_name].prepare(
+                invalid_config, AcquisitionChannelsData(), 1
+            )
 
         # Assert
         assert execinfo.value.args[0] == (
@@ -954,10 +963,16 @@ def test_retrieve_acquisition_qtm(
     }
 
     count = np.array(dummy_data["0"]["acquisition"]["bins"]["count"]).astype(int)
+    repetitions = len(count)
     dataarray = xr.DataArray(
-        [count],
+        count.reshape(-1, 1),
         dims=["repetition", "acq_index_0"],
-        coords={"repetition": [0], "acq_index_0": range(len(count))},
+        coords={
+            "loop_repetition_0": ("acq_index_0", [np.nan]),
+            "acq_index_legacy_0": ("acq_index_0", [0]),
+            "repetition": range(repetitions),
+            "acq_index_0": [0],
+        },
         attrs={"acq_protocol": "TriggerCount"},
     )
     expected_dataset = xr.Dataset({0: dataarray})
@@ -965,7 +980,7 @@ def test_retrieve_acquisition_qtm(
     quantum_device = mock_setup_basic_nv["quantum_device"]
     quantum_device.hardware_config(EXAMPLE_QBLOX_HARDWARE_CONFIG_NV_CENTER)
 
-    sched = Schedule("digital_pulse_and_acq")
+    sched = Schedule("digital_pulse_and_acq", repetitions=repetitions)
     sched.add(MarkerPulse(duration=40e-9, port="qe1:switch"))
     sched.add(TriggerCount(duration=1e-6, port="qe1:optical_readout", clock="qe1.ge0"))
 
@@ -1079,7 +1094,12 @@ def test_timetag_acquisition_qtm_append(
     dataarray = xr.DataArray(
         np.array([t / 2048 for t in raw_timetags]).reshape(3, 1),
         dims=["repetition", "acq_index_0"],
-        coords={"acq_index_0": [0]},
+        coords={
+            "loop_repetition_0": ("acq_index_0", [np.nan]),
+            "acq_index_legacy_0": ("acq_index_0", [0]),
+            "repetition": [0, 1, 2],
+            "acq_index_0": [0],
+        },
         attrs={"acq_protocol": "Timetag"},
     )
     expected_dataset = xr.Dataset({0: dataarray})
@@ -1293,7 +1313,13 @@ def test_retrieve_timetag_trace_acquisition_qtm(
     dataarray = xr.DataArray(
         rel_times.reshape((1, 1, 4)),
         dims=["repetition", "acq_index_0", "trace_index_0"],
-        coords={"acq_index_0": [0], "trace_index_0": list(range(4))},
+        coords={
+            "acq_index_legacy_0": ("acq_index_0", [0]),
+            "loop_repetition_0": ("acq_index_0", [np.nan]),
+            "repetition": [0],
+            "acq_index_0": [0],
+            "trace_index_0": list(range(4)),
+        },
         attrs={"acq_protocol": "TimetagTrace"},
     )
     expected_dataset = xr.Dataset({0: dataarray})
@@ -1335,18 +1361,19 @@ def test_retrieve_timetag_trace_acquisition_qtm(
     xr.testing.assert_identical(qtm.retrieve_acquisition(), expected_dataset)
 
 
-def test_retrieve_empty_timetag_trace_acquisition_qtm():
-    acq_channel_metadata = AcquisitionChannelMetadata(acq_channel=0, acq_indices=[0])
-    acq_metadata = AcquisitionMetadata(
-        "TimetagTrace", BinMode.APPEND, np.ndarray, {0: acq_channel_metadata}, 1
-    )
-    acq_manager = qblox._QTMAcquisitionManager(
-        parent=Mock(),
-        acquisition_metadata={"0": acq_metadata},
-        acquisition_duration={"0": 10},
-        seq_name_to_idx_map={"seq0": 0},
-    )
+def test_retrieve_empty_timetag_trace_acquisition_qtm(
+    mock_setup_basic_nv,
+    make_cluster_component,
+    mocker,
+):
+    cluster_name = "cluster0"
+    qtm_name = f"{cluster_name}_module5"
 
+    cluster = make_cluster_component(cluster_name)
+    qtm = cluster._cluster_modules[qtm_name]
+
+    # Dummy data taken directly from hardware test, does not necessarily correspond to
+    # schedule below.
     dummy_data = {
         "0": {
             "index": 0,
@@ -1360,34 +1387,65 @@ def test_retrieve_empty_timetag_trace_acquisition_qtm():
                     ],
                     "threshold": [0.0],
                     "avg_cnt": [0],
-                },
-                "scope": [
-                    ["OPEN", 322053621179604992],
-                    ["CLOSE", 322053621200494592],
-                ],
+                }
             },
         }
     }
+    dummy_scope_data = [
+        ["OPEN", 322053621179604992],
+        ["CLOSE", 322053621200494592],
+    ]
 
-    expected_dataarray = xr.DataArray(
+    dataarray = xr.DataArray(
         [[[]]],
         dims=["repetition", "acq_index_0", "trace_index_0"],
-        coords={"acq_index_0": [0], "trace_index_0": []},
+        coords={
+            "acq_index_legacy_0": ("acq_index_0", [0]),
+            "loop_repetition_0": ("acq_index_0", [np.nan]),
+            "repetition": [0],
+            "acq_index_0": [0],
+            "trace_index_0": [],
+        },
         attrs={"acq_protocol": "TimetagTrace"},
     )
+    expected_dataset = xr.Dataset({0: dataarray})
 
-    xr.testing.assert_identical(
-        acq_manager._get_timetag_trace_data(
-            acq_indices=[0],
-            hardware_retrieved_acquisitions=dummy_data,
-            acquisition_metadata=acq_metadata,
-            acq_duration=10,
-            qblox_acq_index=0,
-            acq_channel=0,
-            sequencer_name="seq0",
-        ),
-        expected_dataarray,
+    quantum_device = mock_setup_basic_nv["quantum_device"]
+    quantum_device.hardware_config(EXAMPLE_QBLOX_HARDWARE_CONFIG_NV_CENTER)
+
+    sched = Schedule("digital_pulse_and_acq")
+    sched.add(
+        TimetagTrace(
+            duration=10e-6,
+            port="qe1:optical_readout",
+            clock="qe1.ge0",
+            time_ref=TimeRef.START,
+        )
     )
+
+    mocker.patch.object(
+        cluster.instrument.module5,
+        "get_acquisitions",
+        return_value=dummy_data,
+    )
+    mocker.patch.object(
+        cluster.instrument.module5.io_channel4,
+        "get_scope_data",
+        return_value=dummy_scope_data,
+    )
+
+    compiler = SerialCompiler(name="compiler")
+    compiled_schedule = compiler.compile(
+        schedule=sched,
+        config=quantum_device.generate_compilation_config(),
+    )
+    prog = compiled_schedule["compiled_instructions"][cluster_name]
+
+    cluster.prepare(prog)
+    cluster.start()
+
+    retrieved_dataset = qtm.retrieve_acquisition()
+    xr.testing.assert_identical(retrieved_dataset, expected_dataset)
 
 
 def test_multiple_retrieve_timetag_trace_acquisition_qtm(
@@ -1449,7 +1507,13 @@ def test_multiple_retrieve_timetag_trace_acquisition_qtm(
     dataarray = xr.DataArray(
         rel_times.reshape((2, 1, 4)),
         dims=["repetition", "acq_index_0", "trace_index_0"],
-        coords={"acq_index_0": [0], "trace_index_0": list(range(4))},
+        coords={
+            "loop_repetition_0": ("acq_index_0", [np.nan]),
+            "acq_index_legacy_0": ("acq_index_0", [0]),
+            "repetition": [0, 1],
+            "acq_index_0": [0],
+            "trace_index_0": list(range(4)),
+        },
         attrs={"acq_protocol": "TimetagTrace"},
     )
     expected_dataset = xr.Dataset({0: dataarray})
@@ -1488,21 +1552,23 @@ def test_multiple_retrieve_timetag_trace_acquisition_qtm(
     cluster.prepare(prog)
     cluster.start()
 
-    xr.testing.assert_identical(qtm.retrieve_acquisition(), expected_dataset)
+    retrieved_dataset = qtm.retrieve_acquisition()
+    xr.testing.assert_identical(retrieved_dataset, expected_dataset)
 
 
-def test_multiple_retrieve_empty_timetag_trace_acquisition_qtm():
-    acq_channel_metadata = AcquisitionChannelMetadata(acq_channel=0, acq_indices=[0])
-    acq_metadata = AcquisitionMetadata(
-        "TimetagTrace", BinMode.APPEND, np.ndarray, {0: acq_channel_metadata}, 2
-    )
-    acq_manager = qblox._QTMAcquisitionManager(
-        parent=Mock(),
-        acquisition_metadata={"0": acq_metadata},
-        acquisition_duration={"0": 10},
-        seq_name_to_idx_map={"seq0": 0},
-    )
+def test_multiple_retrieve_empty_timetag_trace_acquisition_qtm(
+    mock_setup_basic_nv,
+    make_cluster_component,
+    mocker,
+):
+    cluster_name = "cluster0"
+    qtm_name = f"{cluster_name}_module5"
 
+    cluster = make_cluster_component(cluster_name)
+    qtm = cluster._cluster_modules[qtm_name]
+
+    # Dummy data taken directly from hardware test, does not necessarily correspond to
+    # schedule below.
     dummy_data = {
         "0": {
             "index": 0,
@@ -1518,36 +1584,67 @@ def test_multiple_retrieve_empty_timetag_trace_acquisition_qtm():
                     ],
                     "threshold": [1.0, 1.0],
                     "avg_cnt": [4, 3],
-                },
-                "scope": [
-                    ["OPEN", 322053621179604992],
-                    ["CLOSE", 322053621200494592],
-                    ["OPEN", 322053621179604992],
-                    ["CLOSE", 322053621200494592],
-                ],
+                }
             },
         }
     }
+    dummy_scope_data = [
+        ["OPEN", 322053621179604992],
+        ["CLOSE", 322053621200494592],
+        ["OPEN", 322053621179604992],
+        ["CLOSE", 322053621200494592],
+    ]
 
-    expected_dataarray = xr.DataArray(
+    dataarray = xr.DataArray(
         [[[]], [[]]],
         dims=["repetition", "acq_index_0", "trace_index_0"],
-        coords={"acq_index_0": [0], "trace_index_0": []},
+        coords={
+            "loop_repetition_0": ("acq_index_0", [np.nan]),
+            "acq_index_legacy_0": ("acq_index_0", [0]),
+            "repetition": [0, 1],
+            "acq_index_0": [0],
+            "trace_index_0": [],
+        },
         attrs={"acq_protocol": "TimetagTrace"},
     )
+    expected_dataset = xr.Dataset({0: dataarray})
 
-    xr.testing.assert_identical(
-        acq_manager._get_timetag_trace_data(
-            acq_indices=[0],
-            hardware_retrieved_acquisitions=dummy_data,
-            acquisition_metadata=acq_metadata,
-            acq_duration=10,
-            qblox_acq_index=0,
-            acq_channel=0,
-            sequencer_name="seq0",
-        ),
-        expected_dataarray,
+    quantum_device = mock_setup_basic_nv["quantum_device"]
+    quantum_device.hardware_config(EXAMPLE_QBLOX_HARDWARE_CONFIG_NV_CENTER)
+
+    sched = Schedule("digital_pulse_and_acq", repetitions=2)
+    sched.add(
+        TimetagTrace(
+            duration=10e-6,
+            port="qe1:optical_readout",
+            clock="qe1.ge0",
+            time_ref=TimeRef.START,
+        )
     )
+
+    mocker.patch.object(
+        cluster.instrument.module5,
+        "get_acquisitions",
+        return_value=dummy_data,
+    )
+    mocker.patch.object(
+        cluster.instrument.module5.io_channel4,
+        "get_scope_data",
+        return_value=dummy_scope_data,
+    )
+
+    compiler = SerialCompiler(name="compiler")
+    compiled_schedule = compiler.compile(
+        schedule=sched,
+        config=quantum_device.generate_compilation_config(),
+    )
+    prog = compiled_schedule["compiled_instructions"][cluster_name]
+
+    cluster.prepare(prog)
+    cluster.start()
+
+    retrieved_dataset = qtm.retrieve_acquisition()
+    xr.testing.assert_identical(retrieved_dataset, expected_dataset)
 
 
 def test_start_baseband(
@@ -1573,9 +1670,10 @@ def test_start_baseband(
         schedule_with_measurement, config=quantum_device.generate_compilation_config()
     )
     prog = compiled_schedule["compiled_instructions"][cluster_name]
+    acq_channels_data = prog["acq_channels_data"]
 
-    qcm.prepare(prog[qcm_name])
-    qrm.prepare(prog[qrm_name])
+    qcm.prepare(prog[qcm_name], acq_channels_data, 1)
+    qrm.prepare(prog[qrm_name], acq_channels_data, 1)
 
     qcm.start()
     qrm.start()
@@ -1645,8 +1743,9 @@ def test_start_qtm(
     compiled_schedule = compiler.compile(sched, config=quantum_device.generate_compilation_config())
 
     prog = compiled_schedule["compiled_instructions"][cluster_name]
+    acq_channels_data = prog["acq_channels_data"]
 
-    qtm.prepare(prog[qtm_name])
+    qtm.prepare(prog[qtm_name], acq_channels_data, 1)
 
     qtm.start()
 
@@ -1672,10 +1771,12 @@ def test_qrm_acquisition_manager__init__(make_cluster_component):
     cluster = make_cluster_component("cluster0")
     qblox._QRMAcquisitionManager(
         parent=cluster._cluster_modules["cluster0_module1"],
-        acquisition_metadata=dict(),
+        acq_channels_data=AcquisitionChannelsData(),
+        acq_hardware_mapping={},
         scope_mode_sequencer_and_qblox_acq_index=None,
         acquisition_duration={},
         seq_name_to_idx_map={},
+        repetitions=1,
     )
 
 
@@ -1683,9 +1784,11 @@ def test_qtm_acquisition_manager__init__(make_cluster_component):
     cluster = make_cluster_component("cluster0")
     qblox._QTMAcquisitionManager(
         parent=cluster._cluster_modules["cluster0_module5"],
-        acquisition_metadata=dict(),
+        acq_channels_data=AcquisitionChannelsData(),
+        acq_hardware_mapping={},
         acquisition_duration={},
         seq_name_to_idx_map={},
+        repetitions=1,
     )
 
 
@@ -1693,21 +1796,23 @@ def test_get_integration_data(make_cluster_component, mock_acquisition_data):
     cluster = make_cluster_component("cluster0")
     acq_manager = qblox._QRMAcquisitionManager(
         parent=cluster._cluster_modules["cluster0_module1"],
-        acquisition_metadata=dict(),
+        acq_channels_data={
+            0: AcquisitionChannelData(
+                "acq_index_0", "SSBIntegrationComplex", BinMode.AVERAGE, [{}] * 10
+            )
+        },
+        acq_hardware_mapping={},
         scope_mode_sequencer_and_qblox_acq_index=None,
         acquisition_duration={0: 10},
         seq_name_to_idx_map={"seq0": 0},
+        repetitions=1,
     )
-    acq_metadata = AcquisitionMetadata(
-        "SSBIntegrationComplex", BinMode.AVERAGE, complex, {0: [0]}, 1
-    )
-    formatted_acquisitions = acq_manager._get_integration_data(
-        acq_indices=list(range(10)),
+    acq_hardware_mapping = {i: QbloxAcquisitionIndexBin(0, i, 1, None) for i in range(10)}
+    formatted_acquisitions = acq_manager._get_integration_amplitude_data(
         hardware_retrieved_acquisitions=mock_acquisition_data,
-        acquisition_metadata=acq_metadata,
-        acq_duration=10,
-        qblox_acq_index=0,
         acq_channel=0,
+        seq_channel_hardware_mapping=acq_hardware_mapping,
+        acq_duration=10,
         sequencer_name="seq0",
     )
 
@@ -2783,16 +2888,22 @@ def test_missing_acq_index(
     ],
 )
 def test_unsupported_bin_modes_qrm(protocol, bin_mode):
-    acq_channel_metadata = AcquisitionChannelMetadata(
-        acq_channel=0, acq_indices=[0] if protocol == "Trace" else list(range(10))
-    )
-    acq_metadata = AcquisitionMetadata(protocol, bin_mode, np.ndarray, {0: acq_channel_metadata}, 1)
     acq_manager = qblox._QRMAcquisitionManager(
         parent=Mock(),
-        acquisition_metadata={"0": acq_metadata},
+        acq_channels_data={
+            0: AcquisitionChannelData(
+                "acq_index_0", protocol, bin_mode, coords={} if protocol == "Trace" else [{}]
+            )
+        },
+        acq_hardware_mapping={
+            "seq0": (
+                {0: 0} if protocol == "Trace" else {0: {0: QbloxAcquisitionIndexBin(0, 0, 1, None)}}
+            ),
+        },
         scope_mode_sequencer_and_qblox_acq_index=(0, 0),
         acquisition_duration={"0": 10},
         seq_name_to_idx_map={"seq0": 0},
+        repetitions=1,
     )
     with pytest.raises(
         IncompatibleBinModeError,
@@ -2811,13 +2922,24 @@ def test_unsupported_bin_modes_qrm(protocol, bin_mode):
     ],
 )
 def test_unsupported_bin_modes_qtm(protocol, bin_mode):
-    acq_channel_metadata = AcquisitionChannelMetadata(acq_channel=0, acq_indices=list(range(10)))
-    acq_metadata = AcquisitionMetadata(protocol, bin_mode, np.ndarray, {0: acq_channel_metadata}, 1)
     acq_manager = qblox._QTMAcquisitionManager(
         parent=Mock(),
-        acquisition_metadata={"0": acq_metadata},
+        acq_channels_data={
+            0: AcquisitionChannelData(
+                "acq_index_0",
+                protocol,
+                bin_mode,
+                coords={} if protocol in ("Trace", "TimetagTrace") else [{}],
+            )
+        },
+        acq_hardware_mapping={
+            "seq0": (
+                {0: 0} if protocol == "Trace" else {0: {0: QbloxAcquisitionIndexBin(0, 0, 1, None)}}
+            ),
+        },
         acquisition_duration={"0": 10},
         seq_name_to_idx_map={"seq0": 0},
+        repetitions=1,
     )
     with pytest.raises(
         IncompatibleBinModeError,

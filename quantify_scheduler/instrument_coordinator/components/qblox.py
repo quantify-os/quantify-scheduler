@@ -7,7 +7,6 @@ from __future__ import annotations
 import logging
 import os
 import re
-import warnings
 from abc import ABC, abstractmethod
 from collections import namedtuple
 from dataclasses import dataclass
@@ -49,6 +48,10 @@ from quantify_scheduler.backends.qblox.operation_handling.bin_mode_compat import
     QTM_COMPATIBLE_BIN_MODES,
     IncompatibleBinModeError,
 )
+from quantify_scheduler.backends.qblox.qblox_acq_index_manager import (
+    QbloxAcquisitionHardwareMapping,
+    QbloxAcquisitionIndex,
+)
 from quantify_scheduler.backends.types.qblox import (
     AnalogModuleSettings,
     AnalogSequencerSettings,
@@ -61,6 +64,10 @@ from quantify_scheduler.backends.types.qblox import (
     TimetagSequencerSettings,
 )
 from quantify_scheduler.enums import BinMode, TimeRef, TriggerCondition
+from quantify_scheduler.helpers.schedule import (
+    _is_acquisition_binned_append,
+    _is_acquisition_binned_average,
+)
 from quantify_scheduler.instrument_coordinator.components import base
 from quantify_scheduler.instrument_coordinator.utility import (
     check_already_existing_acquisition,
@@ -76,6 +83,7 @@ if TYPE_CHECKING:
     from qblox_instruments.qcodes_drivers.module import Module
     from qcodes.instrument.instrument_base import InstrumentBase
 
+    from quantify_scheduler.backends.types.common import ThresholdedTriggerCountMetadata
     from quantify_scheduler.schedules.schedule import (
         AcquisitionMetadata,
         CompiledSchedule,
@@ -339,7 +347,12 @@ class _ModuleComponentBase(
 
         return _download_log(_get_configuration_manager(_get_instrument_ip(self)))
 
-    def prepare(self, program: dict[str, dict]) -> None:
+    def prepare(  # pyright: ignore[reportIncompatibleMethodOverride]
+        self,
+        program: dict[str, dict],
+        acq_channels_data: AcquisitionChannelsData,  # noqa: ARG002, unused parameter
+        repetitions: int,  # noqa: ARG002, unused parameter
+    ) -> None:
         """Store program containing sequencer settings."""
         self._program = program
         self._nco_frequency_changed = {}
@@ -589,7 +602,9 @@ class _QCMComponent(_AnalogModuleComponent):
         """
         return None
 
-    def prepare(self, program: dict[str, dict]) -> None:
+    def prepare(
+        self, program: dict[str, dict], acq_channels_data: AcquisitionChannelsData, repetitions: int
+    ) -> None:
         """
         Uploads the waveforms and programs to the sequencers.
 
@@ -605,9 +620,13 @@ class _QCMComponent(_AnalogModuleComponent):
             Under the key :code:`"sequencer"` you specify the sequencer specific
             options for each sequencer, e.g. :code:`"seq0"`.
             For global settings, the options are under different keys, e.g. :code:`"settings"`.
+        acq_channels_data
+            Acquisition channels data.
+        repetitions
+            Repetitions of the schedule.
 
         """
-        super().prepare(program)
+        super().prepare(program, acq_channels_data, repetitions)
 
         if (settings := program.get("settings")) is not None:
             if isinstance(settings, dict):
@@ -727,7 +746,9 @@ class _AnalogReadoutComponent(_AnalogModuleComponent):
         else:
             return None
 
-    def prepare(self, program: dict[str, dict]) -> None:
+    def prepare(
+        self, program: dict[str, dict], acq_channels_data: AcquisitionChannelsData, repetitions: int
+    ) -> None:
         """
         Uploads the waveforms and programs to the sequencers.
 
@@ -743,9 +764,13 @@ class _AnalogReadoutComponent(_AnalogModuleComponent):
             Under the key :code:`"sequencer"` you specify the sequencer specific
             options for each sequencer, e.g. :code:`"seq0"`.
             For global settings, the options are under different keys, e.g. :code:`"settings"`.
+        acq_channels_data
+            Acquisition channels data.
+        repetitions
+            Repetitions of the schedule.
 
         """
-        super().prepare(program)
+        super().prepare(program, acq_channels_data, repetitions)
 
         for seq_idx in range(self._hardware_properties.number_of_sequencers):
             self._set_parameter(self.instrument.sequencers[seq_idx], "sync_en", False)
@@ -767,17 +792,21 @@ class _AnalogReadoutComponent(_AnalogModuleComponent):
             self._configure_sequencer_settings(seq_idx=seq_idx, settings=sequencer_settings)
             acq_duration[seq_name] = sequencer_settings.integration_length_acq
 
-        if (acq_metadata := program.get("acq_metadata")) is not None:
+        if (acq_hardware_mapping := program.get("acq_hardware_mapping")) is not None:
             scope_mode_sequencer_and_qblox_acq_index = (
-                self._determine_scope_mode_acquisition_sequencer_and_qblox_acq_index(acq_metadata)
+                self._determine_scope_mode_acquisition_sequencer_and_qblox_acq_index(
+                    acq_channels_data, acq_hardware_mapping
+                )
             )
             self._acquisition_manager = _QRMAcquisitionManager(
                 parent=self,
-                acquisition_metadata=acq_metadata,
+                acq_channels_data=acq_channels_data,
+                acq_hardware_mapping=acq_hardware_mapping,
                 scope_mode_sequencer_and_qblox_acq_index=scope_mode_sequencer_and_qblox_acq_index,
                 acquisition_duration=acq_duration,
                 seq_name_to_idx_map=self._seq_name_to_idx_map,
                 sequencers=program.get("sequencers"),
+                repetitions=repetitions,
             )
         else:
             self._acquisition_manager = None
@@ -914,7 +943,9 @@ class _AnalogReadoutComponent(_AnalogModuleComponent):
         return channel_map_parameters
 
     def _determine_scope_mode_acquisition_sequencer_and_qblox_acq_index(
-        self, acquisition_metadata: dict[str, AcquisitionMetadata]
+        self,
+        acq_channels_data: AcquisitionChannelsData,
+        acq_hardware_mapping: dict[str, dict[Hashable, QbloxAcquisitionHardwareMapping]],
     ) -> tuple[int, int] | None:
         """
         Finds the sequencer and qblox_acq_index that performs the raw trace acquisition.
@@ -925,11 +956,6 @@ class _AnalogReadoutComponent(_AnalogModuleComponent):
         so we make sure this requirement is still satisfied. See
         :func:`~quantify_scheduler.backends.qblox.analog.AnalogModuleCompiler._ensure_single_scope_mode_acquisition_sequencer`.
 
-        Parameters
-        ----------
-        acquisition_metadata
-            The acquisition metadata for each sequencer.
-
         Returns
         -------
         :
@@ -938,28 +964,27 @@ class _AnalogReadoutComponent(_AnalogModuleComponent):
 
         """
         sequencer_and_qblox_acq_index = None
-        for (
-            sequencer_name,
-            current_acquisition_metadata,
-        ) in acquisition_metadata.items():
-            if current_acquisition_metadata.acq_protocol == "Trace":
-                # It's in the format "seq{n}", so we cut it.
-                sequencer_id = self._seq_name_to_idx_map[sequencer_name]
-                if (
-                    sequencer_and_qblox_acq_index is not None
-                    and sequencer_and_qblox_acq_index[0] != sequencer_id
-                ):
-                    single_scope_mode_acquisition_raise(
-                        sequencer_0=sequencer_id,
-                        sequencer_1=sequencer_and_qblox_acq_index[0],
-                        module_name=self.name,
-                    )
-                # For scope protocol, only one channel makes sense,
-                # we only need the first key in dict
-                qblox_acq_index = next(
-                    iter(current_acquisition_metadata.acq_channels_metadata.keys())
-                )
-                sequencer_and_qblox_acq_index = (sequencer_id, qblox_acq_index)
+        for acq_channel, acq_channel_data in acq_channels_data.items():
+            if acq_channel_data.protocol == "Trace":
+                for sequencer_name, sequencer_hardware_mapping in acq_hardware_mapping.items():
+                    # It's in the format "seq{n}", so we cut it.
+                    sequencer_id = self._seq_name_to_idx_map[sequencer_name]
+                    for (
+                        hardware_mapping_acq_channel,
+                        qblox_acq_index,
+                    ) in sequencer_hardware_mapping.items():
+                        if acq_channel == hardware_mapping_acq_channel:
+                            assert isinstance(qblox_acq_index, int)
+                            if (
+                                sequencer_and_qblox_acq_index is not None
+                                and sequencer_and_qblox_acq_index[0] != sequencer_id
+                            ):
+                                single_scope_mode_acquisition_raise(
+                                    sequencer_0=sequencer_id,
+                                    sequencer_1=sequencer_and_qblox_acq_index[0],
+                                    module_name=self.name,
+                                )
+                            sequencer_and_qblox_acq_index = sequencer_id, qblox_acq_index
 
         return sequencer_and_qblox_acq_index
 
@@ -974,7 +999,9 @@ class _QRMComponent(_AnalogReadoutComponent):
 
     _hardware_properties = _QRM_BASEBAND_PROPERTIES
 
-    def prepare(self, program: dict[str, dict]) -> None:
+    def prepare(
+        self, program: dict[str, dict], acq_channels_data: AcquisitionChannelsData, repetitions: int
+    ) -> None:
         """
         Uploads the waveforms and programs to the sequencers.
 
@@ -990,9 +1017,13 @@ class _QRMComponent(_AnalogReadoutComponent):
             Under the key :code:`"sequencer"` you specify the sequencer specific
             options for each sequencer, e.g. :code:`"seq0"`.
             For global settings, the options are under different keys, e.g. :code:`"settings"`.
+        acq_channels_data
+            Acquisition channels data.
+        repetitions
+            Repetitions of the schedule.
 
         """
-        super().prepare(program)
+        super().prepare(program, acq_channels_data, repetitions)
 
         for seq_name, settings in program["sequencers"].items():
             if isinstance(settings, dict):
@@ -1008,9 +1039,11 @@ class _QRMComponent(_AnalogReadoutComponent):
                 )
 
             self._configure_nco_mixer_calibration(seq_idx=seq_idx, settings=sequencer_settings)
-        if (acq_metadata := program.get("acq_metadata")) is not None:
+        if (acq_hardware_mapping := program.get("acq_hardware_mapping")) is not None:
             scope_mode_sequencer_and_qblox_acq_index = (
-                self._determine_scope_mode_acquisition_sequencer_and_qblox_acq_index(acq_metadata)
+                self._determine_scope_mode_acquisition_sequencer_and_qblox_acq_index(
+                    acq_channels_data, acq_hardware_mapping
+                )
             )
             if scope_mode_sequencer_and_qblox_acq_index is not None:
                 self._set_parameter(
@@ -1029,7 +1062,9 @@ class _QRMComponent(_AnalogReadoutComponent):
 class _RFComponent(_AnalogModuleComponent):
     """Mix-in for RF-module-specific InstrumentCoordinatorComponent behaviour."""
 
-    def prepare(self, program: dict[str, dict]) -> None:
+    def prepare(
+        self, program: dict[str, dict], acq_channels_data: AcquisitionChannelsData, repetitions: int
+    ) -> None:
         """
         Uploads the waveforms and programs to the sequencers.
 
@@ -1043,9 +1078,13 @@ class _RFComponent(_AnalogModuleComponent):
             Under the key :code:`"sequencer"` you specify the sequencer specific
             options for each sequencer, e.g. :code:`"seq0"`.
             For global settings, the options are under different keys, e.g. :code:`"settings"`.
+        acq_channels_data
+            Acquisition channels data.
+        repetitions
+            Repetitions of the schedule.
 
         """
-        super().prepare(program)
+        super().prepare(program, acq_channels_data, repetitions)
 
         lo_idx_to_connected_seq_idx: dict[int, list[int]] = {}
         for seq_name, settings in program["sequencers"].items():
@@ -1278,7 +1317,9 @@ class _QRCComponent(_RFComponent, _AnalogReadoutComponent):
 
     _hardware_properties = _QRC_PROPERTIES
 
-    def prepare(self, program: dict[str, dict]) -> None:
+    def prepare(
+        self, program: dict[str, dict], acq_channels_data: AcquisitionChannelsData, repetitions: int
+    ) -> None:
         """
         Uploads the waveforms and programs to the sequencers.
 
@@ -1294,12 +1335,18 @@ class _QRCComponent(_RFComponent, _AnalogReadoutComponent):
             Under the key :code:`"sequencer"` you specify the sequencer specific
             options for each sequencer, e.g. :code:`"seq0"`.
             For global settings, the options are under different keys, e.g. :code:`"settings"`.
+        acq_channels_data
+            Acquisition channels data.
+        repetitions
+            Repetitions of the schedule.
 
         """
-        super().prepare(program)
-        if (acq_metadata := program.get("acq_metadata")) is not None:
+        super().prepare(program, acq_channels_data, repetitions)
+        if (acq_hardware_mapping := program.get("acq_hardware_mapping")) is not None:
             scope_mode_sequencer_and_qblox_acq_index = (
-                self._determine_scope_mode_acquisition_sequencer_and_qblox_acq_index(acq_metadata)
+                self._determine_scope_mode_acquisition_sequencer_and_qblox_acq_index(
+                    acq_channels_data, acq_hardware_mapping
+                )
             )
             if scope_mode_sequencer_and_qblox_acq_index is not None:
                 scope_mode_sequencer_and_qblox_acq_index = scope_mode_sequencer_and_qblox_acq_index[
@@ -1398,7 +1445,9 @@ class _QTMComponent(_ModuleComponentBase):
         else:
             return None
 
-    def prepare(self, program: dict[str, dict]) -> None:
+    def prepare(
+        self, program: dict[str, dict], acq_channels_data: AcquisitionChannelsData, repetitions: int
+    ) -> None:
         """
         Uploads the waveforms and programs to the sequencers.
 
@@ -1414,9 +1463,13 @@ class _QTMComponent(_ModuleComponentBase):
             Under the key :code:`"sequencer"` you specify the sequencer specific
             options for each sequencer, e.g. :code:`"seq0"`.
             For global settings, the options are under different keys, e.g. :code:`"settings"`.
+        acq_channels_data
+            Acquisition channels data.
+        repetitions
+            Repetitions of the schedule.
 
         """
-        super().prepare(program)
+        super().prepare(program, acq_channels_data, repetitions)
 
         for seq_idx in range(self._hardware_properties.number_of_sequencers):
             self._set_parameter(self.instrument.sequencers[seq_idx], "sync_en", False)
@@ -1437,13 +1490,15 @@ class _QTMComponent(_ModuleComponentBase):
             self._configure_io_channel_settings(seq_idx=seq_idx, settings=settings)
             trace_acq_duration[seq_name] = settings.trace_acq_duration
 
-        if (acq_metadata := program.get("acq_metadata")) is not None:
+        if (acq_hardware_mapping := program.get("acq_hardware_mapping")) is not None:
             self._acquisition_manager = _QTMAcquisitionManager(
                 parent=self,
                 # Ignoring type, because this cannot be solved by a simple assert isinstance.
-                acquisition_metadata=acq_metadata,  # type; ignore
+                acq_channels_data=acq_channels_data,  # type; ignore
+                acq_hardware_mapping=acq_hardware_mapping,
                 acquisition_duration=trace_acq_duration,
                 seq_name_to_idx_map=self._seq_name_to_idx_map,
+                repetitions=repetitions,
             )
         else:
             self._acquisition_manager = None
@@ -1602,28 +1657,36 @@ class _AcquisitionManagerBase(ABC):
     ----------
     parent
         Reference to the parent QRM IC component.
-    acquisition_metadata
+    acq_channels_data
         Provides a summary of the used acquisition protocol, bin mode, acquisition channels,
-        acquisition indices per channel, and repetitions, for each sequencer.
+        acquisition indices per channel, and repetitions.
+    acq_hardware_mapping
+        Acquisition hardware mapping.
     acquisition_duration
         The duration of each acquisition for each sequencer.
     seq_name_to_idx_map
         All available sequencer names to their ids in a dict.
+    repetitions
+        How many times the schedule repeats.
 
     """
 
     def __init__(
         self,
         parent: _ReadoutModuleComponentT,
-        acquisition_metadata: dict[str, AcquisitionMetadata],
+        acq_channels_data: AcquisitionChannelsData,
+        acq_hardware_mapping: dict[str, dict[Hashable, QbloxAcquisitionHardwareMapping]],
         acquisition_duration: dict[str, int],
         seq_name_to_idx_map: dict[str, int],
+        repetitions: int,
     ) -> None:
         self.parent = parent
-        self._acquisition_metadata = acquisition_metadata
+        self._acq_channels_data = acq_channels_data
+        self._acq_hardware_mapping = acq_hardware_mapping
 
         self._acq_duration = acquisition_duration
         self._seq_name_to_idx_map = seq_name_to_idx_map
+        self._repetitions = repetitions
 
     @property
     def instrument(self) -> Module:
@@ -1632,7 +1695,10 @@ class _AcquisitionManagerBase(ABC):
 
     @staticmethod
     @abstractmethod
-    def _check_bin_mode_compatible(acquisition_metadata: AcquisitionMetadata) -> None:
+    def _check_bin_mode_compatible(
+        acq_channels_data: AcquisitionChannelsData,
+        acq_hardware_mapping: dict[str, dict[Hashable, QbloxAcquisitionHardwareMapping]],
+    ) -> None:
         pass
 
     @property
@@ -1641,22 +1707,6 @@ class _AcquisitionManagerBase(ABC):
         """
         Mapping from acquisition protocol name to the function that processes the raw
         acquisition data.
-
-        The acquisition processing function signature should be the following (for
-        brevity, it's not listed in the typehint):
-
-        .. code-block:: python
-
-            def acq_processing_function(
-                self,
-                acq_indices: list,
-                hardware_retrieved_acquisitions: dict,
-                acquisition_metadata: AcquisitionMetadata,
-                acq_duration: int,
-                qblox_acq_index: int,
-                acq_channel: Hashable,
-            ) -> DataArray:
-
         """
 
     def retrieve_acquisition(self) -> Dataset:
@@ -1675,36 +1725,35 @@ class _AcquisitionManagerBase(ABC):
 
         """
         dataset = Dataset()
+        self._check_bin_mode_compatible(self._acq_channels_data, self._acq_hardware_mapping)
 
-        for sequencer_name, acquisition_metadata in self._acquisition_metadata.items():
-            self._check_bin_mode_compatible(acquisition_metadata)
-            acquisition_function: Callable = self._protocol_to_acq_function_map[
-                acquisition_metadata.acq_protocol
-            ]
-            # retrieve the raw data from the qrm sequencer module
-            hardware_retrieved_acquisitions = self._get_acquisitions_from_instrument(
-                seq_idx=self._seq_name_to_idx_map[sequencer_name],
-                acquisition_metadata=acquisition_metadata,
+        for sequencer_name, seq_hardware_mapping in self._acq_hardware_mapping.items():
+            # Retrieve the raw data from the readout sequencer.
+            hardware_retrieved_acquisitions = self.instrument.get_acquisitions(
+                self._seq_name_to_idx_map[sequencer_name]
             )
-            for (
-                qblox_acq_index,
-                acq_channel_metadata,
-            ) in acquisition_metadata.acq_channels_metadata.items():
-                acq_channel: Hashable = acq_channel_metadata.acq_channel
-                acq_indices: list[int] = acq_channel_metadata.acq_indices
-
-                self._assert_acquisition_data_exists(
-                    hardware_retrieved_acquisitions, qblox_acq_index, acq_channel
-                )
-                # the acquisition_function retrieves the right part of the acquisitions
-                # data structure returned by the qrm
+            for acq_channel, seq_channel_hardware_mapping in seq_hardware_mapping.items():
+                acquisition_function: Callable = self._protocol_to_acq_function_map[
+                    self._acq_channels_data[acq_channel].protocol
+                ]
+                # Verifying whether returned data contains the Qblox acquisition indices properly.
+                if isinstance(seq_channel_hardware_mapping, QbloxAcquisitionIndex):
+                    qblox_acq_index = seq_channel_hardware_mapping
+                    self._assert_acquisition_data_exists(
+                        hardware_retrieved_acquisitions, qblox_acq_index, acq_channel
+                    )
+                else:
+                    for qblox_acq_index_bin in seq_channel_hardware_mapping.values():
+                        self._assert_acquisition_data_exists(
+                            hardware_retrieved_acquisitions, qblox_acq_index_bin.index, acq_channel
+                        )
+                # The `acquisition_function` formats the the acquisitions
+                # returned by the readout sequencer.
                 formatted_acquisitions = acquisition_function(
-                    acq_indices=acq_indices,
                     hardware_retrieved_acquisitions=hardware_retrieved_acquisitions,
-                    acquisition_metadata=acquisition_metadata,
-                    acq_duration=self._acq_duration[sequencer_name],
-                    qblox_acq_index=qblox_acq_index,
                     acq_channel=acq_channel,
+                    seq_channel_hardware_mapping=seq_channel_hardware_mapping,
+                    acq_duration=self._acq_duration[sequencer_name],
                     sequencer_name=sequencer_name,
                 )
                 formatted_acquisitions_dataset = Dataset({acq_channel: formatted_acquisitions})
@@ -1718,12 +1767,12 @@ class _AcquisitionManagerBase(ABC):
 
     def delete_acquisition_data(self) -> None:
         """
-        Delete acquisition data from sequencers that have associated acquisition metadata.
+        Delete acquisition data from sequencers that have associated hardware acquisition mapping.
 
         To be called before starting the sequencers, so that old data does not get retrieved more
         than once.
         """
-        for seq_name in self._acquisition_metadata:
+        for seq_name in self._acq_hardware_mapping:
             self.instrument.delete_acquisition_data(
                 sequencer=self._seq_name_to_idx_map[seq_name], all=True
             )
@@ -1774,34 +1823,247 @@ class _AcquisitionManagerBase(ABC):
         """Returns the name of the acquisition from the qblox_acq_index."""
         return str(qblox_acq_index)
 
-    def _get_trigger_count_threshold_data(
+    def _get_binned_data(
         self,
-        *,
-        acq_indices: list,  # noqa: ARG002, unused argument
-        hardware_retrieved_acquisitions: dict,
-        acquisition_metadata: AcquisitionMetadata,
-        acq_duration: int,  # noqa: ARG002, unused argument
-        qblox_acq_index: int,
-        acq_channel: Hashable,
-        sequencer_name: str,  #  noqa: ARG002, unused argument
+        bin_data_function: Callable[[int, int, ThresholdedTriggerCountMetadata | None], Any],
+        acq_channel: str,
+        seq_channel_hardware_mapping: QbloxAcquisitionHardwareMapping,
     ) -> DataArray:
         """
-        Retrieve the thresholded acquisition data associated with ``acq_channel`` and ``acq_index``.
+        Retrieves the binned acquisition data associated with an `acq_channel`.
 
         Parameters
         ----------
-        acq_indices
-            Acquisition indices.
+        bin_data_function
+            Function that returns the bin data for the Qblox acquisition index and bin.
+        acq_channel
+            Acquisition channel.
+        seq_channel_hardware_mapping
+            Acquisition hardware mapping for the sequencer and channel.
+
+        Returns
+        -------
+        :
+            The integrated data.
+
+        """
+        # For binned acquisition protocols, the mapping is of QbloxAcquisitionBinMapping type,
+        # guaranteed by the QbloxAcquisitionIndexManager.
+        assert isinstance(seq_channel_hardware_mapping, dict)
+
+        if _is_acquisition_binned_average(
+            self._acq_channels_data[acq_channel].protocol,
+            self._acq_channels_data[acq_channel].bin_mode,
+        ):
+            formatted_data = []
+            for _acq_index, qblox_acq_index_bin in seq_channel_hardware_mapping.items():
+                formatted_data.append(
+                    bin_data_function(
+                        qblox_acq_index_bin.index,
+                        qblox_acq_index_bin.bin,
+                        qblox_acq_index_bin.thresholded_trigger_count_metadata,
+                    )
+                )
+            acq_index_dim_name = self._acq_channels_data[acq_channel].acq_index_dim_name
+            return DataArray(
+                formatted_data,
+                dims=[acq_index_dim_name],
+                coords={acq_index_dim_name: list(seq_channel_hardware_mapping.keys())},
+                attrs=self._acq_channel_attrs(self._acq_channels_data[acq_channel].protocol),
+            )
+        elif _is_acquisition_binned_append(
+            self._acq_channels_data[acq_channel].protocol,
+            self._acq_channels_data[acq_channel].bin_mode,
+        ):
+            # TODO: Optimize how this data is extracted.
+            # This might be not the most performant way to extract the data from the bins.
+            # In the general case multiple loops and repetitions, we need to
+            # extract the data not in the most straightforward way.
+            formatted_data = []
+            for repetition in range(self._repetitions):
+                formatted_data_repetition = []
+                for _acq_index, qblox_acq_index_bin in seq_channel_hardware_mapping.items():
+                    formatted_data_repetition.append(
+                        bin_data_function(
+                            qblox_acq_index_bin.index,
+                            qblox_acq_index_bin.bin + repetition * qblox_acq_index_bin.stride,
+                            qblox_acq_index_bin.thresholded_trigger_count_metadata,
+                        )
+                    )
+                formatted_data.append(formatted_data_repetition)
+            acq_index_legacy = []
+            loop_repetition = []
+            for acq_index, _qblox_acq_index_bin in seq_channel_hardware_mapping.items():
+                acq_index_legacy.append(
+                    self._acq_channels_data[acq_channel]
+                    .coords[acq_index]
+                    .get("acq_index_legacy", np.nan)
+                )
+                loop_repetition.append(
+                    self._acq_channels_data[acq_channel]
+                    .coords[acq_index]
+                    .get("loop_repetition", np.nan)
+                )
+            loop_repetition_coord_name = f"loop_repetition_{acq_channel}"
+            acq_index_dim_name = self._acq_channels_data[acq_channel].acq_index_dim_name
+            return DataArray(
+                formatted_data,
+                dims=["repetition", acq_index_dim_name],
+                coords={
+                    f"acq_index_legacy_{acq_channel}": (acq_index_dim_name, acq_index_legacy),
+                    loop_repetition_coord_name: (acq_index_dim_name, loop_repetition),
+                    "repetition": list(range(self._repetitions)),
+                    acq_index_dim_name: list(seq_channel_hardware_mapping.keys()),
+                },
+                attrs=self._acq_channel_attrs(self._acq_channels_data[acq_channel].protocol),
+            )
+        else:
+            # In principle unreachable due to _check_bin_mode_compatible, but included for
+            # completeness.
+            raise AssertionError("This should not be reachable due to _check_bin_mode_compatible.")
+
+    def _get_trigger_count_data(
+        self,
+        *,
+        hardware_retrieved_acquisitions: dict,
+        acq_channel: str,
+        seq_channel_hardware_mapping: QbloxAcquisitionHardwareMapping,
+        acq_duration: int,  # noqa: ARG002, unused argument
+        sequencer_name: str,  # noqa: ARG002, unused argument
+        sum_multiply_repetitions: bool,
+    ) -> DataArray:
+        """
+        Retrieves the trigger count acquisition data associated with `acq_channel`.
+
+        Parameters
+        ----------
         hardware_retrieved_acquisitions
             The acquisitions dict as returned by the sequencer.
-        acquisition_metadata
-            Acquisition metadata.
-        acq_duration
-            Desired maximum number of samples for the scope acquisition.
-        qblox_acq_index
-            The Qblox acquisition index from which to get the data.
         acq_channel
             The acquisition channel.
+        seq_channel_hardware_mapping
+            Acquisition hardware mapping for the sequencer and channel.
+        acq_duration
+            Desired maximum number of samples for the scope acquisition.
+        sequencer_name
+            Sequencer.
+        sum_multiply_repetitions
+            Multiplies data by repetitions for the SUM bin mode.
+
+        Returns
+        -------
+        data : xarray.DataArray
+            The acquired trigger count data.
+
+        Notes
+        -----
+        - For BinMode.DISTRIBUTION, `data` contains the distribution of counts.
+        - For BinMode.APPEND, `data` contains the raw trigger counts.
+
+        """
+        if self._acq_channels_data[acq_channel].bin_mode == BinMode.DISTRIBUTION:
+            # For TriggerCount distribution acquisition protocol,
+            # the mapping is of QbloxAcquisitionIndex type,
+            # guaranteed by the QbloxAcquisitionIndexManager.
+            assert isinstance(seq_channel_hardware_mapping, int)
+
+            qblox_acq_index = seq_channel_hardware_mapping
+            bin_data = self._get_bin_data(hardware_retrieved_acquisitions, qblox_acq_index)
+
+            def _convert_from_cumulative(
+                cumulative_values: list[int],
+            ) -> dict[int, int]:
+                """
+                Return the distribution of counts from a cumulative distribution.
+
+                Note, the cumulative distribution is in reverse order.
+                The cumulative_values list can contain any number of integers and NaNs.
+                """
+                result = {}
+
+                last_cumulative_value = 0
+                for count, current_cumulative_value in reversed(list(enumerate(cumulative_values))):
+                    if (not isnan(current_cumulative_value)) and (
+                        last_cumulative_value != current_cumulative_value
+                    ):
+                        result[count + 1] = current_cumulative_value - last_cumulative_value
+                        last_cumulative_value = current_cumulative_value
+
+                return result
+
+            result = _convert_from_cumulative(bin_data["avg_cnt"])
+            # TODO: QTFY-300, when interface can change,
+            # return data with proper coordinates;
+            # no repetitions, and proper dimension name.
+            # acq_index_dim_name = self._acq_channels_data[acq_channel].acq_index_dim_name
+            # return DataArray(
+            #    list(result.values())[::-1],
+            #    dims=[acq_index_dim_name],
+            #    coords={acq_index_dim_name: list(result.keys())[::-1]},
+            #    attrs=self._acq_channel_attrs(self._acq_channels_data[acq_channel].protocol),
+            # )
+            return DataArray(
+                [list(result.values())[::-1]],
+                dims=["repetition", "counts"],
+                coords={"repetition": [0], "counts": list(result.keys())[::-1]},
+                attrs=self._acq_channel_attrs(self._acq_channels_data[acq_channel].protocol),
+            )
+        elif self._acq_channels_data[acq_channel].bin_mode in (BinMode.SUM, BinMode.APPEND):
+
+            def _get_bin(
+                qblox_acq_index: int,
+                qblox_acq_bin: int,
+                thresholded_trigger_count_metadata: ThresholdedTriggerCountMetadata | None,  # noqa: ARG001, unused argument
+            ) -> int:
+                bin_data = self._get_bin_data(hardware_retrieved_acquisitions, qblox_acq_index)
+                # "avg_cnt" is the key for QRM modules, "count" for QTM modules. Note
+                # that QTM modules also return a "avg_cnt" key, that should not be used!
+                counts = bin_data["count"] if "count" in bin_data else bin_data["avg_cnt"]
+                return (
+                    self._repetitions * int(counts[qblox_acq_bin])
+                    if (
+                        sum_multiply_repetitions
+                        and self._acq_channels_data[acq_channel].bin_mode == BinMode.SUM
+                    )
+                    else int(counts[qblox_acq_bin])
+                )
+
+            return self._get_binned_data(
+                bin_data_function=_get_bin,
+                acq_channel=acq_channel,
+                seq_channel_hardware_mapping=seq_channel_hardware_mapping,
+            )
+        else:
+            # In principle unreachable due to _check_bin_mode_compatible, but included for
+            # completeness.
+            raise AssertionError("This should not be reachable due to _check_bin_mode_compatible.")
+
+    def _get_trigger_count_threshold_data(
+        self,
+        *,
+        hardware_retrieved_acquisitions: dict,
+        acq_channel: str,
+        seq_channel_hardware_mapping: QbloxAcquisitionHardwareMapping,
+        acq_duration: int,  # noqa: ARG002, unused argument
+        sequencer_name: str,  # noqa: ARG002, unused argument
+    ) -> DataArray:
+        """
+        Gets the integration data but normalized to the integration time.
+
+        The return value is thus the amplitude of the demodulated
+        signal directly and has volt units (i.e. same units as a single sample of the
+        integrated signal).
+
+        Parameters
+        ----------
+        hardware_retrieved_acquisitions
+            The acquisitions dict as returned by the sequencer.
+        acq_channel
+            The acquisition channel.
+        seq_channel_hardware_mapping
+            Acquisition hardware mapping for the sequencer and channel.
+        acq_duration
+            Desired maximum number of samples for the scope acquisition.
         sequencer_name
             Sequencer.
 
@@ -1811,31 +2073,42 @@ class _AcquisitionManagerBase(ABC):
             DataArray containing thresholded acquisition data.
 
         """
-        bin_data = self._get_bin_data(hardware_retrieved_acquisitions, qblox_acq_index)
-        acq_index_dim_name = f"acq_index_{acq_channel}"
 
-        thresh_tc_settings = acquisition_metadata.acq_channels_metadata[
-            qblox_acq_index
-        ].thresholded_trigger_count
-        assert thresh_tc_settings is not None
-        # "avg_cnt" is the key for QRM modules, "count" for QTM modules. Note
-        # that QTM modules also return a "avg_cnt" key, that should not be used!
-        counts = bin_data["count"] if "count" in bin_data else bin_data["avg_cnt"]
-        # To make the return data similar to thresholdd acquisition, it is cast
-        # to integers. Note that the hardwware returns counts as floats.
-        if thresh_tc_settings.condition == TriggerCondition.GREATER_THAN_EQUAL_TO:
-            states = (np.round(counts) >= thresh_tc_settings.threshold).astype(int)
-        elif thresh_tc_settings.condition == TriggerCondition.LESS_THAN:
-            states = (np.round(counts) < thresh_tc_settings.threshold).astype(int)
-        else:
-            raise ValueError(f"Unknown trigger condition {thresh_tc_settings.condition}")
-        # The above lines convert NaNs to 0. We want them to be -1.
-        states[np.isnan(counts)] = -1
-        return DataArray(
-            [states],
-            dims=["repetition", acq_index_dim_name],
-            coords={"repetition": [0], acq_index_dim_name: range(len(states))},
-            attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
+        def _get_bin(
+            qblox_acq_index: int,
+            qblox_acq_bin: int,
+            thresholded_trigger_count_metadata: ThresholdedTriggerCountMetadata | None,
+        ) -> int:
+            assert thresholded_trigger_count_metadata is not None
+            bin_data = self._get_bin_data(hardware_retrieved_acquisitions, qblox_acq_index)
+            # "avg_cnt" is the key for QRM modules, "count" for QTM modules. Note
+            # that QTM modules also return a "avg_cnt" key, that should not be used!
+            counts = bin_data["count"] if "count" in bin_data else bin_data["avg_cnt"]
+
+            if np.isnan(counts[qblox_acq_bin]):
+                return -1
+            # To make the return data similar to thresholded acquisition, it is cast
+            # to integers. Note that the hardware returns counts as floats.
+            elif (
+                thresholded_trigger_count_metadata.condition
+                == TriggerCondition.GREATER_THAN_EQUAL_TO
+            ):
+                return int(
+                    round(counts[qblox_acq_bin]) >= thresholded_trigger_count_metadata.threshold
+                )
+            elif thresholded_trigger_count_metadata.condition == TriggerCondition.LESS_THAN:
+                return int(
+                    round(counts[qblox_acq_bin]) < thresholded_trigger_count_metadata.threshold
+                )
+            else:
+                raise ValueError(
+                    f"Unknown trigger condition {thresholded_trigger_count_metadata.condition}"
+                )
+
+        return self._get_binned_data(
+            bin_data_function=_get_bin,
+            acq_channel=acq_channel,
+            seq_channel_hardware_mapping=seq_channel_hardware_mapping,
         )
 
 
@@ -1850,9 +2123,11 @@ class _QRMAcquisitionManager(_AcquisitionManagerBase):
     ----------
     parent
         Reference to the parent QRM or QRC IC component.
-    acquisition_metadata
+    acq_channels_data
         Provides a summary of the used acquisition protocol, bin mode, acquisition channels,
-        acquisition indices per channel, and repetitions, for each sequencer.
+        acquisition indices per channel.
+    acq_hardware_mapping
+        Acquisition hardware mapping.
     acquisition_duration
         The duration of each acquisition for each sequencer.
     seq_name_to_idx_map
@@ -1867,17 +2142,21 @@ class _QRMAcquisitionManager(_AcquisitionManagerBase):
     def __init__(
         self,
         parent: _AnalogReadoutComponent,
-        acquisition_metadata: dict[str, AcquisitionMetadata],
+        acq_channels_data: AcquisitionChannelsData,
+        acq_hardware_mapping: dict[str, dict[Hashable, QbloxAcquisitionHardwareMapping]],
         acquisition_duration: dict[str, int],
         seq_name_to_idx_map: dict[str, int],
+        repetitions: int,
         scope_mode_sequencer_and_qblox_acq_index: tuple[int, int] | None = None,
         sequencers: dict[str, dict] | None = None,
     ) -> None:
         super().__init__(
             parent=parent,
-            acquisition_metadata=acquisition_metadata,
+            acq_channels_data=acq_channels_data,
+            acq_hardware_mapping=acq_hardware_mapping,
             acquisition_duration=acquisition_duration,
             seq_name_to_idx_map=seq_name_to_idx_map,
+            repetitions=repetitions,
         )
         self._scope_mode_sequencer_and_qblox_acq_index = scope_mode_sequencer_and_qblox_acq_index
         self._sequencers = sequencers
@@ -1885,30 +2164,33 @@ class _QRMAcquisitionManager(_AcquisitionManagerBase):
     @property
     def _protocol_to_acq_function_map(self) -> dict[str, Callable]:
         return {
-            "WeightedIntegratedSeparated": partial(self._get_integration_data, separated=True),
-            "NumericalSeparatedWeightedIntegration": partial(
-                self._get_integration_data, separated=True
-            ),
-            "NumericalWeightedIntegration": partial(self._get_integration_data, separated=False),
+            "WeightedIntegratedSeparated": self._get_integration_weighted_separated_data,
+            "NumericalSeparatedWeightedIntegration": self._get_integration_weighted_separated_data,
+            "NumericalWeightedIntegration": self._get_integration_real_data,
             "SSBIntegrationComplex": self._get_integration_amplitude_data,
             "ThresholdedAcquisition": self._get_threshold_data,
             "WeightedThresholdedAcquisition": self._get_threshold_data,
             "ThresholdedTriggerCount": self._get_trigger_count_threshold_data,
             "Trace": self._get_scope_data,
-            "TriggerCount": self._get_trigger_count_data,
+            "TriggerCount": partial(self._get_trigger_count_data, sum_multiply_repetitions=False),
         }
 
     @staticmethod
-    def _check_bin_mode_compatible(acquisition_metadata: AcquisitionMetadata) -> None:
-        if (
-            acquisition_metadata.bin_mode
-            not in QRM_COMPATIBLE_BIN_MODES[acquisition_metadata.acq_protocol]
-        ):
-            raise IncompatibleBinModeError(
-                module_type="QRM",
-                protocol=acquisition_metadata.acq_protocol,
-                bin_mode=acquisition_metadata.bin_mode,
-            )
+    def _check_bin_mode_compatible(
+        acq_channels_data: AcquisitionChannelsData,
+        acq_hardware_mapping: dict[str, dict[Hashable, QbloxAcquisitionHardwareMapping]],
+    ) -> None:
+        for seq_acq_hardware_mapping in acq_hardware_mapping.values():
+            for acq_channel in seq_acq_hardware_mapping:
+                if (
+                    acq_channels_data[acq_channel].bin_mode
+                    not in QRM_COMPATIBLE_BIN_MODES[acq_channels_data[acq_channel].protocol]
+                ):
+                    raise IncompatibleBinModeError(
+                        module_type="QRM",
+                        protocol=acq_channels_data[acq_channel].protocol,
+                        bin_mode=acq_channels_data[acq_channel].bin_mode,
+                    )
 
     def retrieve_acquisition(self) -> Dataset:
         """
@@ -1917,7 +2199,7 @@ class _QRMAcquisitionManager(_AcquisitionManagerBase):
         Returns
         -------
         :
-            The acquisitions with the protocols specified in the `acquisition_metadata`.
+            The acquisitions with the protocols specified in the `acq_channels_data`.
             Each `xarray.DataArray` in the `xarray.Dataset` corresponds to one `acq_channel`.
             The ``acq_channel`` is the name of each `xarray.DataArray` in the `xarray.Dataset`.
             Each `xarray.DataArray` is a two-dimensional array,
@@ -1953,12 +2235,10 @@ class _QRMAcquisitionManager(_AcquisitionManagerBase):
     def _get_scope_data(
         self,
         *,
-        acq_indices: list,
         hardware_retrieved_acquisitions: dict,
-        acquisition_metadata: AcquisitionMetadata,
+        acq_channel: str,
+        seq_channel_hardware_mapping: QbloxAcquisitionHardwareMapping,
         acq_duration: int,
-        qblox_acq_index: int,
-        acq_channel: Hashable,
         sequencer_name: str,
     ) -> DataArray:
         """
@@ -1966,18 +2246,14 @@ class _QRMAcquisitionManager(_AcquisitionManagerBase):
 
         Parameters
         ----------
-        acq_indices
-            Acquisition indices.
         hardware_retrieved_acquisitions
             The acquisitions dict as returned by the sequencer.
-        acquisition_metadata
-            Acquisition metadata.
-        acq_duration
-            Desired maximum number of samples for the scope acquisition.
-        qblox_acq_index
-            The Qblox acquisition index from which to get the data.
         acq_channel
             The acquisition channel.
+        seq_channel_hardware_mapping
+            Acquisition hardware mapping for the sequencer and channel.
+        acq_duration
+            Desired maximum number of samples for the scope acquisition.
         sequencer_name
             Sequencer.
 
@@ -1994,6 +2270,11 @@ class _QRMAcquisitionManager(_AcquisitionManagerBase):
                 f"0,...,{constants.MAX_SAMPLE_SIZE_SCOPE_ACQUISITIONS} "
                 f"are allowed."
             )
+        # For scope acquisition protocols, the mapping is of QbloxAcquisitionIndex type,
+        # guaranteed by the QbloxAcquisitionIndexManager.
+        assert isinstance(seq_channel_hardware_mapping, int)
+
+        qblox_acq_index = seq_channel_hardware_mapping
         qblox_acq_name = self._qblox_acq_index_to_qblox_acq_name(qblox_acq_index)
         scope_data = hardware_retrieved_acquisitions[qblox_acq_name]["acquisition"]["scope"]
 
@@ -2022,116 +2303,28 @@ class _QRMAcquisitionManager(_AcquisitionManagerBase):
         scope_data_i = np.array(path0["data"][:acq_duration])
         scope_data_q = np.array(path1["data"][:acq_duration])
 
-        acq_index_dim_name = f"acq_index_{acq_channel}"
+        acq_index_dim_name = self._acq_channels_data[acq_channel].acq_index_dim_name
         trace_index_dim_name = f"trace_index_{acq_channel}"
         return DataArray(
-            (scope_data_i + scope_data_q * 1j).reshape((1, -1)),
+            data=(scope_data_i + scope_data_q * 1j).reshape((1, -1)),
             dims=[acq_index_dim_name, trace_index_dim_name],
             coords={
-                acq_index_dim_name: acq_indices,
+                acq_index_dim_name: [0],
                 trace_index_dim_name: list(range(acq_duration)),
             },
-            attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
+            attrs=self._acq_channel_attrs(self._acq_channels_data[acq_channel].protocol),
         )
 
-    def _get_integration_data(
+    def _get_integration_weighted_separated_data(
         self,
         *,
-        acq_indices: list,
         hardware_retrieved_acquisitions: dict,
-        acquisition_metadata: AcquisitionMetadata,
+        acq_channel: str,
+        seq_channel_hardware_mapping: QbloxAcquisitionHardwareMapping,
         acq_duration: int,  # noqa: ARG002, unused argument
-        qblox_acq_index: int,
-        acq_channel: Hashable,
-        sequencer_name: str,  #  noqa: ARG002, unused argument
-        multiplier: float = 1,
-        separated: bool = True,
+        sequencer_name: str,  # noqa: ARG002, unused argument
     ) -> DataArray:
         """
-        Retrieves the integrated acquisition data associated with an `acq_channel`.
-
-        Parameters
-        ----------
-        acq_indices
-            Acquisition indices.
-        hardware_retrieved_acquisitions
-            The acquisitions dict as returned by the sequencer.
-        acquisition_metadata
-            Acquisition metadata.
-        acq_duration
-            Desired maximum number of samples for the scope acquisition.
-        qblox_acq_index
-            The Qblox acquisition index from which to get the data.
-        acq_channel
-            The acquisition channel.
-        sequencer_name
-            Sequencer.
-        multiplier
-            Multiplies the data with this number.
-        separated
-            True: return I and Q data separately
-            False: return I+Q in the real part and 0 in the imaginary part
-
-        Returns
-        -------
-        :
-            The integrated data.
-
-        """
-        bin_data = self._get_bin_data(hardware_retrieved_acquisitions, qblox_acq_index)
-        i_data = np.array(bin_data["integration"]["path0"])
-        q_data = np.array(bin_data["integration"]["path1"])
-        if not separated:
-            i_data = i_data + q_data
-            q_data = np.zeros_like(q_data)
-        acquisitions_data = multiplier * (i_data + q_data * 1j)
-        acq_index_dim_name = f"acq_index_{acq_channel}"
-
-        if acquisition_metadata.bin_mode == BinMode.AVERAGE:
-            return DataArray(
-                acquisitions_data.reshape((len(acq_indices),)),
-                dims=[acq_index_dim_name],
-                coords={acq_index_dim_name: acq_indices},
-                attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
-            )
-        elif acquisition_metadata.repetitions * len(acq_indices) == acquisitions_data.size:
-            acq_data = acquisitions_data.reshape(
-                (acquisition_metadata.repetitions, len(acq_indices))
-            )
-            return DataArray(
-                acq_data,
-                dims=["repetition", acq_index_dim_name],
-                coords={acq_index_dim_name: acq_indices},
-                attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
-            )
-
-        # There is control flow containing measurements, skip reshaping
-        else:
-            warnings.warn(
-                "The format of acquisition data of looped measurements in APPEND mode"
-                " will change in a future quantify-scheduler revision.",
-                FutureWarning,
-            )
-            acq_data = acquisitions_data.reshape((acquisition_metadata.repetitions, -1))
-            return DataArray(
-                acq_data,
-                dims=["repetition", "loop_repetition"],
-                coords=None,
-                attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
-            )
-
-    def _get_integration_amplitude_data(
-        self,
-        acq_indices: list,
-        hardware_retrieved_acquisitions: dict,
-        acquisition_metadata: AcquisitionMetadata,
-        acq_duration: int,
-        qblox_acq_index: int,
-        acq_channel: Hashable,
-        sequencer_name: str,
-    ) -> DataArray:
-        """
-        Gets the integration data but normalized to the integration time.
 
         The return value is thus the amplitude of the demodulated
         signal directly and has volt units (i.e. same units as a single sample of the
@@ -2139,18 +2332,65 @@ class _QRMAcquisitionManager(_AcquisitionManagerBase):
 
         Parameters
         ----------
-        acq_indices
-            Acquisition indices.
         hardware_retrieved_acquisitions
             The acquisitions dict as returned by the sequencer.
-        acquisition_metadata
-            Acquisition metadata.
-        acq_duration
-            Desired maximum number of samples for the scope acquisition.
-        qblox_acq_index
-            The Qblox acquisition index from which to get the data.
         acq_channel
             The acquisition channel.
+        seq_channel_hardware_mapping
+            Acquisition hardware mapping for the sequencer and channel.
+        acq_duration
+            Desired maximum number of samples for the scope acquisition.
+        sequencer_name
+            Sequencer.
+
+        Returns
+        -------
+        :
+            Array containing binned, normalized acquisition data.
+
+        """
+
+        def _get_bin(
+            qblox_acq_index: int,
+            qblox_acq_bin: int,
+            thresholded_trigger_count_metadata: ThresholdedTriggerCountMetadata | None,  # noqa: ARG001, unused argument
+        ) -> complex:
+            bin_data = self._get_bin_data(hardware_retrieved_acquisitions, qblox_acq_index)
+            i_data = bin_data["integration"]["path0"][qblox_acq_bin]
+            q_data = bin_data["integration"]["path1"][qblox_acq_bin]
+            return i_data + q_data * 1j
+
+        return self._get_binned_data(
+            bin_data_function=_get_bin,
+            acq_channel=acq_channel,
+            seq_channel_hardware_mapping=seq_channel_hardware_mapping,
+        )
+
+    def _get_integration_amplitude_data(
+        self,
+        *,
+        hardware_retrieved_acquisitions: dict,
+        acq_channel: str,
+        seq_channel_hardware_mapping: QbloxAcquisitionHardwareMapping,
+        acq_duration: int,
+        sequencer_name: str,  # noqa: ARG002, unused argument
+    ) -> DataArray:
+        """
+
+        The return value is thus the amplitude of the demodulated
+        signal directly and has volt units (i.e. same units as a single sample of the
+        integrated signal).
+
+        Parameters
+        ----------
+        hardware_retrieved_acquisitions
+            The acquisitions dict as returned by the sequencer.
+        acq_channel
+            The acquisition channel.
+        seq_channel_hardware_mapping
+            Acquisition hardware mapping for the sequencer and channel.
+        acq_duration
+            Desired maximum number of samples for the scope acquisition.
         sequencer_name
             Sequencer.
 
@@ -2165,47 +2405,97 @@ class _QRMAcquisitionManager(_AcquisitionManagerBase):
                 "Retrieving data failed. Expected the integration length to be defined,"
                 " but it is `None`."
             )
-        formatted_data = self._get_integration_data(
-            acq_indices=acq_indices,
-            hardware_retrieved_acquisitions=hardware_retrieved_acquisitions,
-            acquisition_metadata=acquisition_metadata,
-            acq_duration=acq_duration,
-            qblox_acq_index=qblox_acq_index,
+
+        def _get_bin(
+            qblox_acq_index: int,
+            qblox_acq_bin: int,
+            thresholded_trigger_count_metadata: ThresholdedTriggerCountMetadata | None,  # noqa: ARG001, unused argument
+        ) -> complex:
+            bin_data = self._get_bin_data(hardware_retrieved_acquisitions, qblox_acq_index)
+            i_data = bin_data["integration"]["path0"][qblox_acq_bin]
+            q_data = bin_data["integration"]["path1"][qblox_acq_bin]
+            return (i_data + q_data * 1j) / acq_duration
+
+        return self._get_binned_data(
+            bin_data_function=_get_bin,
             acq_channel=acq_channel,
-            multiplier=1 / acq_duration,
-            sequencer_name=sequencer_name,
+            seq_channel_hardware_mapping=seq_channel_hardware_mapping,
         )
 
-        return formatted_data
+    def _get_integration_real_data(
+        self,
+        *,
+        hardware_retrieved_acquisitions: dict,
+        acq_channel: str,
+        seq_channel_hardware_mapping: QbloxAcquisitionHardwareMapping,
+        acq_duration: int,  # noqa: ARG002, unused argument
+        sequencer_name: str,  # noqa: ARG002, unused argument
+    ) -> DataArray:
+        """
+        Gets the integration data but normalized to the integration time.
+
+        The return value is thus the amplitude of the demodulated
+        signal directly and has volt units (i.e. same units as a single sample of the
+        integrated signal).
+
+        Parameters
+        ----------
+        hardware_retrieved_acquisitions
+            The acquisitions dict as returned by the sequencer.
+        acq_channel
+            The acquisition channel.
+        seq_channel_hardware_mapping
+            Acquisition hardware mapping for the sequencer and channel.
+        acq_duration
+            Desired maximum number of samples for the scope acquisition.
+        sequencer_name
+            Sequencer.
+
+        Returns
+        -------
+        :
+            Array containing binned, normalized acquisition data.
+
+        """
+
+        def _get_bin(
+            qblox_acq_index: int,
+            qblox_acq_bin: int,
+            thresholded_trigger_count_metadata: ThresholdedTriggerCountMetadata | None,  # noqa: ARG001, unused argument
+        ) -> complex:
+            bin_data = self._get_bin_data(hardware_retrieved_acquisitions, qblox_acq_index)
+            i_data = bin_data["integration"]["path0"][qblox_acq_bin]
+            q_data = bin_data["integration"]["path1"][qblox_acq_bin]
+            return complex(i_data + q_data)
+
+        return self._get_binned_data(
+            bin_data_function=_get_bin,
+            acq_channel=acq_channel,
+            seq_channel_hardware_mapping=seq_channel_hardware_mapping,
+        )
 
     def _get_threshold_data(
         self,
         *,
-        acq_indices: list,
         hardware_retrieved_acquisitions: dict,
-        acquisition_metadata: AcquisitionMetadata,
+        acq_channel: str,
+        seq_channel_hardware_mapping: QbloxAcquisitionHardwareMapping,
         acq_duration: int,
-        qblox_acq_index: int,
-        acq_channel: Hashable,
-        sequencer_name: str,  #  noqa: ARG002, unused argument
+        sequencer_name: str,  # noqa: ARG002, unused argument
     ) -> DataArray:
         """
         Retrieve the thresholded acquisition data associated with ``acq_channel`` and ``acq_index``.
 
         Parameters
         ----------
-        acq_indices
-            Acquisition indices.
         hardware_retrieved_acquisitions
             The acquisitions dict as returned by the sequencer.
-        acquisition_metadata
-            Acquisition metadata.
-        acq_duration
-            Desired maximum number of samples for the scope acquisition.
-        qblox_acq_index
-            The Qblox acquisition index from which to get the data.
         acq_channel
             The acquisition channel.
+        seq_channel_hardware_mapping
+            Acquisition hardware mapping for the sequencer and channel.
+        acq_duration
+            Desired maximum number of samples for the scope acquisition.
         sequencer_name
             Sequencer.
 
@@ -2220,127 +2510,21 @@ class _QRMAcquisitionManager(_AcquisitionManagerBase):
                 "Retrieving data failed. Expected the integration length to be defined,"
                 " but it is `None`."
             )
-        bin_data = self._get_bin_data(
-            hardware_retrieved_acquisitions=hardware_retrieved_acquisitions,
-            qblox_acq_index=qblox_acq_index,
+
+        def _get_bin(
+            qblox_acq_index: int,
+            qblox_acq_bin: int,
+            thresholded_trigger_count_metadata: ThresholdedTriggerCountMetadata | None,  # noqa: ARG001, unused argument
+        ) -> int:
+            bin_data = self._get_bin_data(hardware_retrieved_acquisitions, qblox_acq_index)
+            n = bin_data["threshold"][qblox_acq_bin]
+            return n if not isnan(n) else -1
+
+        return self._get_binned_data(
+            bin_data_function=_get_bin,
+            acq_channel=acq_channel,
+            seq_channel_hardware_mapping=seq_channel_hardware_mapping,
         )
-
-        acq_index_dim_name = f"acq_index_{acq_channel}"
-        acquisitions_data = np.array(
-            list(map(lambda n: n if not isnan(n) else -1, bin_data["threshold"])),
-            dtype=acquisition_metadata.acq_return_type,
-        )
-
-        if acquisition_metadata.bin_mode == BinMode.AVERAGE:
-            return DataArray(
-                acquisitions_data.reshape((len(acq_indices),)),
-                dims=[acq_index_dim_name],
-                coords={acq_index_dim_name: acq_indices},
-                attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
-            )
-        else:
-            return DataArray(
-                acquisitions_data.reshape((acquisition_metadata.repetitions, len(acq_indices))),
-                dims=["repetition", acq_index_dim_name],
-                coords={acq_index_dim_name: acq_indices},
-                attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
-            )
-
-    def _get_trigger_count_data(
-        self,
-        *,
-        acq_indices: list,
-        hardware_retrieved_acquisitions: dict,
-        acquisition_metadata: AcquisitionMetadata,
-        acq_duration: int,  # noqa: ARG002 unused argument
-        qblox_acq_index: int,
-        acq_channel: Hashable,
-        sequencer_name: str,  #  noqa: ARG002, unused argument
-    ) -> DataArray:
-        """
-        Retrieves the trigger count acquisition data associated with `acq_channel`.
-
-        Parameters
-        ----------
-        acq_indices
-            Acquisition indices.
-        hardware_retrieved_acquisitions
-            The acquisitions dict as returned by the sequencer.
-        acquisition_metadata
-            Acquisition metadata.
-        acq_duration
-            Desired maximum number of samples for the scope acquisition.
-        qblox_acq_index
-            The Qblox acquisition index from which to get the data.
-        acq_channel
-            The acquisition channel.
-        sequencer_name
-            Sequencer.
-
-        Returns
-        -------
-        data : xarray.DataArray
-            The acquired trigger count data.
-
-        Notes
-        -----
-        - For BinMode.DISTRIBUTION, `data` contains the distribution of counts.
-        - For BinMode.APPEND, `data` contains the raw trigger counts.
-
-        """
-        bin_data = self._get_bin_data(hardware_retrieved_acquisitions, qblox_acq_index)
-        acq_index_dim_name = f"acq_index_{acq_channel}"
-
-        if acquisition_metadata.bin_mode == BinMode.DISTRIBUTION:
-
-            def _convert_from_cumulative(
-                cumulative_values: list[int],
-            ) -> dict[int, int]:
-                """
-                Return the distribution of counts from a cumulative distribution.
-
-                Note, the cumulative distribution is in reverse order.
-                The cumulative_values list can contain any number of integers and NaNs.
-                """
-                result = {}
-
-                last_cumulative_value = 0
-                for count, current_cumulative_value in reversed(list(enumerate(cumulative_values))):
-                    if (not isnan(current_cumulative_value)) and (
-                        last_cumulative_value != current_cumulative_value
-                    ):
-                        result[count + 1] = current_cumulative_value - last_cumulative_value
-                        last_cumulative_value = current_cumulative_value
-
-                return result
-
-            result = _convert_from_cumulative(bin_data["avg_cnt"])
-            return DataArray(
-                [list(result.values())[::-1]],
-                dims=["repetition", "counts"],
-                coords={"repetition": [0], "counts": list(result.keys())[::-1]},
-                attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
-            )
-        elif acquisition_metadata.bin_mode == BinMode.SUM:
-            counts = np.array(bin_data["avg_cnt"]).astype(int)
-            return DataArray(
-                counts.reshape((len(acq_indices),)),
-                dims=[acq_index_dim_name],
-                coords={acq_index_dim_name: acq_indices},
-                attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
-            )
-        elif acquisition_metadata.bin_mode == BinMode.APPEND:
-            counts = np.array(bin_data["avg_cnt"]).astype(int)
-            return DataArray(
-                [counts],
-                dims=["repetition", acq_index_dim_name],
-                coords={"repetition": [0], acq_index_dim_name: range(len(counts))},
-                attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
-            )
-        else:
-            # In principle unreachable due to _check_bin_mode_compatible, but included for
-            # completeness.
-            raise AssertionError("This should not be reachable due to _check_bin_mode_compatible.")
 
 
 class _QTMAcquisitionManager(_AcquisitionManagerBase):
@@ -2354,7 +2538,7 @@ class _QTMAcquisitionManager(_AcquisitionManagerBase):
     ----------
     parent
         Reference to the parent QRM IC component.
-    acquisition_metadata
+    acq_channels_data
         Provides a summary of the used acquisition protocol, bin mode, acquisition channels,
         acquisition indices per channel, and repetitions, for each sequencer.
     acquisition_duration
@@ -2367,149 +2551,82 @@ class _QTMAcquisitionManager(_AcquisitionManagerBase):
     @property
     def _protocol_to_acq_function_map(self) -> dict[str, Callable]:
         return {
-            "TriggerCount": self._get_trigger_count_data,
+            "TriggerCount": partial(self._get_trigger_count_data, sum_multiply_repetitions=True),
             "ThresholdedTriggerCount": self._get_trigger_count_threshold_data,
-            "DualThresholdedTriggerCount": self._get_trigger_count_dual_threshold_data,
-            "Timetag": self._get_timetag_data,
+            "DualThresholdedTriggerCount": partial(
+                self._get_trigger_count_data, sum_multiply_repetitions=False
+            ),
             "Trace": self._get_digital_trace_data,
+            "Timetag": self._get_timetag_data,
             "TimetagTrace": self._get_timetag_trace_data,
         }
 
     @staticmethod
-    def _check_bin_mode_compatible(acquisition_metadata: AcquisitionMetadata) -> None:
-        if (
-            acquisition_metadata.bin_mode
-            not in QTM_COMPATIBLE_BIN_MODES[acquisition_metadata.acq_protocol]
-        ):
-            raise IncompatibleBinModeError(
-                module_type="QTM",
-                protocol=acquisition_metadata.acq_protocol,
-                bin_mode=acquisition_metadata.bin_mode,
-            )
-
-    def _get_acquisitions_from_instrument(
-        self, seq_idx: int, acquisition_metadata: AcquisitionMetadata
-    ) -> dict:
-        data = super()._get_acquisitions_from_instrument(seq_idx, acquisition_metadata)
-        if acquisition_metadata.acq_protocol in ("Trace", "TimetagTrace"):
-            # We add this scope data in the same format as QRM acquisitions.
-            scope_data = self.instrument.io_channels[seq_idx].get_scope_data()
-
-            # For (timetag)trace acquisitions, there is only one acq channel per
-            # sequencer/io_channel (enforced by compiler). We just take the first one.
-            qblox_acq_index = next(iter(acquisition_metadata.acq_channels_metadata.keys()))
-            qblox_acq_name = self._qblox_acq_index_to_qblox_acq_name(qblox_acq_index)
-            data[qblox_acq_name]["acquisition"]["scope"] = scope_data
-        return data
-
-    def _get_trigger_count_data(
-        self,
-        *,
-        acq_indices: list,
-        hardware_retrieved_acquisitions: dict,
-        acquisition_metadata: AcquisitionMetadata,
-        acq_duration: int,  # noqa: ARG002, unused argument
-        qblox_acq_index: int,
-        acq_channel: Hashable,
-        sequencer_name: str,  #  noqa: ARG002, unused argument
-    ) -> DataArray:
-        """
-        Retrieves the trigger count acquisition data associated with `acq_channel`.
-
-        Parameters
-        ----------
-        acq_indices
-            Acquisition indices.
-        hardware_retrieved_acquisitions
-            The acquisitions dict as returned by the sequencer.
-        acquisition_metadata
-            Acquisition metadata.
-        acq_duration
-            Desired maximum number of samples for the scope acquisition.
-        qblox_acq_index
-            The Qblox acquisition index from which to get the data.
-        acq_channel
-            The acquisition channel.
-        sequencer_name
-            Sequencer.
-
-        Returns
-        -------
-        data : xarray.DataArray
-            The acquired trigger count data.
-
-        Notes
-        -----
-        - BinMode.AVERAGE is not implemented for the QTM.
-        - For BinMode.APPEND, `data` contains the raw trigger counts.
-
-        """
-        bin_data = self._get_bin_data(hardware_retrieved_acquisitions, qblox_acq_index)
-        acq_index_dim_name = f"acq_index_{acq_channel}"
-
-        counts = np.array(bin_data["count"])
-        if acquisition_metadata.bin_mode == BinMode.APPEND:
-            return DataArray(
-                [counts.astype(int)],
-                dims=["repetition", acq_index_dim_name],
-                coords={"repetition": [0], acq_index_dim_name: range(len(counts))},
-                attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
-            )
-        elif acquisition_metadata.bin_mode == BinMode.SUM:
-            counts = (counts * acquisition_metadata.repetitions).round().astype(int)
-            return DataArray(
-                counts.reshape((len(acq_indices),)),
-                dims=[acq_index_dim_name],
-                coords={acq_index_dim_name: acq_indices},
-                attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
-            )
-        else:
-            # In principle unreachable due to _check_bin_mode_compatible, but included for
-            # completeness.
-            raise AssertionError("This should not be reachable due to _check_bin_mode_compatible.")
+    def _check_bin_mode_compatible(
+        acq_channels_data: AcquisitionChannelsData,
+        acq_hardware_mapping: dict[str, dict[Hashable, QbloxAcquisitionHardwareMapping]],
+    ) -> None:
+        for seq_acq_hardware_mapping in acq_hardware_mapping.values():
+            for acq_channel in seq_acq_hardware_mapping:
+                if (
+                    acq_channels_data[acq_channel].bin_mode
+                    not in QTM_COMPATIBLE_BIN_MODES[acq_channels_data[acq_channel].protocol]
+                ):
+                    raise IncompatibleBinModeError(
+                        module_type="QTM",
+                        protocol=acq_channels_data[acq_channel].protocol,
+                        bin_mode=acq_channels_data[acq_channel].bin_mode,
+                    )
 
     def _get_digital_trace_data(
         self,
         *,
-        acq_indices: list,
-        hardware_retrieved_acquisitions: dict,
-        acquisition_metadata: AcquisitionMetadata,
+        hardware_retrieved_acquisitions: dict,  # noqa: ARG002, unused argument
+        acq_channel: str,
+        seq_channel_hardware_mapping: QbloxAcquisitionHardwareMapping,  # noqa: ARG002, unused argument
         acq_duration: int,
-        qblox_acq_index: int,
-        acq_channel: Hashable,
-        sequencer_name: str,  #  noqa: ARG002, unused argument
+        sequencer_name: str,
     ) -> DataArray:
-        qblox_acq_name = self._qblox_acq_index_to_qblox_acq_name(qblox_acq_index)
-        scope_data = np.array(
-            hardware_retrieved_acquisitions[qblox_acq_name]["acquisition"]["scope"][:acq_duration]
-        )
+        # We ignore the hardware_retrieved_acquisitions,
+        # and use data from from the io channel.
+        seq_idx = self._seq_name_to_idx_map[sequencer_name]
+        scope_data = np.array(self.instrument.io_channels[seq_idx].get_scope_data()[:acq_duration])
 
-        acq_index_dim_name = f"acq_index_{acq_channel}"
+        acq_index_dim_name = self._acq_channels_data[acq_channel].acq_index_dim_name
         trace_index_dim_name = f"trace_index_{acq_channel}"
         return DataArray(
             scope_data.reshape((1, -1)),
             dims=[acq_index_dim_name, trace_index_dim_name],
             coords={
-                acq_index_dim_name: acq_indices,
+                acq_index_dim_name: [0],
                 trace_index_dim_name: list(range(acq_duration)),
             },
-            attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
+            attrs=self._acq_channel_attrs(self._acq_channels_data[acq_channel].protocol),
         )
 
     def _get_timetag_trace_data(
         self,
         *,
-        acq_indices: list,
         hardware_retrieved_acquisitions: dict,
-        acquisition_metadata: AcquisitionMetadata,
+        acq_channel: str,
+        seq_channel_hardware_mapping: QbloxAcquisitionHardwareMapping,
         acq_duration: int,  # noqa: ARG002, unused argument
-        qblox_acq_index: int,
-        acq_channel: Hashable,
-        sequencer_name: str,  #  noqa: ARG002, unused argument
+        sequencer_name: str,
     ) -> DataArray:
-        qblox_acq_name = self._qblox_acq_index_to_qblox_acq_name(qblox_acq_index)
-        scope_data = hardware_retrieved_acquisitions[qblox_acq_name]["acquisition"]["scope"]
+        # TODO: do the same logic as for binned acquisitions
+        seq_idx = self._seq_name_to_idx_map[sequencer_name]
 
+        # For TimetagTrace distribution acquisition protocol,
+        # the mapping is of QbloxAcquisitionBinMapping type,
+        # guaranteed by the QbloxAcquisitionIndexManager.
+        assert isinstance(seq_channel_hardware_mapping, dict)
+
+        # There is only one Qblox acquisition index used for all
+        # acquisitions and bins for this protocol; we only need to retrieve the first.
+        qblox_acq_index = next(iter(seq_channel_hardware_mapping.values())).index
+
+        qblox_acq_name = self._qblox_acq_index_to_qblox_acq_name(qblox_acq_index)
+        scope_data = self.instrument.io_channels[seq_idx].get_scope_data()
         timetag_traces = self._split_timetag_trace_data_per_window(
             timetags=hardware_retrieved_acquisitions[qblox_acq_name]["acquisition"]["bins"][
                 "timedelta"
@@ -2519,45 +2636,53 @@ class _QTMAcquisitionManager(_AcquisitionManagerBase):
 
         # Turn the inhomogeneous 2D array into a rectangular matrix compatible with
         # xarray. Pad with NaN to make it rectangular.
+        max_timetag_traces = max(len(t) for t in timetag_traces)
         rect_array = np.empty(
-            [len(timetag_traces), max(len(t) for t in timetag_traces)],
+            [
+                self._repetitions,
+                len(self._acq_channels_data[acq_channel].coords),
+                max_timetag_traces,
+            ],
             dtype=np.float64,
         )
         rect_array[:] = np.nan
-        for i, j in enumerate(timetag_traces):
-            rect_array[i][0 : len(j)] = j
 
-        acq_index_dim_name = f"acq_index_{acq_channel}"
+        for repetition in range(self._repetitions):
+            for i, (_acq_index, qblox_acq_index_bin) in enumerate(
+                seq_channel_hardware_mapping.items()
+            ):
+                timetag_traces_bin = timetag_traces[
+                    qblox_acq_index_bin.bin + repetition * qblox_acq_index_bin.stride
+                ]
+                rect_array[repetition][i][0 : len(timetag_traces_bin)] = timetag_traces_bin
+        acq_index_legacy = []
+        loop_repetition = []
+        for acq_index, _qblox_acq_index_bin in seq_channel_hardware_mapping.items():
+            acq_index_legacy.append(
+                self._acq_channels_data[acq_channel]
+                .coords[acq_index]
+                .get("acq_index_legacy", np.nan)
+            )
+            loop_repetition.append(
+                self._acq_channels_data[acq_channel]
+                .coords[acq_index]
+                .get("loop_repetition", np.nan)
+            )
+        loop_repetition_coord_name = f"loop_repetition_{acq_channel}"
+        acq_index_dim_name = self._acq_channels_data[acq_channel].acq_index_dim_name
         trace_index_dim_name = f"trace_index_{acq_channel}"
-        if acquisition_metadata.repetitions * len(acq_indices) == len(rect_array):
-            return DataArray(
-                rect_array.reshape(
-                    (
-                        acquisition_metadata.repetitions,
-                        len(acq_indices),
-                        len(rect_array[0]),
-                    )
-                ),
-                dims=["repetition", acq_index_dim_name, trace_index_dim_name],
-                coords={
-                    acq_index_dim_name: acq_indices,
-                    trace_index_dim_name: list(range(len(rect_array[0]))),
-                },
-                attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
-            )
-        # There is control flow containing measurements, skip reshaping
-        else:
-            warnings.warn(
-                "The format of acquisition data of looped measurements in APPEND mode"
-                " will change in a future quantify-scheduler revision.",
-                FutureWarning,
-            )
-            return DataArray(
-                rect_array.reshape((acquisition_metadata.repetitions, -1, len(rect_array[0]))),
-                dims=["repetition", "loop_repetition", trace_index_dim_name],
-                coords=None,
-                attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
-            )
+        return DataArray(
+            rect_array,
+            dims=["repetition", acq_index_dim_name, trace_index_dim_name],
+            coords={
+                f"acq_index_legacy_{acq_channel}": (acq_index_dim_name, acq_index_legacy),
+                loop_repetition_coord_name: (acq_index_dim_name, loop_repetition),
+                "repetition": list(range(self._repetitions)),
+                acq_index_dim_name: list(seq_channel_hardware_mapping.keys()),
+                trace_index_dim_name: list(range(max_timetag_traces)),
+            },
+            attrs=self._acq_channel_attrs(self._acq_channels_data[acq_channel].protocol),
+        )
 
     def _split_timetag_trace_data_per_window(
         self,
@@ -2601,97 +2726,24 @@ class _QTMAcquisitionManager(_AcquisitionManagerBase):
     def _get_timetag_data(
         self,
         *,
-        acq_indices: list,
         hardware_retrieved_acquisitions: dict,
-        acquisition_metadata: AcquisitionMetadata,
+        acq_channel: str,
+        seq_channel_hardware_mapping: QbloxAcquisitionHardwareMapping,
         acq_duration: int,  # noqa: ARG002, unused argument
-        qblox_acq_index: int,
-        acq_channel: Hashable,
-        sequencer_name: str,  #  noqa: ARG002, unused argument
+        sequencer_name: str,  # noqa: ARG002, unused argument
     ) -> DataArray:
-        bin_data = self._get_bin_data(hardware_retrieved_acquisitions, qblox_acq_index)
+        def _get_bin(
+            qblox_acq_index: int,
+            qblox_acq_bin: int,
+            thresholded_trigger_count_metadata: ThresholdedTriggerCountMetadata | None,  # noqa: ARG001, unused argument
+        ) -> int:
+            bin_data = self._get_bin_data(hardware_retrieved_acquisitions, qblox_acq_index)
+            return bin_data["timedelta"][qblox_acq_bin] / 2048
 
-        timetags_ns = np.array(bin_data["timedelta"]) / 2048
-
-        acq_index_dim_name = f"acq_index_{acq_channel}"
-
-        if acquisition_metadata.bin_mode == BinMode.AVERAGE:
-            return DataArray(
-                timetags_ns.reshape((len(acq_indices),)),
-                dims=[acq_index_dim_name],
-                coords={acq_index_dim_name: acq_indices},
-                attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
-            )
-        elif acquisition_metadata.repetitions * len(acq_indices) == timetags_ns.size:
-            acq_data = timetags_ns.reshape((acquisition_metadata.repetitions, len(acq_indices)))
-            return DataArray(
-                acq_data,
-                dims=["repetition", acq_index_dim_name],
-                coords={acq_index_dim_name: acq_indices},
-                attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
-            )
-
-        # There is control flow containing measurements, skip reshaping
-        else:
-            warnings.warn(
-                "The format of acquisition data of looped measurements in APPEND mode"
-                " will change in a future quantify-scheduler revision.",
-                FutureWarning,
-            )
-            acq_data = timetags_ns.reshape((acquisition_metadata.repetitions, -1))
-            return DataArray(
-                acq_data,
-                dims=["repetition", "loop_repetition"],
-                coords=None,
-                attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
-            )
-
-    def _get_trigger_count_dual_threshold_data(
-        self,
-        *,
-        acq_indices: list,  # noqa: ARG002, unused argument
-        hardware_retrieved_acquisitions: dict,
-        acquisition_metadata: AcquisitionMetadata,
-        acq_duration: int,  # noqa: ARG002, unused argument
-        qblox_acq_index: int,
-        acq_channel: Hashable,
-        sequencer_name: str,  #  noqa: ARG002, unused argument
-    ) -> DataArray:
-        """
-        Retrieve the thresholded acquisition data associated with ``acq_channel`` and ``acq_index``.
-
-        Parameters
-        ----------
-        acq_indices
-            Acquisition indices.
-        hardware_retrieved_acquisitions
-            The acquisitions dict as returned by the sequencer.
-        acquisition_metadata
-            Acquisition metadata.
-        acq_duration
-            Desired maximum number of samples for the scope acquisition.
-        qblox_acq_index
-            The Qblox acquisition index from which to get the data.
-        acq_channel
-            The acquisition channel.
-        sequencer_name
-            Sequencer.
-
-        Returns
-        -------
-        :
-            DataArray containing thresholded acquisition data.
-
-        """
-        bin_data = self._get_bin_data(hardware_retrieved_acquisitions, qblox_acq_index)
-        acq_index_dim_name = f"acq_index_{acq_channel}"
-
-        counts = np.array(bin_data["count"]).astype(int)
-        return DataArray(
-            [counts],
-            dims=["repetition", acq_index_dim_name],
-            coords={"repetition": [0], acq_index_dim_name: range(len(counts))},
-            attrs=self._acq_channel_attrs(acquisition_metadata.acq_protocol),
+        return self._get_binned_data(
+            bin_data_function=_get_bin,
+            acq_channel=acq_channel,
+            seq_channel_hardware_mapping=seq_channel_hardware_mapping,
         )
 
 
@@ -2845,7 +2897,10 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
         # Stops all sequencers in the cluster, time efficiently.
         self.instrument.stop_sequencer()
 
-    def prepare(self, program: dict[str, dict | ClusterSettings]) -> None:
+    def prepare(
+        self,
+        program: dict[str, dict | ClusterSettings],
+    ) -> None:
         """
         Prepares the cluster component for execution of a schedule.
 
@@ -2853,6 +2908,10 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
         ----------
         program
             The compiled instructions to configure the cluster to.
+        acq_channels_data
+            Acquisition channels data for acquisition mapping.
+        repetitions
+            Repetitions of the schedule.
 
         """
         settings = program.get("settings", {})
@@ -2866,8 +2925,8 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
         # See QTFY-848.
         # Removing acq_channels_data and repetitions from program,
         # and later (in a subsequent change) we will use it to process acquisition data.
-        _acq_channels_data = program.get("acq_channels_data", AcquisitionChannelsData())
-        _repetitions = program.get("repetitions", 1)
+        acq_channels_data = program.get("acq_channels_data", AcquisitionChannelsData())
+        repetitions = program.get("repetitions", 1)
         self._program = ClusterComponent._Program(
             module_programs=without(program, ["settings", "acq_channels_data", "repetitions"]),
             settings=cluster_settings,
@@ -2878,7 +2937,11 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
                     f"Attempting to prepare module {name} of cluster {self.name}, while"
                     f" module has not been added to the cluster component."
                 )
-            self._cluster_modules[name].prepare(comp_options)
+            # See QTFY-848.
+            # InstrumentCoordinatorComponentBase.prepare expects only one argument,
+            # but we intend to change that in the future, so we can safely ignore the
+            # warning of reportCallIssue.
+            self._cluster_modules[name].prepare(comp_options, acq_channels_data, repetitions)  # pyright: ignore[reportCallIssue]
 
     def retrieve_acquisition(self) -> Dataset | None:
         """

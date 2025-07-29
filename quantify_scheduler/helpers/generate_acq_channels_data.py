@@ -103,7 +103,7 @@ def _generate_acq_channels_data_binned_append(
     assert isinstance(acq_channel_data.coords, list)
     multiple_coords: list[dict] = []
     if len(nested_loop_repetitions) == 0:
-        multiple_coords = [coords]
+        multiple_coords = [{"acq_index_legacy": acq_index, **coords}]
     else:
         if acq_index is not None:
             warnings.warn(
@@ -116,7 +116,8 @@ def _generate_acq_channels_data_binned_append(
             )
         overall_nested_loop_repetitions = _prod(nested_loop_repetitions)
         multiple_coords = [
-            {"loop_repetition": lr, **coords} for lr in range(overall_nested_loop_repetitions)
+            {"loop_repetition": lr, "acq_index_legacy": acq_index, **coords}
+            for lr in range(overall_nested_loop_repetitions)
         ]
     first_acq_index = len(acq_channel_data.coords)
     number_of_new_acq_indices = len(multiple_coords)

@@ -42,6 +42,7 @@ from quantify_scheduler.operations.pulse_library import (
     SquarePulse,
 )
 from quantify_scheduler.resources import ClockResource
+from quantify_scheduler.schedules.schedule import AcquisitionChannelData
 from quantify_scheduler.schedules.trace_schedules import (
     long_time_trace_with_qubit,
     trace_schedule_circuit_layer,
@@ -197,7 +198,7 @@ class TestSquareAcquisitionStrategy:
         # assert
         assert len(wf_dict) == 0
 
-    def test_acquire_with_register_bin_index(self, empty_qasm_program_qrm):
+    def test_acquire_with_immediate_bin_index(self, empty_qasm_program_qrm):
         # arrange
         qasm = empty_qasm_program_qrm
         data = {
@@ -210,12 +211,13 @@ class TestSquareAcquisitionStrategy:
             types.OpInfo(name="", data=data, timing=0)
         )
         strategy.generate_data({})
+        strategy.qblox_acq_index, strategy.qblox_acq_bin = 8, 1
 
         # act
-        strategy._acquire_with_register_bin_index(qasm)
+        strategy._acquire_with_immediate_bin_index(qasm)
 
         # assert
-        assert qasm.instructions == [["", "acquire", "0,0,4", ""]]
+        assert qasm.instructions == [["", "acquire", "8,1,4", ""]]
 
     def test_acquire_with_register_bin_index(self, empty_qasm_program_qrm):
         # arrange
@@ -231,6 +233,7 @@ class TestSquareAcquisitionStrategy:
         )
         strategy.bin_idx_register = qasm.register_manager.allocate_register()
         strategy.generate_data({})
+        strategy.qblox_acq_index = 5
 
         # act
         strategy._acquire_with_register_bin_index(qasm)
@@ -238,7 +241,7 @@ class TestSquareAcquisitionStrategy:
         # assert
         assert qasm.instructions == [
             ["", "", "", ""],
-            ["", "acquire", "0,R0,4", ""],
+            ["", "acquire", "5,R0,4", ""],
             ["", "add", "R0,1,R0", "# Increment bin_idx for ch0"],
             ["", "", "", ""],
         ]
@@ -313,6 +316,7 @@ class TestWeightedAcquisitionStrategy:
             types.OpInfo(name="", data=data, timing=0)
         )
         strategy.generate_data({})
+        strategy.qblox_acq_index, strategy.qblox_acq_bin = 3, 4
 
         # act
         strategy._acquire_with_immediate_bin_index(qasm)
@@ -322,8 +326,8 @@ class TestWeightedAcquisitionStrategy:
             [
                 "",
                 "acquire_weighed",
-                "2,12,0,1,4",
-                "# Store acq in acq_channel:2, bin_idx:12",
+                "3,4,0,1,4",
+                "# Store acq in acq_channel:2, bin_idx:4",
             ]
         ]
 
@@ -379,6 +383,7 @@ class TestWeightedAcquisitionStrategy:
         )
         strategy.bin_idx_register = qasm.register_manager.allocate_register()
         strategy.generate_data({})
+        strategy.qblox_acq_index = 3
 
         # act
         strategy._acquire_with_register_bin_index(qasm)
@@ -390,7 +395,7 @@ class TestWeightedAcquisitionStrategy:
             [
                 "",
                 "acquire_weighed",
-                "2,R0,R1,R2,4",
+                "3,R0,R1,R2,4",
                 "# Store acq in acq_channel:2, bin_idx:R0",
             ],
             ["", "add", "R0,1,R0", "# Increment bin_idx for ch2"],
@@ -459,6 +464,7 @@ class TestTriggerCountStrategy:
             types.OpInfo(name="", data=data, timing=0)
         )
         strategy.generate_data({})
+        strategy.qblox_acq_index, strategy.qblox_acq_bin = 5, 3
 
         # act
         strategy._acquire_with_immediate_bin_index(qasm)
@@ -468,7 +474,7 @@ class TestTriggerCountStrategy:
             [
                 "",
                 "acquire_ttl",
-                "0,0,1,4",
+                "5,3,1,4",
                 "# Enable TTL acquisition of acq_channel:0, bin_mode:distribution",
             ],
             ["", "wait", "65532", "# auto generated wait (99992 ns)"],
@@ -476,7 +482,7 @@ class TestTriggerCountStrategy:
             [
                 "",
                 "acquire_ttl",
-                "0,0,0,4",
+                "5,3,0,4",
                 "# Disable TTL acquisition of acq_channel:0, bin_mode:distribution",
             ],
         ]
@@ -495,6 +501,7 @@ class TestTriggerCountStrategy:
         )
         strategy.bin_idx_register = qasm.register_manager.allocate_register()
         strategy.generate_data({})
+        strategy.qblox_acq_index = 12
 
         # act
         strategy._acquire_with_register_bin_index(qasm)
@@ -504,7 +511,7 @@ class TestTriggerCountStrategy:
             [
                 "",
                 "acquire_ttl",
-                "0,R0,1,4",
+                "12,R0,1,4",
                 "# Enable TTL acquisition of acq_channel:0, store in bin:R0",
             ],
             ["", "wait", "65532", "# auto generated wait (99992 ns)"],
@@ -512,7 +519,7 @@ class TestTriggerCountStrategy:
             [
                 "",
                 "acquire_ttl",
-                "0,R0,0,4",
+                "12,R0,0,4",
                 "# Disable TTL acquisition of acq_channel:0, store in bin:R0",
             ],
             ["", "add", "R0,1,R0", "# Increment bin_idx for ch0 by 1"],
@@ -552,6 +559,7 @@ class TestTimetagStrategy:
             types.OpInfo(name="", data=data, timing=0)
         )
         strategy.generate_data({})
+        strategy.qblox_acq_index, strategy.qblox_acq_bin = 1, 2
 
         # act
         strategy._acquire_with_immediate_bin_index(qasm)
@@ -561,7 +569,7 @@ class TestTimetagStrategy:
             [
                 "",
                 "acquire_timetags",
-                "0,0,1,0,4",
+                "1,2,1,0,4",
                 "# Enable timetag acquisition of acq_channel:0, bin_mode:first",
             ],
             ["", "wait", "65532", "# auto generated wait (99992 ns)"],
@@ -569,7 +577,7 @@ class TestTimetagStrategy:
             [
                 "",
                 "acquire_timetags",
-                "0,0,0,0,4",
+                "1,2,0,0,4",
                 "# Disable timetag acquisition of acq_channel:0, bin_mode:first",
             ],
         ]
@@ -588,6 +596,7 @@ class TestTimetagStrategy:
         )
         strategy.bin_idx_register = qasm.register_manager.allocate_register()
         strategy.generate_data({})
+        strategy.qblox_acq_index = 1
 
         # act
         strategy._acquire_with_register_bin_index(qasm)
@@ -598,7 +607,7 @@ class TestTimetagStrategy:
             [
                 "",
                 "acquire_timetags",
-                "0,R0,1,R1,4",
+                "1,R0,1,R1,4",
                 "# Enable timetag acquisition of acq_channel:0, store in bin:R0",
             ],
             ["", "wait", "65532", "# auto generated wait (99992 ns)"],
@@ -606,7 +615,7 @@ class TestTimetagStrategy:
             [
                 "",
                 "acquire_timetags",
-                "0,R0,0,R1,4",
+                "1,R0,0,R1,4",
                 "# Disable timetag acquisition of acq_channel:0, store in bin:R0",
             ],
             ["", "add", "R0,1,R0", "# Increment bin_idx for ch0 by 1"],
@@ -646,6 +655,7 @@ class TestScopedTimetagStrategy:
             types.OpInfo(name="", data=data, timing=0)
         )
         strategy.generate_data({})
+        strategy.qblox_acq_index, strategy.qblox_acq_bin = 3, 6
 
         # act
         strategy._acquire_with_immediate_bin_index(qasm)
@@ -656,7 +666,7 @@ class TestScopedTimetagStrategy:
             [
                 "",
                 "acquire_timetags",
-                "0,0,1,0,4",
+                "3,6,1,0,4",
                 "# Enable timetag acquisition of acq_channel:0, bin_mode:first",
             ],
             ["", "wait", "65532", "# auto generated wait (99992 ns)"],
@@ -664,7 +674,7 @@ class TestScopedTimetagStrategy:
             [
                 "",
                 "acquire_timetags",
-                "0,0,0,0,4",
+                "3,6,0,0,4",
                 "# Disable timetag acquisition of acq_channel:0, bin_mode:first",
             ],
             ["", "set_scope_en", "0", ""],
@@ -684,6 +694,7 @@ class TestScopedTimetagStrategy:
         )
         strategy.bin_idx_register = qasm.register_manager.allocate_register()
         strategy.generate_data({})
+        strategy.qblox_acq_index = 3
 
         # act
         strategy._acquire_with_register_bin_index(qasm)
@@ -695,7 +706,7 @@ class TestScopedTimetagStrategy:
             [
                 "",
                 "acquire_timetags",
-                "0,R0,1,R1,4",
+                "3,R0,1,R1,4",
                 "# Enable timetag acquisition of acq_channel:0, store in bin:R0",
             ],
             ["", "wait", "65532", "# auto generated wait (99992 ns)"],
@@ -703,7 +714,7 @@ class TestScopedTimetagStrategy:
             [
                 "",
                 "acquire_timetags",
-                "0,R0,0,R1,4",
+                "3,R0,0,R1,4",
                 "# Disable timetag acquisition of acq_channel:0, store in bin:R0",
             ],
             ["", "add", "R0,1,R0", "# Increment bin_idx for ch0 by 1"],
@@ -869,12 +880,7 @@ def test_custom_long_trace_acquisition_measurement_control(
     meas_ctrl.settables(sample_param)
     meas_ctrl.setpoints(sample_setpoints)
     meas_ctrl.gettables(sched_gettable)
-    with pytest.warns(
-        FutureWarning,
-        match="The format of acquisition data of looped measurements in APPEND mode "
-        "will change in a future quantify-scheduler revision.",
-    ):
-        dataset = meas_ctrl.run(f"Readout long trace schedule of {q2.name}")
+    dataset = meas_ctrl.run(f"Readout long trace schedule of {q2.name}")
 
     assert dataset.y0.size == num_points
     assert dataset.y1.size == num_points
@@ -924,7 +930,7 @@ def test_thresholded_acquisition(
         qubit_to_device_map[qubit_name]
     ]
     sequencer_compiled_instructions = compiled_instructions["sequencers"]["seq0"]
-    sequencer_acquisition_metadata = compiled_instructions["acq_metadata"]["seq0"]
+    acq_channels_data = compiled_schedule.compiled_instructions["cluster0"]["acq_channels_data"]
 
     if protocol == "WeightedThresholdedAcquisition":
         integration_time = round(
@@ -934,7 +940,7 @@ def test_thresholded_acquisition(
         integration_time = qubit.measure.integration_time() * 1e9
     assert sequencer_compiled_instructions.thresholded_acq_threshold == threshold * integration_time
     assert sequencer_compiled_instructions.thresholded_acq_rotation == rotation
-    assert sequencer_acquisition_metadata.acq_protocol == protocol
+    assert acq_channels_data[qubit.measure.acq_channel()].protocol == protocol
 
     instr_coordinator = mock_setup["instrument_coordinator"]
 
@@ -1022,8 +1028,8 @@ def test_long_time_trace_protocol(
 
     compiled_instructions = compiled_schedule.compiled_instructions["cluster0"]["cluster0_module4"]
 
-    sequencer_acquisition_metadata = compiled_instructions["acq_metadata"]["seq0"]
-    assert sequencer_acquisition_metadata.acq_protocol == "SSBIntegrationComplex"
+    acq_channels_data = compiled_schedule.compiled_instructions["cluster0"]["acq_channels_data"]
+    assert acq_channels_data[0].protocol == "SSBIntegrationComplex"
 
     sequencer_compiled_instructions = compiled_instructions["sequencers"]["seq0"]
     program = sequencer_compiled_instructions.sequence["program"]
@@ -1107,9 +1113,10 @@ def test_weighted_thresholded_acquisition_multiplex(
         sequencer_compiled_instructions = compiled_schedule.compiled_instructions["cluster0"][
             "cluster0_module3"
         ]["sequencers"][f"seq{index}"]
-        sequencer_acquisition_metadata = compiled_schedule.compiled_instructions["cluster0"][
-            "cluster0_module3"
-        ]["acq_metadata"][f"seq{index}"]
+        acq_channels_data = compiled_schedule.compiled_instructions["cluster0"]["acq_channels_data"]
+        sequencer_acquisition_hardware_mapping = compiled_schedule.compiled_instructions[
+            "cluster0"
+        ]["cluster0_module3"]["acq_hardware_mapping"][f"seq{index}"]
 
         qubit = q0 if index == 0 else q1
 
@@ -1124,8 +1131,11 @@ def test_weighted_thresholded_acquisition_multiplex(
             sequencer_compiled_instructions.thresholded_acq_threshold
             == threshold * integration_length
         )
+
         assert sequencer_compiled_instructions.thresholded_acq_rotation == phase
-        assert sequencer_acquisition_metadata.acq_protocol == protocol
+        acq_channel = index
+        assert acq_channel in sequencer_acquisition_hardware_mapping
+        assert acq_channels_data[acq_channel].protocol == protocol
 
 
 def test_trigger_count_append(
@@ -1182,7 +1192,12 @@ def test_trigger_count_append(
     assert isinstance(data, Dataset)
     expected_dataarray = DataArray(
         [[100, 200, 300]],
-        coords=[[0], [0, 1, 2]],
+        coords={
+            "acq_index_legacy_0": ("acq_index_0", [0, 1, 2]),
+            "loop_repetition_0": ("acq_index_0", [np.nan, np.nan, np.nan]),
+            "repetition": [0],
+            "acq_index_0": [0, 1, 2],
+        },
         dims=["repetition", "acq_index_0"],
         attrs={"acq_protocol": "TriggerCount"},
     )
@@ -1250,7 +1265,12 @@ def test_trigger_count_append_legacy_hardware_cfg(
     assert isinstance(data, Dataset)
     expected_dataarray = DataArray(
         [[100, 200, 300]],
-        coords=[[0], [0, 1, 2]],
+        coords={
+            "acq_index_legacy_0": ("acq_index_0", [0, 1, 2]),
+            "loop_repetition_0": ("acq_index_0", [np.nan, np.nan, np.nan]),
+            "repetition": [0],
+            "acq_index_0": [0, 1, 2],
+        },
         dims=["repetition", "acq_index_0"],
         attrs={"acq_protocol": "TriggerCount"},
     )
@@ -1376,7 +1396,12 @@ def test_trigger_count_append_qtm(
     assert isinstance(data, Dataset)
     expected_dataarray = DataArray(
         [[100, 200, 300]],
-        coords=[[0], [0, 1, 2]],
+        coords={
+            "loop_repetition_0": ("acq_index_0", [np.nan, np.nan, np.nan]),
+            "acq_index_legacy_0": ("acq_index_0", [0, 1, 2]),
+            "repetition": [0],
+            "acq_index_0": [0, 1, 2],
+        },
         dims=["repetition", "acq_index_0"],
         attrs={"acq_protocol": "TriggerCount"},
     )
@@ -1428,11 +1453,15 @@ def test_trigger_count_append_gettables(
         acq_index_name="0",
         data=[
             DummyBinnedAcquisitionData(data=(10000, 15000), thres=0, avg_cnt=100),
+            DummyBinnedAcquisitionData(data=(10000, 15000), thres=0, avg_cnt=150),
             DummyBinnedAcquisitionData(data=(20000, 25000), thres=0, avg_cnt=200),
+            DummyBinnedAcquisitionData(data=(20000, 25000), thres=0, avg_cnt=250),
             DummyBinnedAcquisitionData(data=(20000, 25000), thres=0, avg_cnt=300),
+            DummyBinnedAcquisitionData(data=(20000, 25000), thres=0, avg_cnt=350),
         ],
     )
 
+    quantum_device.cfg_sched_repetitions(2)
     sched_gettable = ScheduleGettable(
         quantum_device=quantum_device,
         schedule_function=_schedule_function,
@@ -1442,7 +1471,7 @@ def test_trigger_count_append_gettables(
     data = sched_gettable.get()
 
     # Assert intended behaviour
-    np.testing.assert_array_equal(data, [[100, 200, 300]])
+    np.testing.assert_array_equal(data, [[100, 200, 300, 150, 250, 350]])
 
     instr_coordinator.remove_component("ic_cluster0")
 
@@ -1714,14 +1743,14 @@ def test_multiple_trace_raises(
     )
 
     # Imitate a compiled schedule which contains multiple trace acquisition for one module.
-    acq_metadata = compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"][
-        "acq_metadata"
-    ]
-    acq_metadata_trace = acq_metadata["seq0"]
-    acq_metadata = {"seq0": acq_metadata_trace, "seq1": acq_metadata_trace}
-    compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"]["acq_metadata"] = (
-        acq_metadata
-    )
+    compiled_sched.compiled_instructions["cluster0"]["acq_channels_data"] = {
+        0: AcquisitionChannelData("acq_index_0", "Trace", BinMode.AVERAGE, {}),
+        1: AcquisitionChannelData("acq_index_0", "Trace", BinMode.AVERAGE, {}),
+    }
+    compiled_sched.compiled_instructions["cluster0"]["cluster0_module3"]["acq_hardware_mapping"] = {
+        "seq0": {0: 0},
+        "seq1": {1: 0},
+    }
 
     with pytest.raises(ValueError) as exc:
         instr_coordinator.prepare(compiled_sched)
@@ -2616,10 +2645,10 @@ def test_append_measurements(mock_setup_basic_transmon, make_cluster_component):
         acq_index_name="0",
         data=[
             DummyBinnedAcquisitionData(data=(10000, 15000), thres=0, avg_cnt=0),
-            DummyBinnedAcquisitionData(data=(20000, 25000), thres=0, avg_cnt=0),
             DummyBinnedAcquisitionData(data=(30000, 35000), thres=0, avg_cnt=0),
-            DummyBinnedAcquisitionData(data=(40000, 45000), thres=0, avg_cnt=0),
             DummyBinnedAcquisitionData(data=(50000, 55000), thres=0, avg_cnt=0),
+            DummyBinnedAcquisitionData(data=(20000, 25000), thres=0, avg_cnt=0),
+            DummyBinnedAcquisitionData(data=(40000, 45000), thres=0, avg_cnt=0),
             DummyBinnedAcquisitionData(data=(60000, 65000), thres=0, avg_cnt=0),
         ],
     )
@@ -2642,13 +2671,17 @@ def test_append_measurements(mock_setup_basic_transmon, make_cluster_component):
         {
             1: DataArray(
                 [[2 + 3j, 4 + 5j], [6 + 7j, 8 + 9j], [10 + 11j, 12 + 13j]],
-                coords={"acq_index_1": [0, 1]},
+                coords={
+                    "acq_index_legacy_1": ("acq_index_1", [0, 1]),
+                    "loop_repetition_1": ("acq_index_1", [np.nan, np.nan]),
+                    "repetition": [0, 1, 2],
+                    "acq_index_1": [0, 1],
+                },
                 dims=["repetition", "acq_index_1"],
                 attrs={"acq_protocol": "SSBIntegrationComplex"},
             ),
         }
     )
-
     xr.testing.assert_identical(data, expected_dataset)
 
     instr_coordinator.remove_component("ic_cluster0")
@@ -2737,12 +2770,7 @@ def test_looped_measurements(mock_setup_basic_transmon, make_cluster_component):
     instr_coordinator.prepare(compiled_sched)
     instr_coordinator.start()
 
-    with pytest.warns(
-        FutureWarning,
-        match="The format of acquisition data of looped measurements in APPEND mode "
-        "will change in a future quantify-scheduler revision.",
-    ):
-        data = instr_coordinator.retrieve_acquisition()
+    data = instr_coordinator.retrieve_acquisition()
 
     instr_coordinator.stop()
 
@@ -2752,8 +2780,13 @@ def test_looped_measurements(mock_setup_basic_transmon, make_cluster_component):
         {
             0: DataArray(
                 [[2 + 3j, 4 + 5j, 6 + 7j], [8 + 9j, 10 + 11j, 12 + 13j]],
-                coords=None,
-                dims=["repetition", "loop_repetition"],
+                coords={
+                    "acq_index_legacy_0": ("acq_index_0", [0, 0, 0]),
+                    "loop_repetition_0": ("acq_index_0", [0, 1, 2]),
+                    "repetition": [0, 1],
+                    "acq_index_0": [0, 1, 2],
+                },
+                dims=["repetition", "acq_index_0"],
                 attrs={"acq_protocol": "SSBIntegrationComplex"},
             ),
         }

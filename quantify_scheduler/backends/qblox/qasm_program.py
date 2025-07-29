@@ -22,7 +22,7 @@ from quantify_scheduler.backends.qblox.conditional import (
 from quantify_scheduler.backends.qblox.register_manager import RegisterManager
 
 if TYPE_CHECKING:
-    from collections.abc import Generator, Hashable, Iterator, Sequence
+    from collections.abc import Generator, Iterator, Sequence
 
     from quantify_scheduler.backends.qblox.operation_handling.base import (
         IOperationStrategy,
@@ -34,7 +34,6 @@ if TYPE_CHECKING:
         OpInfo,
         StaticHardwareProperties,
     )
-    from quantify_scheduler.schedules.schedule import AcquisitionMetadata
 
 
 class QASMProgram:
@@ -53,9 +52,6 @@ class QASMProgram:
         The register manager that keeps track of the occupied/available registers.
     align_fields
         If True, make QASM program more human-readable by aligning its fields.
-    acq_metadata
-        Provides a summary of the used acquisition protocol, bin mode, acquisition
-        channels, acquisition indices per channel, and repetitions.
 
     """
 
@@ -64,7 +60,6 @@ class QASMProgram:
         static_hw_properties: StaticHardwareProperties,
         register_manager: RegisterManager | None = None,
         align_fields: bool = True,
-        acq_metadata: AcquisitionMetadata | None = None,
     ) -> None:
         self.static_hw_properties = static_hw_properties
         """Dataclass holding the properties of the hardware that this program is to be
@@ -75,9 +70,6 @@ class QASMProgram:
         """If true, all labels, instructions, arguments and comments
         in the string representation of the program are printed on the same indention level.
         This worsens performance."""
-        self.acq_metadata = acq_metadata
-        """Provides a summary of the used acquisition protocol, bin mode, acquisition
-        channels, acquisition indices per channel, and repetitions."""
 
         self.time_last_acquisition_triggered: int | None = None
         """Time on which the last acquisition was triggered. Is ``None`` if no previous
@@ -112,22 +104,6 @@ class QASMProgram:
     def elapsed_time(self, value: int) -> None:
         difference: int = value - self.elapsed_time
         self._elapsed_times_in_loops[-1] += difference
-
-    def _find_qblox_acq_index(self, acq_channel: Hashable) -> int:
-        """
-        Finds the Qblox acq_index corresponding to acq_channel
-        in the acq_metadata.
-        """
-        # This function is a temporary solution.
-        # TODO: QTFY-300 for proper solution.
-        assert self.acq_metadata is not None
-        for (
-            qblox_acq_index,
-            acq_channel_metadata,
-        ) in self.acq_metadata.acq_channels_metadata.items():
-            if acq_channel_metadata.acq_channel == acq_channel:
-                return qblox_acq_index
-        raise ValueError(f"Qblox acquisition index not found for {acq_channel=}.")
 
     @staticmethod
     def get_instruction_as_list(
@@ -189,25 +165,6 @@ class QASMProgram:
             A list containing instructions.
 
         """
-        # Translating the acquisition channel to qblox acquisition index
-        # is intended as a temporary solution.
-        # TODO: Proper solution: QTFY-300.
-        instruction = args[0]
-        if self.acq_metadata and (
-            instruction
-            in (
-                q1asm_instructions.ACQUIRE,
-                q1asm_instructions.ACQUIRE_DIGITAL,
-                q1asm_instructions.ACQUIRE_TIMETAGS,
-                q1asm_instructions.ACQUIRE_TTL,
-                q1asm_instructions.ACQUIRE_WEIGHED,
-                q1asm_instructions.ACQUIRE_DIGITAL,
-                q1asm_instructions.ACQUIRE_TIMETAGS,
-            )
-        ):
-            args = list(args)
-            args[1] = self._find_qblox_acq_index(acq_channel=args[1])
-
         self.instructions.append(self.get_instruction_as_list(*args, **kwargs))
         return self.instructions[-1]
 
@@ -590,7 +547,6 @@ class QASMProgram:
                 static_hw_properties=QCMCompiler.static_hw_properties,
                 register_manager=register_manager.RegisterManager(),
                 align_fields=True,
-                acq_metadata=None,
             )
 
             with qasm.loop(label="repeat", repetitions=10):

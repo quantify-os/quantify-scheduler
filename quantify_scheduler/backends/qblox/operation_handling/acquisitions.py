@@ -33,6 +33,8 @@ class AcquisitionStrategyPartial(IOperationStrategy):
         self._acq_info: types.OpInfo = operation_info
         self.bin_mode: BinMode = operation_info.data["bin_mode"]
         self.acq_channel = operation_info.data["acq_channel"]
+        self.qblox_acq_index: int | None = None
+        self.qblox_acq_bin: int | None = None
         self.bin_idx_register: str | None = None
         """The register used to keep track of the bin index, only not None for append
         mode acquisitions."""
@@ -122,10 +124,8 @@ class SquareAcquisitionStrategy(AcquisitionStrategyPartial):
             The QASMProgram to add the assembly instructions to.
 
         """
-        bin_idx = self.operation_info.data.get(
-            "acq_index_legacy", self.operation_info.data["acq_index"]
-        )
-        self._acquire_square(qasm_program, bin_idx)
+        assert isinstance(self.qblox_acq_bin, int)
+        self._acquire_square(qasm_program, self.qblox_acq_bin)
 
     def _acquire_with_register_bin_index(self, qasm_program: QASMProgram) -> None:
         """
@@ -169,7 +169,7 @@ class SquareAcquisitionStrategy(AcquisitionStrategyPartial):
         """
         qasm_program.emit(
             q1asm_instructions.ACQUIRE,
-            self.acq_channel,
+            self.qblox_acq_index,
             bin_idx,
             constants.MIN_TIME_BETWEEN_OPERATIONS,
         )
@@ -274,18 +274,14 @@ class WeightedAcquisitionStrategy(AcquisitionStrategyPartial):
             The QASMProgram to add the assembly instructions to.
 
         """
-        bin_idx = self.operation_info.data.get(
-            "acq_index_legacy", self.operation_info.data["acq_index"]
-        )
-
         qasm_program.emit(
             q1asm_instructions.ACQUIRE_WEIGHED,
-            self.acq_channel,
-            bin_idx,
+            self.qblox_acq_index,
+            self.qblox_acq_bin,
             self.waveform_index0,
             self.waveform_index1,
             constants.MIN_TIME_BETWEEN_OPERATIONS,
-            comment=f"Store acq in acq_channel:{self.acq_channel}, bin_idx:{bin_idx}",
+            comment=f"Store acq in acq_channel:{self.acq_channel}, bin_idx:{self.qblox_acq_bin}",
         )
         qasm_program.elapsed_time += constants.MIN_TIME_BETWEEN_OPERATIONS
 
@@ -301,8 +297,6 @@ class WeightedAcquisitionStrategy(AcquisitionStrategyPartial):
             The QASMProgram to add the assembly instructions to.
 
         """
-        acq_bin_idx_reg = self.bin_idx_register
-
         with qasm_program.temp_registers(2) as (acq_idx0_reg, acq_idx1_reg):
             qasm_program.emit(q1asm_instructions.NEW_LINE)
             qasm_program.emit(
@@ -320,18 +314,19 @@ class WeightedAcquisitionStrategy(AcquisitionStrategyPartial):
 
             qasm_program.emit(
                 q1asm_instructions.ACQUIRE_WEIGHED,
-                self.acq_channel,
-                acq_bin_idx_reg,
+                self.qblox_acq_index,
+                self.bin_idx_register,
                 acq_idx0_reg,
                 acq_idx1_reg,
                 constants.MIN_TIME_BETWEEN_OPERATIONS,
-                comment=f"Store acq in acq_channel:{self.acq_channel}, bin_idx:{acq_bin_idx_reg}",
+                comment=f"Store acq in acq_channel:{self.acq_channel}, "
+                f"bin_idx:{self.bin_idx_register}",
             )
             qasm_program.emit(
                 q1asm_instructions.ADD,
-                acq_bin_idx_reg,
+                self.bin_idx_register,
                 1,
-                acq_bin_idx_reg,
+                self.bin_idx_register,
                 comment=f"Increment bin_idx for ch{self.acq_channel}",
             )
             qasm_program.emit(q1asm_instructions.NEW_LINE)
@@ -356,14 +351,10 @@ class TriggerCountAcquisitionStrategy(AcquisitionStrategyPartial):
             The QASMProgram to add the assembly instructions to.
 
         """
-        bin_idx = self.operation_info.data.get(
-            "acq_index_legacy", self.operation_info.data["acq_index"]
-        )
-
         qasm_program.emit(
             q1asm_instructions.ACQUIRE_TTL,
-            self.acq_channel,
-            bin_idx,
+            self.qblox_acq_index,
+            self.qblox_acq_bin,
             1,  # enable ttl acquisition
             constants.MIN_TIME_BETWEEN_OPERATIONS,
             comment=f"Enable TTL acquisition of acq_channel:{self.acq_channel}, "
@@ -380,8 +371,8 @@ class TriggerCountAcquisitionStrategy(AcquisitionStrategyPartial):
 
         qasm_program.emit(
             q1asm_instructions.ACQUIRE_TTL,
-            self.acq_channel,
-            bin_idx,
+            self.qblox_acq_index,
+            self.qblox_acq_bin,
             0,  # disable ttl acquisition
             constants.MIN_TIME_BETWEEN_OPERATIONS,
             comment=f"Disable TTL acquisition of acq_channel:{self.acq_channel}, "
@@ -400,16 +391,14 @@ class TriggerCountAcquisitionStrategy(AcquisitionStrategyPartial):
             The QASMProgram to add the assembly instructions to.
 
         """
-        acq_bin_idx_reg = self.bin_idx_register
-
         qasm_program.emit(
             q1asm_instructions.ACQUIRE_TTL,
-            self.acq_channel,
-            acq_bin_idx_reg,
+            self.qblox_acq_index,
+            self.bin_idx_register,
             1,  # enable ttl acquisition
             constants.MIN_TIME_BETWEEN_OPERATIONS,
             comment=f"Enable TTL acquisition of acq_channel:{self.acq_channel}, "
-            f"store in bin:{acq_bin_idx_reg}",
+            f"store in bin:{self.bin_idx_register}",
         )
         qasm_program.elapsed_time += constants.MIN_TIME_BETWEEN_OPERATIONS
 
@@ -422,20 +411,20 @@ class TriggerCountAcquisitionStrategy(AcquisitionStrategyPartial):
 
         qasm_program.emit(
             q1asm_instructions.ACQUIRE_TTL,
-            self.acq_channel,
-            acq_bin_idx_reg,
+            self.qblox_acq_index,
+            self.bin_idx_register,
             0,  # disable ttl acquisition
             constants.MIN_TIME_BETWEEN_OPERATIONS,
             comment=f"Disable TTL acquisition of acq_channel:{self.acq_channel}, "
-            f"store in bin:{acq_bin_idx_reg}",
+            f"store in bin:{self.bin_idx_register}",
         )
         qasm_program.elapsed_time += constants.MIN_TIME_BETWEEN_OPERATIONS
 
         qasm_program.emit(
             q1asm_instructions.ADD,
-            acq_bin_idx_reg,
+            self.bin_idx_register,
             1,  # increment
-            acq_bin_idx_reg,
+            self.bin_idx_register,
             comment=f"Increment bin_idx for ch{self.acq_channel} by 1",
         )
 
@@ -468,14 +457,10 @@ class TimetagAcquisitionStrategy(AcquisitionStrategyPartial):
             The QASMProgram to add the assembly instructions to.
 
         """
-        bin_idx = self.operation_info.data.get(
-            "acq_index_legacy", self.operation_info.data["acq_index"]
-        )
-
         qasm_program.emit(
             q1asm_instructions.ACQUIRE_TIMETAGS,
-            self.acq_channel,
-            bin_idx,
+            self.qblox_acq_index,
+            self.qblox_acq_bin,
             1,  # enable timetags acquisition
             self._fine_start_delay_int,
             constants.MIN_TIME_BETWEEN_OPERATIONS,
@@ -493,8 +478,8 @@ class TimetagAcquisitionStrategy(AcquisitionStrategyPartial):
 
         qasm_program.emit(
             q1asm_instructions.ACQUIRE_TIMETAGS,
-            self.acq_channel,
-            bin_idx,
+            self.qblox_acq_index,
+            self.qblox_acq_bin,
             0,  # disable timetags acquisition
             self._fine_end_delay_int,
             constants.MIN_TIME_BETWEEN_OPERATIONS,
@@ -514,8 +499,6 @@ class TimetagAcquisitionStrategy(AcquisitionStrategyPartial):
             The QASMProgram to add the assembly instructions to.
 
         """
-        acq_bin_idx_reg = self.bin_idx_register
-
         if self._fine_start_delay_int == self._fine_end_delay_int:
             fine_start_delay_reg = qasm_program.register_manager.allocate_register()
             fine_end_delay_reg = fine_start_delay_reg
@@ -542,13 +525,13 @@ class TimetagAcquisitionStrategy(AcquisitionStrategyPartial):
 
         qasm_program.emit(
             q1asm_instructions.ACQUIRE_TIMETAGS,
-            self.acq_channel,
-            acq_bin_idx_reg,
+            self.qblox_acq_index,
+            self.bin_idx_register,
             1,  # enable ttl acquisition
             fine_start_delay_reg,
             constants.MIN_TIME_BETWEEN_OPERATIONS,
             comment=f"Enable timetag acquisition of acq_channel:{self.acq_channel}, "
-            f"store in bin:{acq_bin_idx_reg}",
+            f"store in bin:{self.bin_idx_register}",
         )
         qasm_program.elapsed_time += constants.MIN_TIME_BETWEEN_OPERATIONS
 
@@ -561,13 +544,13 @@ class TimetagAcquisitionStrategy(AcquisitionStrategyPartial):
 
         qasm_program.emit(
             q1asm_instructions.ACQUIRE_TIMETAGS,
-            self.acq_channel,
-            acq_bin_idx_reg,
+            self.qblox_acq_index,
+            self.bin_idx_register,
             0,  # disable ttl acquisition
             fine_end_delay_reg,
             constants.MIN_TIME_BETWEEN_OPERATIONS,
             comment=f"Disable timetag acquisition of acq_channel:{self.acq_channel}, "
-            f"store in bin:{acq_bin_idx_reg}",
+            f"store in bin:{self.bin_idx_register}",
         )
         qasm_program.elapsed_time += constants.MIN_TIME_BETWEEN_OPERATIONS
         if fine_start_delay_reg == fine_end_delay_reg:
@@ -578,9 +561,9 @@ class TimetagAcquisitionStrategy(AcquisitionStrategyPartial):
 
         qasm_program.emit(
             q1asm_instructions.ADD,
-            acq_bin_idx_reg,
+            self.bin_idx_register,
             1,  # increment
-            acq_bin_idx_reg,
+            self.bin_idx_register,
             comment=f"Increment bin_idx for ch{self.acq_channel} by 1",
         )
 

@@ -203,6 +203,8 @@ def test_prepare_acq_settings():
                     "time_ref": TimeRef.PORT,
                     "time_ref_port": "some:other_port",
                     "time_ref_channel": time_ref_channel,
+                    "protocol": "Timetag",
+                    "duration": 4e-6,
                 },
                 timing=0,
             )
@@ -210,13 +212,6 @@ def test_prepare_acq_settings():
     ]
     qtm_seq_compiler._prepare_acq_settings(
         acquisitions=acquisitions,  # type: ignore
-        acq_metadata=AcquisitionMetadata(
-            acq_protocol="Timetag",
-            bin_mode=BinMode.APPEND,
-            acq_return_type=np.ndarray,
-            acq_channels_metadata={0: AcquisitionChannelMetadata(acq_channel=0, acq_indices=[0])},
-            repetitions=1,
-        ),
     )
 
     assert qtm_seq_compiler._settings.time_ref_channel == time_ref_channel

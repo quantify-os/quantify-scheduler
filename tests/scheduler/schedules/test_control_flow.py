@@ -167,6 +167,5 @@ def test_nested_conditional_control_flow_raises_runtime_warning():
             ordered_op_strategies=sequencer._get_ordered_operations(),
             total_sequence_time=0,
             align_qasm_fields=False,
-            acq_metadata=None,
             repetitions=1,
         )

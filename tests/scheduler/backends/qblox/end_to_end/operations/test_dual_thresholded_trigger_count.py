@@ -250,9 +250,14 @@ def test_thresholded_trigger_count_acquisition_qtm(
 
     counts_passed = np.array(counts).astype(int)
     dataarray = xr.DataArray(
-        [counts_passed],
+        counts_passed.reshape(-1, 1),
         dims=["repetition", "acq_index_0"],
-        coords={"repetition": [0], "acq_index_0": range(len(counts_passed))},
+        coords={
+            "loop_repetition_0": ("acq_index_0", [np.nan]),
+            "acq_index_legacy_0": ("acq_index_0", [0]),
+            "repetition": range(len(counts_passed)),
+            "acq_index_0": [0],
+        },
         attrs={"acq_protocol": "DualThresholdedTriggerCount"},
     )
     expected_dataset = xr.Dataset({0: dataarray})
@@ -260,7 +265,7 @@ def test_thresholded_trigger_count_acquisition_qtm(
     quantum_device = mock_setup_basic_nv["quantum_device"]
     quantum_device.hardware_config(EXAMPLE_QBLOX_HARDWARE_CONFIG_NV_CENTER)
 
-    sched = Schedule("digital_pulse_and_acq")
+    sched = Schedule("digital_pulse_and_acq", repetitions=10)
     sched.add(MarkerPulse(duration=40e-9, port="qe1:switch"))
     sched.add(
         DualThresholdedTriggerCount(

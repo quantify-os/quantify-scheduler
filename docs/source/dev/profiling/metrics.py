@@ -117,16 +117,15 @@ def stat_experiment_detailed(experiment_notebook, samples, methods):
                 current_stats = get_stat(stats, method[2][0], method[2][1])
                 if current_stats:
                     time = current_stats[3]
-            else:
-                if hasattr(notebook_mod, method[2][1]):
-                    time = getattr(notebook_mod, method[2][1])()
+            elif hasattr(notebook_mod, method[2][1]):
+                time = getattr(notebook_mod, method[2][1])()
             times[i].sum += time
             times[i].sq_sum += time**2
         total_time.sum += stats.total_tt
         total_time.sq_sum += stats.total_tt**2
 
         if hasattr(notebook_mod, "close_experiment"):
-            getattr(notebook_mod, "close_experiment")()
+            notebook_mod.close_experiment()
 
     times = [expected_value_and_sigma(t.sum, t.sq_sum, samples) for t in times]
     total_time = expected_value_and_sigma(total_time.sum, total_time.sq_sum, samples)

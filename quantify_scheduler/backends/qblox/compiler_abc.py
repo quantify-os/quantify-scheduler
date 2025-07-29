@@ -61,7 +61,6 @@ from quantify_scheduler.enums import BinMode
 from quantify_scheduler.helpers.schedule import (
     _is_acquisition_binned_append,
     _is_acquisition_binned_average,
-    extract_acquisition_metadata_from_acquisition_protocols,
 )
 
 if TYPE_CHECKING:
@@ -76,7 +75,6 @@ if TYPE_CHECKING:
         _LocalOscillatorCompilationConfig,
         _SequencerCompilationConfig,
     )
-    from quantify_scheduler.schedules.schedule import AcquisitionMetadata
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
@@ -205,7 +203,7 @@ class SequencerCompiler(ABC):
 
         self.distortion_correction = sequencer_cfg.distortion_correction
 
-        self._qblox_acq_index_manager = QbloxAcquisitionIndexManager()
+        self.qblox_acq_index_manager = QbloxAcquisitionIndexManager()
 
     @property
     def connected_output_indices(self) -> tuple[int, ...]:
@@ -472,7 +470,6 @@ class SequencerCompiler(ABC):
     def _prepare_acq_settings(
         self,
         acquisitions: list[IOperationStrategy],
-        acq_metadata: AcquisitionMetadata,
     ) -> None:
         """
         Sets sequencer settings that are specific to certain acquisitions.
@@ -482,14 +479,12 @@ class SequencerCompiler(ABC):
         ----------
         acquisitions
             List of the acquisitions assigned to this sequencer.
-        acq_metadata
-            Acquisition metadata.
 
         """
 
-    def _get_thresholded_trigger_count_metadata_by_acq_channel(
+    def _validate_thresholded_trigger_count_metadata_by_acq_channel(
         self, acquisitions: list[IOperationStrategy]
-    ) -> dict[int, ThresholdedTriggerCountMetadata]:
+    ) -> None:
         """
         Validate that all thresholds are the same for **single** threshold ThresholdedTriggerCount
         acquisitions on this sequencer.
@@ -529,106 +524,11 @@ class SequencerCompiler(ABC):
                 threshold=threshold, condition=condition
             )
 
-        return metadata_dict
-
-    # TODO: QTFY-300, remove this function,
-    # and use QbloxAcquisitionIndexManager.acq_declaration_dict to generate this.
-    def _generate_acq_declaration_dict(
-        self,
-        repetitions: int,
-        acq_metadata: AcquisitionMetadata,
-    ) -> dict[str, Any]:
-        """
-        Generates the "acquisitions" entry of the program json. It contains declaration
-        of the acquisitions along with the number of bins and the corresponding index.
-
-        For the name of the acquisition (in the hardware), the acquisition channel
-        (cast to str) is used, and is thus identical to the index. Number of bins is
-        taken to be the highest acq_index specified for that channel.
-
-        Parameters
-        ----------
-        repetitions
-            The number of times to repeat execution of the schedule.
-        acq_metadata
-            Acquisition metadata.
-
-        Returns
-        -------
-        :
-            The "acquisitions" entry of the program json as a dict. The keys correspond
-            to the names of the acquisitions (i.e. the acq_channel in the scheduler).
-
-        """
-        # initialize an empty dictionary for the format required by module
-        acq_declaration_dict = {}
-        for (
-            qblox_acq_index,
-            acq_channel_metadata,
-        ) in acq_metadata.acq_channels_metadata.items():
-            acq_indices: list[int] = acq_channel_metadata.acq_indices
-            acq_channel: Hashable = acq_channel_metadata.acq_channel
-            # Some sanity checks on the input for easier debugging.
-            if min(acq_indices) != 0:
-                raise ValueError(
-                    f"Please make sure the lowest acquisition index used is 0. "
-                    f"Found: {min(acq_indices)} as lowest index for channel "
-                    f"{acq_channel}. Problem occurred for port {self.port} with"
-                    f" clock {self.clock}, which corresponds to {self.name} of "
-                    f"{self.parent.name}."
-                )
-            if len(acq_indices) != max(acq_indices) + 1:
-                raise ValueError(
-                    f"Found {max(acq_indices)} as the highest index out of "
-                    f"{len(acq_indices)} for channel {acq_channel}, indicating "
-                    f"an acquisition index was skipped or an acquisition index was repeated. "
-                    f"Please make sure the used indices increment by 1 starting from 0. "
-                    f"Problem occurred for port {self.port} with clock {self.clock}, "
-                    f"which corresponds to {self.name} of {self.parent.name}."
-                )
-            unique_acq_indices = len(set(acq_indices))
-            if len(acq_indices) != unique_acq_indices:
-                raise ValueError(
-                    f"Found {unique_acq_indices} unique indices out of "
-                    f"{len(acq_indices)} for channel {acq_channel}, indicating "
-                    f"an acquisition index was skipped or an acquisition index was repeated. "
-                    f"Please make sure the used indices increment by 1 starting from 0. "
-                    f"Problem occurred for port {self.port} with clock {self.clock}, "
-                    f"which corresponds to {self.name} of {self.parent.name}."
-                )
-
-            # Add the acquisition metadata to the acquisition declaration dict
-            if acq_metadata.bin_mode == BinMode.APPEND:
-                num_bins = repetitions * self._num_acq_per_channel.get(acq_channel, 0)
-            elif acq_metadata.bin_mode in (BinMode.AVERAGE, BinMode.SUM):
-                num_bins = max(acq_indices) + 1
-            elif acq_metadata.bin_mode == BinMode.DISTRIBUTION:
-                assert acq_metadata.acq_protocol == "TriggerCount"
-                num_bins = constants.MAX_NUMBER_OF_BINS
-            elif acq_metadata.bin_mode == BinMode.FIRST:
-                # In BinMode.FIRST (currently only implemented for digital Trace
-                # acquisitions on the QTM), the binned data is ignored by quantify.
-                # However, should it happen that any extra acq_indices were specified,
-                # we must allocate memory for them on the hardware.
-                num_bins = max(acq_indices) + 1
-            else:
-                # currently the BinMode enum only has average and append.
-                # this check exists to catch unexpected errors if we add more
-                # BinModes in the future.
-                raise NotImplementedError(f"Unknown bin mode {acq_metadata.bin_mode}.")
-            acq_declaration_dict[str(qblox_acq_index)] = {
-                "num_bins": num_bins,
-                "index": qblox_acq_index,
-            }
-
-        return acq_declaration_dict
-
     def generate_qasm_program(
         self,
         ordered_op_strategies: list[IOperationStrategy],
         total_sequence_time: float,
         align_qasm_fields: bool,
-        acq_metadata: AcquisitionMetadata | None,
         repetitions: int,
     ) -> str:
         """
@@ -662,8 +562,6 @@ class SequencerCompiler(ABC):
             before this time, a wait is added at the end to ensure synchronization.
         align_qasm_fields
             If True, make QASM program more human-readable by aligning its fields.
-        acq_metadata
-            Acquisition metadata.
         repetitions
             Number of times to repeat execution of the schedule.
 
@@ -691,7 +589,6 @@ class SequencerCompiler(ABC):
             static_hw_properties=self.static_hw_properties,
             register_manager=self.register_manager,
             align_fields=align_qasm_fields,
-            acq_metadata=acq_metadata,
         )
         self._write_pre_wait_sync_instructions(qasm)
 
@@ -881,7 +778,6 @@ class SequencerCompiler(ABC):
             Schedule repetitions.
 
         """
-        channel_to_reg: dict[str, str] = {}
         for op_strategy in op_strategies:
             if not op_strategy.operation_info.is_acquisition:
                 continue
@@ -893,8 +789,6 @@ class SequencerCompiler(ABC):
             protocol: str = acq_data["protocol"]
             bin_mode: BinMode = acq_data["bin_mode"]
 
-            # TODO: QTFY-300, store and utilize the generated
-            # Qblox acquisition index and bin in the operation strategies.
             if _is_acquisition_binned_average(protocol, bin_mode) or _is_acquisition_binned_append(
                 protocol, bin_mode
             ):
@@ -906,31 +800,29 @@ class SequencerCompiler(ABC):
                     if protocol == "ThresholdedTriggerCount"
                     else None
                 )
-                _qblox_acq_index, _qblox_acq_bin_offset = (
-                    self._qblox_acq_index_manager.allocate_bins(
-                        acq_channel,
-                        acq_data["acq_index"],
-                        self.name,
-                        thresholded_trigger_count_metadata,
-                        repetitions if bin_mode == BinMode.APPEND else None,
-                    )
+                qblox_acq_index, qblox_acq_bin_offset = self.qblox_acq_index_manager.allocate_bins(
+                    acq_channel,
+                    acq_data["acq_index"],
+                    self.name,
+                    thresholded_trigger_count_metadata,
+                    repetitions if bin_mode == BinMode.APPEND else None,
                 )
             elif bin_mode == BinMode.DISTRIBUTION and protocol in (
                 "TriggerCount",
                 "ThresholdedTriggerCount",
                 "DualThresholdedTriggerCount",
             ):
-                _qblox_acq_index = self._qblox_acq_index_manager.allocate_qblox_index(
+                qblox_acq_index = self.qblox_acq_index_manager.allocate_qblox_index(
                     acq_channel, self.name
                 )
-                _qblox_acq_bin_offset = 0
+                qblox_acq_bin_offset = 0
             elif protocol in "Trace":
-                _qblox_acq_index, _qblox_acq_bin_offset = (
-                    self._qblox_acq_index_manager.allocate_trace(acq_channel, self.name)
+                qblox_acq_index, qblox_acq_bin_offset = self.qblox_acq_index_manager.allocate_trace(
+                    acq_channel, self.name
                 )
             elif bin_mode == BinMode.APPEND and protocol == "TimetagTrace":
-                _qblox_acq_index, _qblox_acq_offset = (
-                    self._qblox_acq_index_manager.allocate_timetagtrace(
+                qblox_acq_index, qblox_acq_bin_offset = (
+                    self.qblox_acq_index_manager.allocate_timetagtrace(
                         acq_channel,
                         acq_data["acq_index"],
                         self.name,
@@ -944,19 +836,22 @@ class SequencerCompiler(ABC):
                     f"{op_strategy.operation_info!r}."
                 )
 
-            if acq_data["bin_mode"] == BinMode.APPEND:
-                if acq_channel not in channel_to_reg:
-                    acq_bin_idx_reg = self.register_manager.allocate_register()
-                    channel_to_reg[acq_channel] = acq_bin_idx_reg
+            op_strategy.qblox_acq_index = qblox_acq_index
 
-                    qasm.emit(
-                        q1asm_instructions.MOVE,
-                        0,
-                        acq_bin_idx_reg,
-                        comment=f"Initialize acquisition bin_idx for "
-                        f"ch{op_strategy.operation_info.data['acq_channel']}",
-                    )
-                op_strategy.bin_idx_register = channel_to_reg[acq_channel]
+            if acq_data["bin_mode"] == BinMode.APPEND:
+                acq_bin_idx_reg = self.register_manager.allocate_register()
+
+                qasm.emit(
+                    q1asm_instructions.MOVE,
+                    qblox_acq_bin_offset,
+                    acq_bin_idx_reg,
+                    comment=f"Initialize acquisition bin_idx for "
+                    f"channel {op_strategy.operation_info.data['acq_channel']}, "
+                    f"index {op_strategy.operation_info.data['acq_index']}",
+                )
+                op_strategy.bin_idx_register = acq_bin_idx_reg
+            else:
+                op_strategy.qblox_acq_bin = qblox_acq_bin_offset
 
     def _get_latency_correction_ns(self, latency_correction: float) -> int:
         if latency_correction == 0:
@@ -1297,7 +1192,7 @@ class SequencerCompiler(ABC):
         sequence_to_file: bool,
         align_qasm_fields: bool,
         repetitions: int = 1,
-    ) -> tuple[SequencerSettings | None, AcquisitionMetadata | None]:
+    ) -> SequencerSettings | None:
         """
         Performs the full sequencer level compilation based on the assigned data and
         settings. If no data is assigned to this sequencer, the compilation is skipped
@@ -1316,18 +1211,17 @@ class SequencerCompiler(ABC):
         Returns
         -------
         :
-            The compiled program and the acquisition metadata.
+            The compiled program.
             If no data is assigned to this sequencer, the
             compilation is skipped and None is returned instead.
 
         """
         if not self.has_data:
-            return None, None
+            return None
 
         awg_dict = self._generate_awg_dict()
         weights_dict = None
         acq_declaration_dict = None
-        acq_metadata: AcquisitionMetadata | None = None
 
         # the program needs _generate_weights_dict for the waveform indices
         if self.parent.supports_acquisition:
@@ -1338,13 +1232,8 @@ class SequencerCompiler(ABC):
                 if op_strategy.operation_info.is_acquisition
             ]
             if len(acquisitions) > 0:
-                acq_metadata = extract_acquisition_metadata_from_acquisition_protocols(
-                    acquisition_protocols=[acq.operation_info.data for acq in acquisitions],
-                    repetitions=repetitions,
-                )
                 self._prepare_acq_settings(
                     acquisitions=acquisitions,
-                    acq_metadata=acq_metadata,
                 )
                 weights_dict = self._generate_weights_dict()
 
@@ -1354,19 +1243,11 @@ class SequencerCompiler(ABC):
             ordered_op_strategies=operation_list,
             total_sequence_time=self.parent.total_play_time,
             align_qasm_fields=align_qasm_fields,
-            acq_metadata=acq_metadata,
             repetitions=repetitions,
         )
 
         if self.parent.supports_acquisition:
-            acq_declaration_dict = {}
-            if acq_metadata is not None:
-                # TODO: QTFY-300, generate acquisition declaration dict differently
-                # acq_declaration_dict = self._qblox_acq_index_manager.acq_declaration_dict().
-                acq_declaration_dict = self._generate_acq_declaration_dict(
-                    repetitions=repetitions,
-                    acq_metadata=acq_metadata,
-                )
+            acq_declaration_dict = self.qblox_acq_index_manager.acq_declaration_dict()
 
         wf_and_prog = self._generate_waveforms_and_program_dict(
             qasm_program, awg_dict, weights_dict, acq_declaration_dict
@@ -1379,7 +1260,7 @@ class SequencerCompiler(ABC):
                 wf_and_pr_dict=wf_and_prog, label=f"{self.port}_{self.clock}"
             )
 
-        return self._settings, acq_metadata
+        return self._settings
 
     def _validate_thresholded_acquisitions(
         self, operations: list[IOperationStrategy], protocol: str
@@ -1630,7 +1511,8 @@ class ClusterModuleCompiler(InstrumentCompiler, Generic[_SequencerT_co], ABC):
         :
             The compiled program corresponding to this module.
             It contains an entry for every sequencer under the key `"sequencers"`,
-            and acquisition metadata under the key `"acq_metadata"`,
+            acquisition channels data, and
+            acquisition hardware mapping under the key `"acq_hardware_mapping"`,
             and the `"repetitions"` is an integer with
             the number of times the defined schedule is repeated.
             All the other generic settings are under the key `"settings"`.
@@ -1648,19 +1530,21 @@ class ClusterModuleCompiler(InstrumentCompiler, Generic[_SequencerT_co], ABC):
         align_qasm_fields = debug_mode
 
         if self.supports_acquisition:
-            program["acq_metadata"] = {}
+            program["acq_hardware_mapping"] = {}
 
         program["sequencers"] = {}
         for seq_name, seq in self.sequencers.items():
-            seq_program, acq_metadata = seq.compile(
+            seq_program = seq.compile(
                 repetitions=repetitions,
                 sequence_to_file=sequence_to_file,
                 align_qasm_fields=align_qasm_fields,
             )
             if seq_program is not None:
                 program["sequencers"][seq_name] = seq_program
-            if acq_metadata is not None:
-                program["acq_metadata"][seq_name] = acq_metadata
+            if self.supports_acquisition:
+                program["acq_hardware_mapping"][seq_name] = (
+                    seq.qblox_acq_index_manager.acq_hardware_mapping()
+                )
 
         if len(program) == 0:
             return {}

@@ -18,6 +18,7 @@
 # absolute, like shown here.
 #
 from __future__ import annotations
+
 import os
 import re
 from typing import Any
@@ -520,7 +521,10 @@ nitpick_ignore = [
     ("py:attr", "BasicTransmonElement.measure.acq_threshold"),
     ("py:attr", "BasicTransmonElement.measure.acq_rotation"),
     ("py:class", "NamedTuple"),
-    ("py:class", "quantify_scheduler.helpers.generate_acq_channels_data.SchedulableLabelToAcquisitionIndex"),
+    (
+        "py:class",
+        "quantify_scheduler.helpers.generate_acq_channels_data.SchedulableLabelToAcquisitionIndex",
+    ),
     ("py:class", "SchedulableLabelToAcquisitionIndex"),
     ("py:class", "quantify_scheduler.helpers.generate_acq_channels_data.FullSchedulableLabel"),
     ("py:class", "FullSchedulableLabel"),
@@ -529,6 +533,10 @@ nitpick_ignore = [
     ("py:class", "ipywidgets.Tab"),
     ("py:class", "widgets.Tab"),
     ("py:class", "SequencerIndex"),
+    (
+        "py:class",
+        "quantify_scheduler.backends.qblox.qblox_acq_index_manager.QbloxAcquisitionHardwareMapping",
+    ),
     ("py:class", "QbloxAcquisitionHardwareMapping"),
     ("py:class", "QbloxAcquisitionIndex"),
     ("py:class", "QbloxAcquisitionBinMapping"),

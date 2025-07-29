@@ -864,8 +864,9 @@ class TriggerCount(Acquisition):
             # and currently we do not support multiple indices for this,
             # or starting the counting from a predefined count number.
             raise NotImplementedError(
-                "Using nonzero acq_index is not yet implemented for AVERAGE bin mode for "
-                "the trigger count protocol"
+                f"Using nonzero acq_index is not yet implemented for "
+                f"{BinMode.DISTRIBUTION} bin mode for "
+                f"the trigger count protocol"
             )
 
         super().__init__(name=self.__class__.__name__)

@@ -213,43 +213,48 @@ def get_dummy_binned_acquisition_data(
     return DummyBinnedAcquisitionData(data=(real, imag), thres=thres, avg_cnt=0)
 
 
-# Means and standard deviations
-x0, xs0 = -2.7, 2.5
-y0, ys0 = 2.9, 2.5
-x1, xs1 = -14, 2.5
-y1, ys1 = 1.9, 2.5
+def setup_dummy_data(theta: float, threshold: float):
+    # Means and standard deviations
+    x0, xs0 = -2.7, 2.5
+    y0, ys0 = 2.9, 2.5
+    x1, xs1 = -14, 2.5
+    y1, ys1 = 1.9, 2.5
 
-# Number of points per data cluster
-n_points = 500
+    # Number of points per data cluster
+    max_batch_size = 60
 
-# Generate random samples
-x0_samples = np.random.normal(x0, xs0, n_points)
-y0_samples = np.random.normal(y0, ys0, n_points)
-x1_samples = np.random.normal(x1, xs1, n_points)
-y1_samples = np.random.normal(y1, ys1, n_points)
+    # Generate random samples
+    x0_samples = np.random.normal(x0, xs0, max_batch_size)
+    y0_samples = np.random.normal(y0, ys0, max_batch_size)
+    x1_samples = np.random.normal(x1, xs1, max_batch_size)
+    y1_samples = np.random.normal(y1, ys1, max_batch_size)
 
-# interleave the random samples such that we get
-# x = [x0_samples[0], x1_samples[0], x0_samples[1],...]
-# y = [y0_samples[0], y1_samples[0], y0_samples[1],...]
+    # interleave the random samples such that we get
+    # x = [x0_samples[0], x1_samples[0], x0_samples[1],...]
+    # y = [y0_samples[0], y1_samples[0], y0_samples[1],...]
 
-x = np.vstack((x0_samples, x1_samples)).reshape(-1, order="F")
-y = np.vstack((y0_samples, y1_samples)).reshape(-1, order="F")
-states = np.array([0, 1] * 500)
+    x = np.vstack((x0_samples, x1_samples)).reshape(-1, order="F")
+    y = np.vstack((y0_samples, y1_samples)).reshape(-1, order="F")
+    states = np.array([0, 1] * max_batch_size)
 
-# prepare cluster with dummy data that will be returned 
-# after retrieving acquisitions.
-cluster.delete_dummy_binned_acquisition_data(1)
-cluster.set_dummy_binned_acquisition_data(
-    slot_idx=1,
-    sequencer=0,
-    acq_index_name="0",
-    data=[
-        get_dummy_binned_acquisition_data(float(re), float(im), 0, 0)
-        for re, im in zip(x, y)
-    ],
-)
+    # prepare cluster with dummy data that will be returned 
+    # after retrieving acquisitions.
+    cluster.delete_dummy_binned_acquisition_data(1)
+    cluster.set_dummy_binned_acquisition_data(
+        slot_idx=1,
+        sequencer=0,
+        acq_index_name="0",
+        data=[
+            get_dummy_binned_acquisition_data(float(re), float(im), theta, threshold)
+            for re, im in zip(x, y)
+        ],
+    )
 
-cluster.start_sequencer = lambda: start_dummy_cluster_armed_sequencers(ic_cluster)
+def setup_dummy_and_start_sequencer(theta: float, threshold: float):
+    setup_dummy_data(theta, threshold)
+    start_dummy_cluster_armed_sequencers(ic_cluster)
+
+cluster.start_sequencer = lambda: setup_dummy_and_start_sequencer(0, 0)
 ```
 
 ```{code-cell} ipython3
@@ -267,14 +272,14 @@ states = ManualParameter(name="States", unit="", label="")
 states.batched = True
 
 prepared_states = np.asarray([0, 1] * 500)
-readout_calibration_kwargs = {"qubit": "q0", "prepared_states": prepared_states}
+readout_calibration_kwargs = {"qubit": "q0", "prepared_states": states}
 gettable = ScheduleGettable(
     single_qubit_device,
     schedule_function=readout_calibration_sched,
     schedule_kwargs=readout_calibration_kwargs,
     real_imag=True,
     batched=True,
-    max_batch_size=200,
+    max_batch_size=60,
 )
 
 measurement_control.settables(states)
@@ -327,19 +332,8 @@ We can quickly verify that the qubit parameters are set correctly by running aga
 tags: [remove-cell]
 ---
 cluster.delete_dummy_binned_acquisition_data(1)
-cluster.set_dummy_binned_acquisition_data(
-    slot_idx=1,
-    sequencer=0,
-    acq_index_name="0",
-    data=[
-        get_dummy_binned_acquisition_data(
-            float(re), float(im), acq_rotation, acq_threshold
-        )
-        for re, im in zip(x, y)
-    ],
-)
 
-cluster.start_sequencer = lambda: start_dummy_cluster_armed_sequencers(ic_cluster)
+cluster.start_sequencer = lambda: setup_dummy_and_start_sequencer(acq_rotation, acq_threshold)
 ```
 
 ```{code-cell} ipython3
@@ -354,7 +348,7 @@ states.batched = True
 prepared_states = np.asarray([0, 1] * 500)
 readout_calibration_kwargs = {
     "qubit": "q0",
-    "prepared_states": prepared_states,
+    "prepared_states": states,
     "acq_protocol": "ThresholdedAcquisition",
 }
 
@@ -364,7 +358,7 @@ gettable = ScheduleGettable(
     schedule_kwargs=readout_calibration_kwargs,
     real_imag=True,
     batched=True,
-    max_batch_size=200,
+    max_batch_size=60,
 )
 
 measurement_control.settables(states)

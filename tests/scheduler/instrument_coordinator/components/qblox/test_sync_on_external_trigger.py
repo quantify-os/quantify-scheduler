@@ -3,6 +3,7 @@ from qblox_instruments.qcodes_drivers.time import Polarity, SyncRef
 
 from quantify_scheduler.backends.types.qblox import ExternalTriggerSyncSettings
 from quantify_scheduler.instrument_coordinator.components.qblox import ClusterComponent
+from quantify_scheduler.schedules.schedule import AcquisitionChannelsData
 
 
 def test_sync_on_external_trigger_success_cmm(mocker):

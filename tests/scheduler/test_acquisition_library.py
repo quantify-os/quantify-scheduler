@@ -227,7 +227,7 @@ def test_trigger_count_invalid_index_distribution_mode():
 
     assert (
         error.value.args[0]
-        == "Using nonzero acq_index is not yet implemented for AVERAGE bin mode for "
+        == "Using nonzero acq_index is not yet implemented for distribution bin mode for "
         "the trigger count protocol"
     )
 

@@ -1,6 +1,7 @@
 # Repository: https://gitlab.com/quantify-os/quantify-scheduler
 # Licensed according to the LICENCE file on the main branch
 import numpy as np
+import pytest
 import xarray as xr
 
 from quantify_scheduler import Schedule, SerialCompiler
@@ -183,3 +184,44 @@ def test_trigger_count_bin_mode_sum_qtm(
     cluster.start()
 
     xr.testing.assert_identical(qtm.retrieve_acquisition(), expected_dataset)
+
+
+def test_trigger_count_distribution_exclusivity(
+    mock_setup_basic_nv,
+    make_cluster_component,
+    mocker,
+):
+    quantum_device = mock_setup_basic_nv["quantum_device"]
+    quantum_device.hardware_config(EXAMPLE_QBLOX_HARDWARE_CONFIG_NV_CENTER)
+
+    sched = Schedule("digital_pulse_and_acq", repetitions=3)
+    sched.add(
+        TriggerCount(
+            duration=1e-6,
+            port="qe0:optical_readout",
+            clock="qe0.ge0",
+            acq_channel=0,
+            acq_index=0,
+            bin_mode=BinMode.DISTRIBUTION,
+        )
+    )
+    sched.add(
+        TriggerCount(
+            duration=1e-6,
+            port="qe0:optical_readout",
+            clock="qe0.ge0",
+            acq_channel=1,
+            acq_index=0,
+            bin_mode=BinMode.SUM,
+        ),
+        rel_time=100e-9,
+    )
+
+    compiler = SerialCompiler(name="compiler")
+    with pytest.raises(
+        RuntimeError,
+    ):
+        compiler.compile(
+            schedule=sched,
+            config=quantum_device.generate_compilation_config(),
+        )

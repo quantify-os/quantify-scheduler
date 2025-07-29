@@ -71,7 +71,6 @@ if TYPE_CHECKING:
         _SequencerCompilationConfig,
     )
     from quantify_scheduler.resources import Resource
-    from quantify_scheduler.schedules.schedule import AcquisitionMetadata
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
@@ -228,7 +227,6 @@ class AnalogSequencerCompiler(SequencerCompiler):
     def _prepare_acq_settings(
         self,
         acquisitions: list[IOperationStrategy],
-        acq_metadata: AcquisitionMetadata,
     ) -> None:
         """
         Sets sequencer settings that are specific to certain acquisitions.
@@ -238,8 +236,6 @@ class AnalogSequencerCompiler(SequencerCompiler):
         ----------
         acquisitions
             List of the acquisitions assigned to this sequencer.
-        acq_metadata
-            Acquisition metadata.
 
         """
         if len(acquisitions) == 0:
@@ -247,8 +243,36 @@ class AnalogSequencerCompiler(SequencerCompiler):
             return
 
         acquisition_infos: list[OpInfo] = list(map(lambda acq: acq.operation_info, acquisitions))
-        if acq_metadata.acq_protocol in ("TriggerCount", "ThresholdedTriggerCount"):
-            self._settings.ttl_acq_auto_bin_incr_en = acq_metadata.bin_mode == BinMode.DISTRIBUTION
+        unique_protocols_bin_modes: set = {
+            (acq_info.data["protocol"], acq_info.data["bin_mode"]) for acq_info in acquisition_infos
+        }
+
+        trigger_count_bin_modes: set = {
+            protocol_bin_mode[1]
+            for protocol_bin_mode in unique_protocols_bin_modes
+            if protocol_bin_mode[0] == "TriggerCount"
+        }
+        thresholded_trigger_count_bin_modes: set = {
+            protocol_bin_mode[1]
+            for protocol_bin_mode in unique_protocols_bin_modes
+            if protocol_bin_mode[0] == "ThresholdedTriggerCount"
+        }
+
+        # For the "TriggerCount" protocol
+        # if BinMode.DISTRIBUTION is used, only that bin mode can be used.
+        if (BinMode.DISTRIBUTION in trigger_count_bin_modes) and (len(trigger_count_bin_modes) > 1):
+            raise RuntimeError(
+                f"For TriggerCount acquisition protocol "
+                f"if {BinMode.DISTRIBUTION} bin mode is used, make sure not use any other "
+                f"bin mode for the given portclock. "
+                f"Port {self.port}, clock {self.clock}."
+            )
+
+        if trigger_count_bin_modes or thresholded_trigger_count_bin_modes:
+            self._settings.ttl_acq_auto_bin_incr_en = (
+                BinMode.DISTRIBUTION in trigger_count_bin_modes
+            ) or (BinMode.DISTRIBUTION in thresholded_trigger_count_bin_modes)
+
             if len(self.connected_input_indices) == 1:
                 self._settings.ttl_acq_input_select = self.connected_input_indices[0]
             else:
@@ -262,10 +286,14 @@ class AnalogSequencerCompiler(SequencerCompiler):
                     f"{self.parent.name}."
                 )
 
-        if acq_metadata.acq_protocol in (
-            "ThresholdedAcquisition",
-            "ThresholdedTriggerCount",
-            "WeightedThresholdedAcquisition",
+        if any(
+            protocol
+            in (
+                "ThresholdedAcquisition",
+                "ThresholdedTriggerCount",
+                "WeightedThresholdedAcquisition",
+            )
+            for protocol, _bin_mode in unique_protocols_bin_modes
         ):
             # We ignore None because it does not interfere with other acquisitions/conditionals.
             # This is because a LatchReset is used for every thresholded acq with a not-None
@@ -286,18 +314,20 @@ class AnalogSequencerCompiler(SequencerCompiler):
                 self._settings.thresholded_acq_trigger_write_en = True
                 self._settings.thresholded_acq_trigger_write_address = address
 
-        if acq_metadata.acq_protocol in [
-            "ThresholdedAcquisition",
-            "WeightedThresholdedAcquisition",
-        ]:
-            self._prepare_thresholded_acquisition_settings(acquisition_infos)
-        elif acq_metadata.acq_protocol == "ThresholdedTriggerCount":
-            thresh_trg_cnt_metadata = self._get_thresholded_trigger_count_metadata_by_acq_channel(
-                acquisitions
+        if any(
+            protocol
+            in (
+                "ThresholdedAcquisition",
+                "WeightedThresholdedAcquisition",
             )
-            for acq_channel, metadata in thresh_trg_cnt_metadata.items():
-                acq_ch_metadata = acq_metadata.acq_channel_metadata_by_acq_channel_name(acq_channel)
-                acq_ch_metadata.thresholded_trigger_count = metadata
+            for protocol, _bin_mode in unique_protocols_bin_modes
+        ):
+            self._prepare_thresholded_acquisition_settings(acquisition_infos)
+        elif any(
+            protocol == "ThresholdedTriggerCount"
+            for protocol, _bin_mode in unique_protocols_bin_modes
+        ):
+            self._validate_thresholded_trigger_count_metadata_by_acq_channel(acquisitions)
 
         self._settings.integration_length_acq = self._get_integration_length_from_acquisitions()
 

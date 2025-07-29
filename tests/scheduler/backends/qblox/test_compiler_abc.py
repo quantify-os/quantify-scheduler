@@ -592,7 +592,6 @@ def test_too_many_instructions_warns(mock_sequencer: AnalogSequencerCompiler):
             ordered_op_strategies=operations,
             total_sequence_time=max_operations_num * 8e-9,
             align_qasm_fields=False,
-            acq_metadata=None,
             repetitions=1,
         )
 
@@ -659,7 +658,6 @@ def test_write_repetition_loop_header_equal_time():
             static_hw_properties=Mock(),
             register_manager=Mock(),
             align_fields=False,
-            acq_metadata=None,
         )
         class_._write_repetition_loop_header(qasm_program)
         durations.append(
@@ -770,49 +768,7 @@ def test_get_ordered_operations(mock_sequencer: AnalogSequencerCompiler):
 
 # Total play time number does not matter here, but the fixture needs it.
 @pytest.mark.parametrize("total_play_time", [2e-7])
-def test_get_thresholded_trigger_count_metadata_by_acq_channel_success(
-    mock_sequencer: AnalogSequencerCompiler,
-):
-    acquisitions = [
-        ThresholdedTriggerCount(
-            mock_sequencer.port,
-            mock_sequencer.clock,
-            duration=1e-3,
-            threshold=10,
-        ),
-        ThresholdedTriggerCount(
-            mock_sequencer.port,
-            mock_sequencer.clock,
-            duration=1e-3,
-            threshold=10,
-        ),
-        ThresholdedTriggerCount(
-            mock_sequencer.port,
-            mock_sequencer.clock,
-            duration=1e-3,
-            threshold=10,
-        ),
-    ]
-    operation_strats = [
-        ioperation_strategy_from_op_info(
-            op_info_from_operation(operation=op, timing=0, data=op.data["acquisition_info"][0]),
-            channel_name="real_input_0",
-        )
-        for op in acquisitions
-    ]
-
-    assert mock_sequencer._get_thresholded_trigger_count_metadata_by_acq_channel(
-        operation_strats
-    ) == {
-        0: ThresholdedTriggerCountMetadata(
-            threshold=10, condition=TriggerCondition.GREATER_THAN_EQUAL_TO
-        )
-    }
-
-
-# Total play time number does not matter here, but the fixture needs it.
-@pytest.mark.parametrize("total_play_time", [2e-7])
-def test_get_thresholded_trigger_count_metadata_by_acq_channel_raises(
+def test_validate_thresholded_trigger_count_metadata_by_acq_channel_raises(
     mock_sequencer: AnalogSequencerCompiler,
 ):
     acquisitions = [
@@ -841,31 +797,7 @@ def test_get_thresholded_trigger_count_metadata_by_acq_channel_raises(
         "to be threshold=7 and condition=greater_than_equal_to, respectively. These settings must "
         "be the same per acquisition channel.",
     ):
-        mock_sequencer._get_thresholded_trigger_count_metadata_by_acq_channel(operation_strats)
-
-
-# Total play time number does not matter here, but the fixture needs it.
-@pytest.mark.parametrize("total_play_time", [2e-7])
-def test_get_thresholded_trigger_count_metadata_by_acq_channel_ignored(
-    mock_sequencer: AnalogSequencerCompiler,
-):
-    acquisitions = [
-        SSBIntegrationComplex(mock_sequencer.port, mock_sequencer.clock, duration=1e-3),
-        SSBIntegrationComplex(mock_sequencer.port, mock_sequencer.clock, duration=1e-3),
-        SSBIntegrationComplex(mock_sequencer.port, mock_sequencer.clock, duration=1e-3),
-    ]
-    operation_strats = [
-        ioperation_strategy_from_op_info(
-            op_info_from_operation(operation=op, timing=0, data=op.data["acquisition_info"][0]),
-            channel_name="real_input_0",
-        )
-        for op in acquisitions
-    ]
-
-    assert (
-        mock_sequencer._get_thresholded_trigger_count_metadata_by_acq_channel(operation_strats)
-        == {}
-    )
+        mock_sequencer._validate_thresholded_trigger_count_metadata_by_acq_channel(operation_strats)
 
 
 @pytest.fixture
@@ -902,7 +834,6 @@ def test_write_pre_wait_sync_instructions_raises_if_not_both_thresholds_set(mock
         static_hw_properties=mock_timetag_sequencer.static_hw_properties,
         register_manager=RegisterManager(),
         align_fields=False,
-        acq_metadata=None,
     )
 
     with pytest.raises(

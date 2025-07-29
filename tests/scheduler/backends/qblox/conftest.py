@@ -29,7 +29,6 @@ def empty_qasm_program_qcm():
         static_hw_properties=QCMCompiler.static_hw_properties,
         register_manager=RegisterManager(),
         align_fields=True,
-        acq_metadata=None,
     )
 
 
@@ -39,7 +38,6 @@ def empty_qasm_program_qrm():
         static_hw_properties=QRMCompiler.static_hw_properties,
         register_manager=RegisterManager(),
         align_fields=True,
-        acq_metadata=None,
     )
 
 
@@ -49,7 +47,6 @@ def empty_qasm_program_qrm_rf():
         static_hw_properties=QRMRFCompiler.static_hw_properties,
         register_manager=RegisterManager(),
         align_fields=True,
-        acq_metadata=None,
     )
 
 
@@ -59,7 +56,6 @@ def empty_qasm_program_qcm_rf():
         static_hw_properties=QCMRFCompiler.static_hw_properties,
         register_manager=RegisterManager(),
         align_fields=True,
-        acq_metadata=None,
     )
 
 
@@ -69,5 +65,4 @@ def empty_qasm_program_qtm():
         static_hw_properties=QTMCompiler.static_hw_properties,
         register_manager=RegisterManager(),
         align_fields=True,
-        acq_metadata=None,
     )
