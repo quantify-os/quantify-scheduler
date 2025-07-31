@@ -4,7 +4,9 @@
 
 from __future__ import annotations
 
+import bisect
 import math
+import sys
 from copy import deepcopy
 from dataclasses import dataclass
 from typing import Any
@@ -222,6 +224,8 @@ class StitchedPulseBuilder:
         self._clock = clock
         self._t0 = t0
         self._pulses: list[Operation] = []
+
+        # Note, this list is kept sorted by start time.
         self._offsets: list[_VoltageOffsetInfo] = []
 
     def set_port(self, port: str) -> StitchedPulseBuilder:
@@ -325,8 +329,9 @@ class StitchedPulseBuilder:
 
         pulse = deepcopy(pulse)  # we will modify it
         if append:
+            operation_end = self.operation_end  # performance: calculate only once
             for pulse_info in pulse["pulse_info"]:
-                pulse_info["t0"] += self.operation_end
+                pulse_info["t0"] += operation_end
         self._pulses.append(pulse)
         return self
 
@@ -402,12 +407,10 @@ class StitchedPulseBuilder:
             duration=duration,
             reference_magnitude=reference_magnitude,
         )
-        if self._overlaps_with_existing_offsets(offset):
-            raise RuntimeError(
-                "Tried to add offset that overlaps with existing offsets in the StitchedPulse."
-            )
 
-        self._offsets.append(offset)
+        idx = self._get_offset_list_insertion_index(offset)
+        self._offsets.insert(idx, offset)
+
         return self
 
     @property
@@ -434,9 +437,12 @@ class StitchedPulseBuilder:
             ),
             default=0,
         )
-        max_from_offsets: float = max(
-            (offs.t0 + (offs.duration or 0.0) for offs in self._offsets), default=0
-        )
+
+        # Offsets are sorted by t0 and do not overlap (see `add_voltage_offset`)
+        if self._offsets:
+            max_from_offsets = self._offsets[-1].t0 + (self._offsets[-1].duration or 0.0)
+        else:
+            max_from_offsets = 0
 
         return max(max_from_pulses, max_from_offsets)
 
@@ -485,12 +491,9 @@ class StitchedPulseBuilder:
             )
 
         offset_ops: list[VoltageOffset] = []
-        offset_infos = sorted(
-            self._offsets,
-            key=lambda op: op.t0,
-        )
         background = (0.0, 0.0)
-        for i, offset_info in enumerate(offset_infos):
+        operation_end = self.operation_end  # performance: calculate only once
+        for i, offset_info in enumerate(self._offsets):
             offset_ops.append(create_operation_from_info(offset_info))
 
             if offset_info.duration is None:
@@ -503,7 +506,7 @@ class StitchedPulseBuilder:
                 continue
 
             this_end = offset_info.t0 + (offset_info.duration or 0.0)
-            if math.isclose(this_end, self.operation_end):
+            if math.isclose(this_end, operation_end):
                 background = (0.0, 0.0)
             # Reset if the next offset's start does not overlap with the current
             # offset's end, or if the current offset is the last one
@@ -522,21 +525,61 @@ class StitchedPulseBuilder:
         # If this wasn't done yet, add a reset to 0 at the end of the StitchedPulse
         if not (math.isclose(background[0], 0) and math.isclose(background[1], 0)):
             offset_ops.append(
-                create_operation_from_info(_VoltageOffsetInfo(0.0, 0.0, t0=self.operation_end))
+                create_operation_from_info(_VoltageOffsetInfo(0.0, 0.0, t0=operation_end))
             )
 
         return offset_ops
 
-    def _overlaps_with_existing_offsets(self, offset: _VoltageOffsetInfo) -> bool:
-        offsets = self._offsets[:]
-        offsets.append(offset)
-        offsets.sort(key=lambda op: op.t0)
-        for i, offs in enumerate(offsets[:-1]):
-            next_start = offsets[i + 1].t0
-            this_end = offs.t0 + (offs.duration or 0.0)
-            if next_start < this_end:
-                return True
-        return False
+    def _get_offset_list_insertion_index(self, offset: _VoltageOffsetInfo) -> int:
+        """
+        Get the index of self._offsets to insert the voltage offset operation at. Note that
+        self._offsets is always kept sorted by t0.
+
+        If the offset is overlapping in time with any existing offset, throw an error.
+        """
+        overlaps_with_existing_offsets = False
+
+        if not self._offsets:
+            # No overlap, so we can insert at index 0.
+            return 0
+
+        if sys.version_info[1] < 10:
+            # The `key` keyword was added in python 3.10
+            closest_next_offset_idx = bisect.bisect_right([o.t0 for o in self._offsets], offset.t0)
+        else:
+            closest_next_offset_idx = bisect.bisect_right(
+                self._offsets,
+                offset.t0,
+                key=lambda x: x.t0,  # type: ignore
+            )
+
+        closest_prev_offset_idx = closest_next_offset_idx - 1
+        if closest_prev_offset_idx == -1:
+            # This offset comes before all others. Return whether there is overlap with the first
+            # stored offset.
+            overlaps_with_existing_offsets = (
+                offset.t0 + (offset.duration or 0.0) > self._offsets[0].t0
+            )
+        elif closest_next_offset_idx == len(self._offsets):
+            # This offset comes after all others. Return whether there is overlap with the last
+            # stored offset.
+            overlaps_with_existing_offsets = (
+                self._offsets[-1].t0 + (self._offsets[-1].duration or 0.0) > offset.t0
+            )
+        else:
+            closest_next_offset = self._offsets[closest_next_offset_idx]
+            closest_prev_offset = self._offsets[closest_prev_offset_idx]
+            overlaps_with_existing_offsets = (
+                offset.t0 + (offset.duration or 0.0) > closest_next_offset.t0
+                or closest_prev_offset.t0 + (closest_prev_offset.duration or 0.0) > offset.t0
+            )
+
+        if overlaps_with_existing_offsets:
+            raise RuntimeError(
+                "Tried to add offset that overlaps with existing offsets in the StitchedPulse."
+            )
+
+        return closest_next_offset_idx
 
     def build(self) -> StitchedPulse:
         """
@@ -551,6 +594,9 @@ class StitchedPulseBuilder:
         offsets = self._build_voltage_offset_operations()
         self._distribute_t0(offsets)
         stitched_pulse = StitchedPulse(self._name)
+        # performance: do not call Operation.add_pulse, so that Operation._update is called only
+        # once
         for op in offsets + self._pulses:
-            stitched_pulse.add_pulse(op)
+            stitched_pulse.data["pulse_info"] += op.data["pulse_info"]
+        stitched_pulse._update()
         return stitched_pulse
