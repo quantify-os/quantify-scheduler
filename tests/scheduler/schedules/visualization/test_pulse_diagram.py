@@ -25,6 +25,7 @@ from quantify_scheduler.schedules._visualization.pulse_diagram import (
     pulse_diagram_plotly,
     sample_schedule,
 )
+from quantify_scheduler.schedules.schedule import Schedule
 
 
 # Proper verification of this, probably requires some horrible selenium malarkey
@@ -427,3 +428,22 @@ def test_merge_pulses_and_offsets_label():
 
     result = merge_pulses_and_offsets(waveforms)
     assert result.label == "4 operations"
+
+
+def test_schedule_repetitions_are_not_sampled():
+    schedule = Schedule(repetitions=1024)
+    schedule.add(SquarePulse(amp=0.2, duration=1e-9, port="SDP"))
+    schedule.add(VoltageOffset(offset_path_I=0.1, offset_path_Q=0.1, port="SDP"))
+    schedule.add(SquarePulse(amp=0.2, duration=1e-9, port="SDP"))
+
+    schedule = _determine_absolute_timing(schedule)
+    sampled_pulses_and_acqs = sample_schedule(schedule)
+
+    all_times = []
+
+    for port_data in sampled_pulses_and_acqs.values():
+        pulses, _ = port_data
+        for pulse in pulses:
+            all_times.extend(pulse.time)
+
+    assert max(all_times) <= 3e-9

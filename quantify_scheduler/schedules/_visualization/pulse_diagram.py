@@ -134,7 +134,7 @@ def get_sampled_pulses_from_voltage_offsets(
                     signal.append(signal[-1])
                 time.append(info.time)
                 signal.append(info.op_info["offset_path_I"] + 1j * info.op_info["offset_path_Q"])
-            time.append(schedule.duration)
+            time.append(schedule.duration / schedule.repetitions)
             signal.append(signal[-1])
 
             # Filter in time: Keep one point before and one point after the limit (if
