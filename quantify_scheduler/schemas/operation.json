@@ -142,7 +142,8 @@
                     "acq_index": {
                         "description": "The acquisition index where to store the result of the acquisition protocol.",
                         "type": [
-                            "number"
+                            "number",
+                            "null"
                         ]
                     },
                     "acq_return_type": {

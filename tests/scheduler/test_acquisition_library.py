@@ -199,7 +199,7 @@ def test_trigger_count():
         clock="q0.ro",
         duration=0.001,
         acq_channel=4815162342,
-        acq_index=0,
+        acq_index=None,
         bin_mode=BinMode.DISTRIBUTION,
         t0=12e-9,
     )
@@ -207,14 +207,19 @@ def test_trigger_count():
     assert trigger_count.data["acquisition_info"][0]["port"] == "q0:res"
     assert trigger_count.data["acquisition_info"][0]["clock"] == "q0.ro"
     assert trigger_count.data["acquisition_info"][0]["duration"] == 0.001
-    assert trigger_count.data["acquisition_info"][0]["acq_index"] == 0
+    assert trigger_count.data["acquisition_info"][0]["acq_index"] is None
     assert trigger_count.data["acquisition_info"][0]["acq_channel"] == 4815162342
     assert trigger_count.data["acquisition_info"][0]["bin_mode"] == BinMode.DISTRIBUTION
     assert trigger_count.data["acquisition_info"][0]["t0"] == 12e-9
 
 
 def test_trigger_count_invalid_index_distribution_mode():
-    with pytest.raises(NotImplementedError) as error:
+    with pytest.warns(
+        FutureWarning,
+        match="Using integer acq_index is not going to be supported "
+        "for distribution bin mode for "
+        "the trigger count protocol. Use acq_index=None.",
+    ):
         _ = TriggerCount(
             port="q0:res",
             clock="q0.ro",
@@ -224,12 +229,6 @@ def test_trigger_count_invalid_index_distribution_mode():
             bin_mode=BinMode.DISTRIBUTION,
             t0=12e-9,
         )
-
-    assert (
-        error.value.args[0]
-        == "Using nonzero acq_index is not yet implemented for distribution bin mode for "
-        "the trigger count protocol"
-    )
 
 
 def test_trigger_count_average_mode_warning():
@@ -242,6 +241,7 @@ def test_trigger_count_average_mode_warning():
             clock="q0.ro",
             duration=0.001,
             acq_channel=0,
+            acq_index=None,
             bin_mode=BinMode.AVERAGE,
             t0=12e-9,
         )

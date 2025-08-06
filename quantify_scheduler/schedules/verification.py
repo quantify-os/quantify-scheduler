@@ -271,7 +271,7 @@ def multiplexing_staircase_sched(
         amp: float | complex,
         clock: str,
         acq_channel: int,
-        acq_index: int,
+        acq_index: int | None,
         delay: float,
     ) -> Schedule:
         pulse = sched.add(

@@ -359,17 +359,17 @@ class Operation(JSONSchemaValMixin, UserDict):
 
 
 def _generate_acq_indices_for_gate(
-    device_elements: list[str], acq_index: Sequence[int] | int | None
-) -> int | Iterable[int]:
+    device_elements: list[str], acq_index: Sequence[int] | Sequence[None] | int | None
+) -> int | None | Iterable[int] | Iterable[None]:
     # This if else statement a workaround to support multiplexed measurements (#262);
     # this snippet has some automatic behaviour that is error prone; see #262.
     if len(device_elements) == 1:
-        return 0 if (acq_index is None) else acq_index
+        return None if (acq_index is None) else acq_index
     elif acq_index is None:
-        # Defaults to writing the result of all device elements to acq_index 0.
+        # Defaults to writing the result of all device elements to acq_index None.
         # Note that this will result in averaging data together if multiple
         # measurements are present in the same schedule (#262).
-        return [0] * len(device_elements)
+        return [None] * len(device_elements)
     elif isinstance(acq_index, Iterable):
         return acq_index
     else:

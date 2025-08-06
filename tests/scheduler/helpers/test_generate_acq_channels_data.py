@@ -78,6 +78,7 @@ def test_binned_average(
                 acq_channel=0,
                 acq_index=0,
                 bin_mode=BinMode.AVERAGE,
+                coords={"amp": 0.1, "freq": 1.0},
                 port="q0:res",
                 clock="q0.ro",
                 **protocol_opt_args,
@@ -90,6 +91,7 @@ def test_binned_average(
                 acq_channel=0,
                 acq_index=1,
                 bin_mode=BinMode.AVERAGE,
+                coords={"amp": 0.2, "freq": 2.0},
                 port="q0:res",
                 clock="q0.ro",
                 **protocol_opt_args,
@@ -102,6 +104,7 @@ def test_binned_average(
                 acq_channel=1,
                 acq_index=0,
                 bin_mode=BinMode.AVERAGE,
+                coords={"amp": 0.3, "freq": 3.0},
                 port="q0:res",
                 clock="q0.ro",
                 **protocol_opt_args,
@@ -114,6 +117,7 @@ def test_binned_average(
                 acq_channel=1,
                 acq_index=1,
                 bin_mode=BinMode.AVERAGE,
+                coords={"amp": 0.4, "freq": 4.0},
                 port="q0:res",
                 clock="q0.ro",
                 **protocol_opt_args,
@@ -126,6 +130,7 @@ def test_binned_average(
                 acq_channel=1,
                 acq_index=2,
                 bin_mode=BinMode.AVERAGE,
+                coords=None,
                 port="q0:res",
                 clock="q0.ro",
                 **protocol_opt_args,
@@ -138,6 +143,7 @@ def test_binned_average(
                 acq_channel=1,
                 acq_index=3,
                 bin_mode=BinMode.AVERAGE,
+                coords={"amp": 0.6, "freq": 6.0},
                 port="q0:res",
                 clock="q0.ro",
                 **protocol_opt_args,
@@ -150,6 +156,7 @@ def test_binned_average(
                 acq_channel=2,
                 acq_index=0,
                 bin_mode=BinMode.AVERAGE,
+                coords={"amp": 0.7, "freq": 7.0},
                 port="q0:res",
                 clock="q0.ro",
                 **protocol_opt_args,
@@ -171,19 +178,24 @@ def test_binned_average(
             acq_index_dim_name="acq_index_0",
             protocol=protocol_str,
             bin_mode=BinMode.AVERAGE,
-            coords=[{}, {}],
+            coords=[{"amp": 0.1, "freq": 1.0}, {"amp": 0.2, "freq": 2.0}],
         ),
         1: AcquisitionChannelData(
             acq_index_dim_name="acq_index_1",
             protocol=protocol_str,
             bin_mode=BinMode.AVERAGE,
-            coords=[{}, {}, {}, {}],
+            coords=[
+                {"amp": 0.3, "freq": 3.0},
+                {"amp": 0.4, "freq": 4.0},
+                {},
+                {"amp": 0.6, "freq": 6.0},
+            ],
         ),
         2: AcquisitionChannelData(
             acq_index_dim_name="acq_index_2",
             protocol=protocol_str,
             bin_mode=BinMode.AVERAGE,
-            coords=[{}],
+            coords=[{"amp": 0.7, "freq": 7.0}],
         ),
     }
 
@@ -254,6 +266,7 @@ def test_binned_append(
                 acq_channel=0,
                 acq_index=0,
                 bin_mode=BinMode.APPEND,
+                coords={"amp": 0.1, "freq": 1.0},
                 port="q0:res",
                 clock="q0.ro",
                 **protocol_opt_args,
@@ -266,6 +279,7 @@ def test_binned_append(
                 acq_channel=0,
                 acq_index=1,
                 bin_mode=BinMode.APPEND,
+                coords=None,
                 port="q0:res",
                 clock="q0.ro",
                 **protocol_opt_args,
@@ -278,6 +292,7 @@ def test_binned_append(
                 acq_channel=0,
                 acq_index=1,
                 bin_mode=BinMode.APPEND,
+                coords={"amp": 0.3, "freq": 3.0},
                 port="q0:res",
                 clock="q0.ro",
                 **protocol_opt_args,
@@ -300,9 +315,9 @@ def test_binned_append(
             protocol=protocol_str,
             bin_mode=BinMode.APPEND,
             coords=[
-                {"acq_index_legacy": 0},
+                {"acq_index_legacy": 0, "amp": 0.1, "freq": 1.0},
                 {"acq_index_legacy": 1},
-                {"acq_index_legacy": 1},
+                {"acq_index_legacy": 1, "amp": 0.3, "freq": 3.0},
             ],
         ),
     }
@@ -370,6 +385,7 @@ def test_binned_append_loop(
             acq_channel=0,
             acq_index=0,
             bin_mode=BinMode.APPEND,
+            coords={"amp": 0.1, "freq": 1.0},
             port="q0:res",
             clock="q0.ro",
             **protocol_opt_args,
@@ -392,7 +408,10 @@ def test_binned_append_loop(
             acq_index_dim_name="acq_index_0",
             protocol=protocol_str,
             bin_mode=BinMode.APPEND,
-            coords=[{"acq_index_legacy": 0, "loop_repetition": lr} for lr in range(4 * 3)],
+            coords=[
+                {"acq_index_legacy": 0, "loop_repetition": lr, "amp": 0.1, "freq": 1.0}
+                for lr in range(4 * 3)
+            ],
         ),
     }
 
@@ -441,6 +460,7 @@ def test_trace_and_binned(mock_setup_basic_transmon_with_standard_params):
                 acq_channel=0,
                 acq_index=0,
                 bin_mode=BinMode.AVERAGE,
+                coords=None,
                 port="q0:res",
                 clock="q0.ro",
                 duration=1e-6,
@@ -453,6 +473,7 @@ def test_trace_and_binned(mock_setup_basic_transmon_with_standard_params):
                 acq_channel=1,
                 acq_index=0,
                 bin_mode=BinMode.AVERAGE,
+                coords={"amp": 0.1, "freq": 1.0},
                 port="q0:res",
                 clock="q0.ro",
                 duration=1e-6,
@@ -480,7 +501,7 @@ def test_trace_and_binned(mock_setup_basic_transmon_with_standard_params):
             acq_index_dim_name="acq_index_1",
             protocol="Trace",
             bin_mode=BinMode.AVERAGE,
-            coords={},
+            coords={"amp": 0.1, "freq": 1.0},
         ),
     }
 
@@ -503,7 +524,7 @@ def test_trigger_count_distribution(mock_setup_basic_transmon_with_standard_para
         schedule.add(
             TriggerCount(
                 acq_channel=1,
-                acq_index=0,
+                acq_index=None,
                 bin_mode=BinMode.DISTRIBUTION,
                 port="q0:res",
                 clock="q0.ro",
@@ -516,7 +537,7 @@ def test_trigger_count_distribution(mock_setup_basic_transmon_with_standard_para
         schedule.add(
             TriggerCount(
                 acq_channel=1,
-                acq_index=0,
+                acq_index=None,
                 bin_mode=BinMode.DISTRIBUTION,
                 port="q0:res",
                 clock="q0.ro",
@@ -562,6 +583,7 @@ def test_trigger_count_append(mock_setup_basic_transmon_with_standard_params):
                 acq_channel=1,
                 acq_index=0,
                 bin_mode=BinMode.APPEND,
+                coords={"amp": 0.1, "freq": 1.0},
                 port="q0:res",
                 clock="q0.ro",
                 duration=1e-6,
@@ -583,7 +605,7 @@ def test_trigger_count_append(mock_setup_basic_transmon_with_standard_params):
             acq_index_dim_name="acq_index_1",
             protocol="TriggerCount",
             bin_mode=BinMode.APPEND,
-            coords=[{"acq_index_legacy": 0}],
+            coords=[{"acq_index_legacy": 0, "amp": 0.1, "freq": 1.0}],
         ),
     }
 
@@ -608,6 +630,7 @@ def test_trigger_count_sum(mock_setup_basic_transmon_with_standard_params):
                 acq_channel=1,
                 acq_index=0,
                 bin_mode=BinMode.SUM,
+                coords={"amp": 0.1, "freq": 1.0},
                 port="q0:res",
                 clock="q0.ro",
                 duration=1e-6,
@@ -621,6 +644,7 @@ def test_trigger_count_sum(mock_setup_basic_transmon_with_standard_params):
                 acq_channel=1,
                 acq_index=1,
                 bin_mode=BinMode.SUM,
+                coords=None,
                 port="q0:res",
                 clock="q0.ro",
                 duration=1e-6,
@@ -642,7 +666,7 @@ def test_trigger_count_sum(mock_setup_basic_transmon_with_standard_params):
             acq_index_dim_name="acq_index_1",
             protocol="TriggerCount",
             bin_mode=BinMode.SUM,
-            coords=[{}, {}],
+            coords=[{"amp": 0.1, "freq": 1.0}, {}],
         ),
     }
 
@@ -653,3 +677,54 @@ def test_trigger_count_sum(mock_setup_basic_transmon_with_standard_params):
 
     assert expected_acq_channels_data == acq_channels_data
     assert expected_schedulable_label_to_acq_index == schedulable_label_to_acq_index
+
+
+def test_shared_coords_warning(
+    mock_setup_basic_transmon_with_standard_params,
+):
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
+
+    schedule = Schedule("Test schedule", repetitions=2)
+    schedulables: list[Schedulable] = []
+
+    schedulables.append(
+        schedule.add(
+            SSBIntegrationComplex(
+                acq_channel=0,
+                acq_index=0,
+                bin_mode=BinMode.AVERAGE,
+                coords={"amp": 0.1},
+                port="q0:res",
+                clock="q0.ro",
+                duration=100e-9,
+            )
+        )
+    )
+    schedulables.append(
+        schedule.add(
+            SSBIntegrationComplex(
+                acq_channel=1,
+                acq_index=0,
+                bin_mode=BinMode.AVERAGE,
+                coords={"amp": 0.2, "freq": 2.0},
+                port="q0:res",
+                clock="q0.ro",
+                duration=100e-9,
+            )
+        )
+    )
+
+    compiler = SerialCompiler("test")
+    partially_compiled_sched = compiler.compile(
+        schedule=schedule, config=quantum_device.generate_compilation_config()
+    )
+
+    with pytest.warns(
+        match="The coords key `amp` is shared between "
+        "`0` and `1`. "
+        "This is not yet fully supported, please try different keys. "
+        "See https://gitlab.com/quantify-os/quantify-scheduler/-/issues/497."
+    ):
+        acq_channels_data, schedulable_label_to_acq_index = generate_acq_channels_data(
+            partially_compiled_sched
+        )

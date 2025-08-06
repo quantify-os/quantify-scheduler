@@ -54,7 +54,8 @@ def _dispersive_measurement(  # noqa: PLR0915
     acq_delay: float,
     acq_channel: Hashable,
     acq_channel_override: Hashable | None,
-    acq_index: int,
+    coords: dict | None,
+    acq_index: int | None,
     acq_protocol: str | None,
     pulse_type: Literal["SquarePulse"],
     bin_mode: BinMode | None,
@@ -99,6 +100,8 @@ def _dispersive_measurement(  # noqa: PLR0915
         The acquisition channel.
     acq_channel_override
         An optional override for the acquisition channel.
+    coords
+        Coords.
     acq_index
         The index of the acquisition.
     acq_protocol
@@ -188,6 +191,7 @@ def _dispersive_measurement(  # noqa: PLR0915
                 clock=clock,
                 duration=acq_duration,
                 acq_channel=acq_channel,
+                coords=coords,
                 acq_index=acq_index,
                 bin_mode=bin_mode,
                 t0=acq_delay,
@@ -225,6 +229,7 @@ def _dispersive_measurement(  # noqa: PLR0915
                     weights_b=acq_weights_b,
                     weights_sampling_rate=acq_weights_sampling_rate,
                     acq_channel=acq_channel,
+                    coords=coords,
                     acq_index=acq_index,
                     bin_mode=bin_mode,
                     t0=acq_delay,
@@ -240,6 +245,7 @@ def _dispersive_measurement(  # noqa: PLR0915
                     weights_b=acq_weights_b,
                     weights_sampling_rate=acq_weights_sampling_rate,
                     acq_channel=acq_channel,
+                    coords=coords,
                     acq_index=acq_index,
                     bin_mode=bin_mode,
                     t0=acq_delay,
@@ -255,6 +261,7 @@ def _dispersive_measurement(  # noqa: PLR0915
                     weights_b=acq_weights_b,
                     weights_sampling_rate=acq_weights_sampling_rate,
                     acq_channel=acq_channel,
+                    coords=coords,
                     acq_index=acq_index,
                     bin_mode=bin_mode,
                     t0=acq_delay,
@@ -271,6 +278,7 @@ def _dispersive_measurement(  # noqa: PLR0915
                 clock=clock,
                 duration=acq_duration,
                 acq_channel=acq_channel,
+                coords=coords,
                 acq_index=acq_index,
                 bin_mode=bin_mode,
                 t0=acq_delay,
@@ -287,6 +295,7 @@ def _dispersive_measurement(  # noqa: PLR0915
                 clock=clock,
                 duration=acq_duration,
                 acq_channel=acq_channel,
+                coords=coords,
                 acq_index=acq_index,
                 t0=acq_delay,
             ),
@@ -331,6 +340,7 @@ def _dispersive_measurement(  # noqa: PLR0915
             clock=clock,
             duration=acq_duration,
             acq_channel=0,
+            coords=coords,
             acq_index=acq_index,
             bin_mode=bin_mode,
             t0=0,
@@ -380,7 +390,8 @@ def dispersive_measurement_transmon(
     acq_delay: float,
     acq_channel: Hashable,
     acq_channel_override: Hashable | None,
-    acq_index: int,
+    coords: dict | None,
+    acq_index: int | None,
     acq_protocol: str | None,
     pulse_type: Literal["SquarePulse"] = "SquarePulse",
     bin_mode: BinMode | None = BinMode.AVERAGE,
@@ -417,6 +428,8 @@ def dispersive_measurement_transmon(
         The acquisition channel.
     acq_channel_override
         An optional override for the acquisition channel.
+    coords
+        Coords.
     acq_index
         The index of the acquisition.
     acq_protocol
@@ -465,6 +478,7 @@ def dispersive_measurement_transmon(
         acq_delay=acq_delay,
         acq_channel=acq_channel,
         acq_channel_override=acq_channel_override,
+        coords=coords,
         acq_index=acq_index,
         acq_protocol=acq_protocol,
         pulse_type=pulse_type,
@@ -494,7 +508,8 @@ def dispersive_measurement_spin(
     acq_delay: float,
     acq_channel: Hashable,
     acq_channel_override: Hashable | None,
-    acq_index: int,
+    coords: dict | None,
+    acq_index: int | None,
     acq_protocol: str | None,
     pulse_type: Literal["SquarePulse"] = "SquarePulse",
     bin_mode: BinMode | None = BinMode.AVERAGE,
@@ -531,6 +546,8 @@ def dispersive_measurement_spin(
         The acquisition channel.
     acq_channel_override
         An optional override for the acquisition channel.
+    coords
+        Coords.
     acq_index
         The index of the acquisition.
     acq_protocol
@@ -583,6 +600,7 @@ def dispersive_measurement_spin(
         acq_delay=acq_delay,
         acq_channel=acq_channel,
         acq_channel_override=acq_channel_override,
+        coords=coords,
         acq_index=acq_index,
         acq_protocol=acq_protocol,
         pulse_type=pulse_type,
@@ -612,7 +630,8 @@ def optical_measurement(
     acq_clock: str,
     acq_channel: Hashable,
     acq_channel_override: Hashable | None,
-    acq_index: int,
+    coords: dict | None,
+    acq_index: int | None,
     bin_mode: BinMode | None,
     acq_protocol: Literal["Trace", "TriggerCount", "Timetag", "TimetagTrace"] | None,
     acq_protocol_default: Literal["Trace", "TriggerCount"],
@@ -656,6 +675,8 @@ def optical_measurement(
         Default acquisition channel of the device element
     acq_channel_override
         Acquisition channel of the operation
+    coords
+        Coords.
     acq_index
         Acquisition index as defined in the Schedule
     bin_mode
@@ -745,6 +766,7 @@ def optical_measurement(
                 duration=acq_duration,
                 t0=t0_acquisition,
                 acq_channel=acq_channel,
+                coords=coords,
                 acq_index=acq_index,
                 bin_mode=bin_mode,
             )
@@ -757,6 +779,7 @@ def optical_measurement(
                 duration=acq_duration,
                 t0=t0_acquisition,
                 acq_channel=acq_channel,
+                coords=coords,
                 acq_index=acq_index,
                 bin_mode=bin_mode,
             )
@@ -777,6 +800,7 @@ def optical_measurement(
                 duration=acq_duration,
                 t0=t0_acquisition,
                 acq_channel=acq_channel,
+                coords=coords,
                 acq_index=acq_index,
                 bin_mode=bin_mode,
                 **timetag_args,
@@ -793,6 +817,7 @@ def optical_measurement(
                 duration=acq_duration,
                 t0=t0_acquisition,
                 acq_channel=acq_channel,
+                coords=coords,
                 acq_index=acq_index,
                 bin_mode=bin_mode,
                 **timetag_args,

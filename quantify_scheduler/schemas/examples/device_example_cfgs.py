@@ -47,6 +47,7 @@ example_transmon_cfg = {
                 + "measurement_factories.dispersive_measurement_transmon",
                 "gate_info_factory_kwargs": [
                     "acq_channel_override",
+                    "coords",
                     "acq_index",
                     "bin_mode",
                     "acq_protocol",
@@ -92,6 +93,7 @@ example_transmon_cfg = {
                 + "measurement_factories.dispersive_measurement_transmon",
                 "gate_info_factory_kwargs": [
                     "acq_channel_override",
+                    "coords",
                     "acq_index",
                     "bin_mode",
                     "acq_protocol",

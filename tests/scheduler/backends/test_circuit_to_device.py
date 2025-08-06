@@ -208,7 +208,7 @@ def test_compile_symmetric_gate_distinguished_qubits(mock_setup_basic_transmon):
 
 def test_measurement_compile(device_cfg_transmon_example, get_subschedule_operation):
     sched = Schedule("Test schedule")
-    sched.add(Measure("q0", "q1"))  # acq_index should be 0 for both.
+    sched.add(Measure("q0", "q1", acq_index=0))  # acq_index should be 0 for both.
     sched.add(Measure("q0", acq_index=1))
     sched.add(Measure("q1", acq_index=2))  # acq_channel should be 1
     sched.add(Measure("q1", acq_channel=2, acq_index=0))
@@ -399,6 +399,7 @@ def test_clock_not_defined_raises():
                     + "measurement_factories.dispersive_measurement_transmon",
                     "gate_info_factory_kwargs": [
                         "acq_channel_override",
+                        "coords",
                         "acq_index",
                         "bin_mode",
                         "acq_protocol",
@@ -524,6 +525,7 @@ def test_compile_schedule_with_trace_acq_protocol():
                     + "measurement_factories.dispersive_measurement_transmon",
                     "gate_info_factory_kwargs": [
                         "acq_channel_override",
+                        "coords",
                         "acq_index",
                         "bin_mode",
                         "acq_protocol",
@@ -566,6 +568,7 @@ def test_compile_schedule_with_invalid_pulse_type_raises():
                     + "measurement_factories.dispersive_measurement_transmon",
                     "gate_info_factory_kwargs": [
                         "acq_channel_override",
+                        "coords",
                         "acq_index",
                         "bin_mode",
                         "acq_protocol",
@@ -910,6 +913,7 @@ def test_clock_resources_and_subschedules_compiles():
                     + "measurement_factories.dispersive_measurement_transmon",
                     "gate_info_factory_kwargs": [
                         "acq_channel_override",
+                        "coords",
                         "acq_index",
                         "bin_mode",
                         "acq_protocol",

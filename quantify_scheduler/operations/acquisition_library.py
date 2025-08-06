@@ -73,6 +73,14 @@ class Trace(Acquisition):
         The data channel in which the acquisition is stored, is by default 0.
         Describes the "where" information of the  measurement, which typically
         corresponds to a device element idx.
+    coords
+        Coords for the acquisition.
+        These coordinates for the measured value for this operation
+        appear in the retrieved acquisition data.
+        For example ``coords={"amp": 0.1}`` has the effect, that the measured
+        value for this acquisition will be associated with ``amp==0.1``.
+        By default ``None``, no coords are added.
+        Not implemented for zhinst backend.
     acq_index
         The data register in which the acquisition is stored, by default 0.
         Describes the "when" information of the measurement, used to label or
@@ -97,7 +105,8 @@ class Trace(Acquisition):
         port: str,
         clock: str,
         acq_channel: int = 0,
-        acq_index: int = 0,
+        coords: dict | None = None,
+        acq_index: int | None = 0,
         bin_mode: BinMode | str = BinMode.AVERAGE,
         t0: float = 0,
     ) -> None:
@@ -115,6 +124,7 @@ class Trace(Acquisition):
                 "port": port,
                 "clock": clock,
                 "acq_channel": acq_channel,
+                "coords": coords,
                 "acq_index": acq_index,
                 "bin_mode": bin_mode,
                 "protocol": "Trace",
@@ -160,6 +170,14 @@ class WeightedIntegratedSeparated(Acquisition):
         The data channel in which the acquisition is stored, by default 0.
         Describes the "where" information of the  measurement, which typically
         corresponds to a device element idx.
+    coords
+        Coords for the acquisition.
+        These coordinates for the measured value for this operation
+        appear in the retrieved acquisition data.
+        For example ``coords={"amp": 0.1}`` has the effect, that the measured
+        value for this acquisition will be associated with ``amp==0.1``.
+        By default ``None``, no coords are added.
+        Not implemented for zhinst backend.
     acq_index
         The data register in which the acquisition is stored, by default 0.
         Describes the "when" information of the measurement, used to label or
@@ -189,7 +207,8 @@ class WeightedIntegratedSeparated(Acquisition):
         clock: str,
         duration: float,
         acq_channel: int = 0,
-        acq_index: int = 0,
+        coords: dict | None = None,
+        acq_index: int | None = 0,
         bin_mode: BinMode | str = BinMode.APPEND,
         phase: float = 0,
         t0: float = 0,
@@ -207,6 +226,7 @@ class WeightedIntegratedSeparated(Acquisition):
                 "duration": duration,
                 "phase": phase,
                 "acq_channel": acq_channel,
+                "coords": coords,
                 "acq_index": acq_index,
                 "bin_mode": bin_mode,
                 "protocol": "WeightedIntegratedSeparated",
@@ -246,6 +266,14 @@ class SSBIntegrationComplex(Acquisition):
         The data channel in which the acquisition is stored, by default 0.
         Describes the "where" information of the  measurement, which typically
         corresponds to a device element idx.
+    coords
+        Coords for the acquisition.
+        These coordinates for the measured value for this operation
+        appear in the retrieved acquisition data.
+        For example ``coords={"amp": 0.1}`` has the effect, that the measured
+        value for this acquisition will be associated with ``amp==0.1``.
+        By default ``None``, no coords are added.
+        Not implemented for zhinst backend.
     acq_index
         The data register in which the acquisition is stored, by default 0.
         Describes the "when" information of the measurement, used to label or
@@ -269,7 +297,8 @@ class SSBIntegrationComplex(Acquisition):
         clock: str,
         duration: float,
         acq_channel: int = 0,
-        acq_index: int = 0,
+        coords: dict | None = None,
+        acq_index: int | None = 0,
         bin_mode: BinMode | str = BinMode.AVERAGE,
         phase: float = 0,
         t0: float = 0,
@@ -305,6 +334,7 @@ class SSBIntegrationComplex(Acquisition):
                 "duration": duration,
                 "phase": phase,
                 "acq_channel": acq_channel,
+                "coords": coords,
                 "acq_index": acq_index,
                 "bin_mode": bin_mode,
                 "acq_return_type": complex,
@@ -375,6 +405,14 @@ class ThresholdedAcquisition(Acquisition):
         The data channel in which the acquisition is stored, by default 0.
         Describes the "where" information of the  measurement, which
         typically corresponds to a device element idx.
+    coords
+        Coords for the acquisition.
+        These coordinates for the measured value for this operation
+        appear in the retrieved acquisition data.
+        For example ``coords={"amp": 0.1}`` has the effect, that the measured
+        value for this acquisition will be associated with ``amp==0.1``.
+        By default ``None``, no coords are added.
+        Not implemented for zhinst backend.
     acq_index : int
         The data register in which the acquisition is stored, by default 0.
         Describes the "when" information of the measurement, used to label
@@ -404,7 +442,8 @@ class ThresholdedAcquisition(Acquisition):
         clock: str,
         duration: float,
         acq_channel: int = 0,
-        acq_index: int = 0,
+        coords: dict | None = None,
+        acq_index: int | None = 0,
         bin_mode: BinMode | str = BinMode.AVERAGE,
         feedback_trigger_label: str | None = None,
         phase: float = 0,
@@ -443,6 +482,7 @@ class ThresholdedAcquisition(Acquisition):
                 "duration": duration,
                 "phase": phase,
                 "acq_channel": acq_channel,
+                "coords": coords,
                 "acq_index": acq_index,
                 "bin_mode": bin_mode,
                 "acq_return_type": float if bin_mode == BinMode.AVERAGE else np.int32,
@@ -499,6 +539,14 @@ class NumericalSeparatedWeightedIntegration(WeightedIntegratedSeparated):
         The data channel in which the acquisition is stored, by default 0.
         Describes the "where" information of the  measurement, which typically
         corresponds to a device element idx.
+    coords
+        Coords for the acquisition.
+        These coordinates for the measured value for this operation
+        appear in the retrieved acquisition data.
+        For example ``coords={"amp": 0.1}`` has the effect, that the measured
+        value for this acquisition will be associated with ``amp==0.1``.
+        By default ``None``, no coords are added.
+        Not implemented for zhinst backend.
     acq_index
         The data register in which the acquisition is stored, by default 0.
         Describes the "when" information of the measurement, used to label or
@@ -525,7 +573,8 @@ class NumericalSeparatedWeightedIntegration(WeightedIntegratedSeparated):
         weights_sampling_rate: float = 1e9,
         interpolation: str = "linear",
         acq_channel: int = 0,
-        acq_index: int = 0,
+        coords: dict | None = None,
+        acq_index: int | None = 0,
         bin_mode: BinMode | str = BinMode.APPEND,
         phase: float = 0,
         t0: float = 0,
@@ -556,6 +605,7 @@ class NumericalSeparatedWeightedIntegration(WeightedIntegratedSeparated):
             clock=clock,
             duration=duration,
             acq_channel=acq_channel,
+            coords=coords,
             acq_index=acq_index,
             bin_mode=bin_mode,
             phase=phase,
@@ -579,6 +629,7 @@ class NumericalSeparatedWeightedIntegration(WeightedIntegratedSeparated):
         clock = acq_info["clock"]
         interpolation = acq_info["waveforms"][0]["interpolation"]
         acq_channel = acq_info["acq_channel"]
+        coords = acq_info["coords"]
         acq_index = acq_info["acq_index"]
         bin_mode = acq_info["bin_mode"].value
         phase = acq_info["phase"]
@@ -587,7 +638,7 @@ class NumericalSeparatedWeightedIntegration(WeightedIntegratedSeparated):
         return (
             f"{self.__class__.__name__}(weights_a={weights_a}, weights_b={weights_b}, "
             f"{weights_sampling_rate=}, {port=}, {clock=}, {interpolation=}, "
-            f"{acq_channel=}, {acq_index=}, {bin_mode=}, {phase=}, {t0=})"
+            f"{acq_channel=}, {coords=}, {acq_index=}, {bin_mode=}, {phase=}, {t0=})"
         )
 
     def __repr__(self) -> str:
@@ -625,6 +676,14 @@ class NumericalWeightedIntegration(NumericalSeparatedWeightedIntegration):
         The data channel in which the acquisition is stored, by default 0.
         Describes the "where" information of the  measurement, which typically
         corresponds to a device element idx.
+    coords
+        Coords for the acquisition.
+        These coordinates for the measured value for this operation
+        appear in the retrieved acquisition data.
+        For example ``coords={"amp": 0.1}`` has the effect, that the measured
+        value for this acquisition will be associated with ``amp==0.1``.
+        By default ``None``, no coords are added.
+        Not implemented for zhinst backend.
     acq_index
         The data register in which the acquisition is stored, by default 0.
         Describes the "when" information of the measurement, used to label or
@@ -651,7 +710,8 @@ class NumericalWeightedIntegration(NumericalSeparatedWeightedIntegration):
         weights_sampling_rate: float = 1e9,
         interpolation: str = "linear",
         acq_channel: int = 0,
-        acq_index: int = 0,
+        coords: dict | None = None,
+        acq_index: int | None = 0,
         bin_mode: BinMode | str = BinMode.APPEND,
         phase: float = 0,
         t0: float = 0,
@@ -664,6 +724,7 @@ class NumericalWeightedIntegration(NumericalSeparatedWeightedIntegration):
             weights_sampling_rate=weights_sampling_rate,
             interpolation=interpolation,
             acq_channel=acq_channel,
+            coords=coords,
             acq_index=acq_index,
             bin_mode=bin_mode,
             phase=phase,
@@ -721,6 +782,14 @@ class WeightedThresholdedAcquisition(NumericalSeparatedWeightedIntegration):
         The data channel in which the acquisition is stored, by default 0.
         Describes the "where" information of the  measurement, which typically
         corresponds to a qubit idx.
+    coords
+        Coords for the acquisition.
+        These coordinates for the measured value for this operation
+        appear in the retrieved acquisition data.
+        For example ``coords={"amp": 0.1}`` has the effect, that the measured
+        value for this acquisition will be associated with ``amp==0.1``.
+        By default ``None``, no coords are added.
+        Not implemented for zhinst backend.
     acq_index
         The data register in which the acquisition is stored, by default 0.
         Describes the "when" information of the measurement, used to label or
@@ -750,7 +819,8 @@ class WeightedThresholdedAcquisition(NumericalSeparatedWeightedIntegration):
         weights_sampling_rate: float = 1e9,
         interpolation: str = "linear",
         acq_channel: int = 0,
-        acq_index: int = 0,
+        coords: dict | None = None,
+        acq_index: int | None = 0,
         bin_mode: BinMode | str = BinMode.APPEND,
         phase: float = 0,
         t0: float = 0,
@@ -766,6 +836,7 @@ class WeightedThresholdedAcquisition(NumericalSeparatedWeightedIntegration):
             weights_sampling_rate=weights_sampling_rate,
             interpolation=interpolation,
             acq_channel=acq_channel,
+            coords=coords,
             acq_index=acq_index,
             bin_mode=bin_mode,
             phase=phase,
@@ -807,6 +878,14 @@ class TriggerCount(Acquisition):
         The data channel in which the acquisition is stored, by default 0.
         Describes the "where" information of the measurement, which typically
         corresponds to a device element idx.
+    coords
+        Coords for the acquisition.
+        These coordinates for the measured value for this operation
+        appear in the retrieved acquisition data.
+        For example ``coords={"amp": 0.1}`` has the effect, that the measured
+        value for this acquisition will be associated with ``amp==0.1``.
+        By default ``None``, no coords are added.
+        Not implemented for zhinst backend.
     acq_index
         The data register in which the acquisition is stored, by default 0.
         Describes the "when" information of the measurement, used to label or
@@ -843,7 +922,8 @@ class TriggerCount(Acquisition):
         clock: str,
         duration: float,
         acq_channel: int = 0,
-        acq_index: int = 0,
+        coords: dict | None = None,
+        acq_index: int | None = 0,
         bin_mode: BinMode | str = BinMode.APPEND,
         t0: float = 0,
         fine_start_delay: float = 0,
@@ -859,14 +939,16 @@ class TriggerCount(Acquisition):
                 FutureWarning,
             )
             bin_mode = BinMode.DISTRIBUTION
-        if bin_mode == BinMode.DISTRIBUTION and acq_index != 0:
-            # In average mode the count distribution is measured,
+        if bin_mode == BinMode.DISTRIBUTION and acq_index is not None:
+            # In distribution mode the count distribution is measured,
             # and currently we do not support multiple indices for this,
             # or starting the counting from a predefined count number.
-            raise NotImplementedError(
-                f"Using nonzero acq_index is not yet implemented for "
+            warnings.warn(
+                f"Using integer acq_index is not going to be supported for "
                 f"{BinMode.DISTRIBUTION} bin mode for "
-                f"the trigger count protocol"
+                f"the trigger count protocol. "
+                f"Use acq_index=None.",
+                FutureWarning,
             )
 
         super().__init__(name=self.__class__.__name__)
@@ -878,6 +960,7 @@ class TriggerCount(Acquisition):
                 "port": port,
                 "duration": duration,
                 "acq_channel": acq_channel,
+                "coords": coords,
                 "acq_index": acq_index,
                 "bin_mode": bin_mode,
                 "acq_return_type": int,
@@ -915,6 +998,14 @@ class TimetagTrace(Acquisition):
         The data channel in which the acquisition is stored, is by default 0.
         Describes the "where" information of the  measurement, which typically
         corresponds to a device element idx.
+    coords
+        Coords for the acquisition.
+        These coordinates for the measured value for this operation
+        appear in the retrieved acquisition data.
+        For example ``coords={"amp": 0.1}`` has the effect, that the measured
+        value for this acquisition will be associated with ``amp==0.1``.
+        By default ``None``, no coords are added.
+        Not implemented for zhinst backend.
     acq_index
         The data register in which the acquisition is stored, by default 0.
         Describes the "when" information of the measurement, used to label or
@@ -966,7 +1057,8 @@ class TimetagTrace(Acquisition):
         port: str,
         clock: str = DigitalClockResource.IDENTITY,
         acq_channel: int = 0,
-        acq_index: int = 0,
+        coords: dict | None = None,
+        acq_index: int | None = 0,
         bin_mode: BinMode | str = BinMode.APPEND,
         time_ref: TimeRef | str = TimeRef.START,
         time_ref_port: str | None = None,
@@ -991,6 +1083,7 @@ class TimetagTrace(Acquisition):
                 "port": port,
                 "clock": clock,
                 "acq_channel": acq_channel,
+                "coords": coords,
                 "acq_index": acq_index,
                 "bin_mode": bin_mode,
                 # time_source is not settable, because all timetags will be returned
@@ -1036,6 +1129,14 @@ class Timetag(Acquisition):
         The data channel in which the acquisition is stored, by default 0.
         Describes the "where" information of the  measurement, which typically
         corresponds to a device element idx.
+    coords
+        Coords for the acquisition.
+        These coordinates for the measured value for this operation
+        appear in the retrieved acquisition data.
+        For example ``coords={"amp": 0.1}`` has the effect, that the measured
+        value for this acquisition will be associated with ``amp==0.1``.
+        By default ``None``, no coords are added.
+        Not implemented for zhinst backend.
     acq_index
         The data register in which the acquisition is stored, by default 0.
         Describes the "when" information of the measurement, used to label or
@@ -1097,7 +1198,8 @@ class Timetag(Acquisition):
         port: str,
         clock: str = DigitalClockResource.IDENTITY,
         acq_channel: int = 0,
-        acq_index: int = 0,
+        coords: dict | None = None,
+        acq_index: int | None = 0,
         bin_mode: BinMode | str = BinMode.APPEND,
         time_source: TimeSource | str = TimeSource.FIRST,
         time_ref: TimeRef | str = TimeRef.START,
@@ -1124,6 +1226,7 @@ class Timetag(Acquisition):
                 "port": port,
                 "duration": duration,
                 "acq_channel": acq_channel,
+                "coords": coords,
                 "acq_index": acq_index,
                 "bin_mode": bin_mode,
                 "time_source": time_source,
@@ -1178,6 +1281,14 @@ class ThresholdedTriggerCount(Acquisition):
     acq_channel
         The data channel in which the acquisition is stored, by default 0.  Describes the "where"
         information of the measurement, which typically corresponds to a qubit idx.
+    coords
+        Coords for the acquisition.
+        These coordinates for the measured value for this operation
+        appear in the retrieved acquisition data.
+        For example ``coords={"amp": 0.1}`` has the effect, that the measured
+        value for this acquisition will be associated with ``amp==0.1``.
+        By default ``None``, no coords are added.
+        Not implemented for zhinst backend.
     acq_index
         The data register in which the acquisition is stored, by default 0.  Describes the "when"
         information of the measurement, used to label or tag individual measurements in a large
@@ -1204,7 +1315,8 @@ class ThresholdedTriggerCount(Acquisition):
             str | TriggerCondition
         ) = TriggerCondition.GREATER_THAN_EQUAL_TO,
         acq_channel: int = 0,
-        acq_index: int = 0,
+        coords: dict | None = None,
+        acq_index: int | None = 0,
         bin_mode: BinMode | str = BinMode.APPEND,
         t0: float = 0,
     ) -> None:
@@ -1226,6 +1338,7 @@ class ThresholdedTriggerCount(Acquisition):
                 "port": port,
                 "duration": duration,
                 "acq_channel": acq_channel,
+                "coords": coords,
                 "acq_index": acq_index,
                 "bin_mode": bin_mode,
                 "thresholded_trigger_count": {
@@ -1297,6 +1410,14 @@ class DualThresholdedTriggerCount(Acquisition):
     acq_channel
         The data channel in which the acquisition is stored, by default 0.  Describes the "where"
         information of the measurement, which typically corresponds to a qubit idx.
+    coords
+        Coords for the acquisition.
+        These coordinates for the measured value for this operation
+        appear in the retrieved acquisition data.
+        For example ``coords={"amp": 0.1}`` has the effect, that the measured
+        value for this acquisition will be associated with ``amp==0.1``.
+        By default ``None``, no coords are added.
+        Not implemented for zhinst backend.
     acq_index
         The data register in which the acquisition is stored, by default 0.  Describes the "when"
         information of the measurement, used to label or tag individual measurements in a large
@@ -1324,7 +1445,8 @@ class DualThresholdedTriggerCount(Acquisition):
         label_high: str | None = None,
         label_invalid: str | None = None,
         acq_channel: int = 0,
-        acq_index: int = 0,
+        coords: dict | None = None,
+        acq_index: int | None = 0,
         bin_mode: BinMode | str = BinMode.APPEND,
         t0: float = 0,
     ) -> None:
@@ -1346,6 +1468,7 @@ class DualThresholdedTriggerCount(Acquisition):
                 "port": port,
                 "duration": duration,
                 "acq_channel": acq_channel,
+                "coords": coords,
                 "acq_index": acq_index,
                 "bin_mode": bin_mode,
                 "thresholded_trigger_count": {

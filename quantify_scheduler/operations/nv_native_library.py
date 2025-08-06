@@ -70,6 +70,14 @@ class CRCount(Operation):
         Only for special use cases.
         By default (if None): the acquisition channel specified in the device element is used.
         If set, this acquisition channel is used for this measurement.
+    coords
+        Coords for the acquisition.
+        These coordinates for the measured value for this operation
+        appear in the retrieved acquisition data.
+        For example ``coords={"amp": 0.1}`` has the effect, that the measured
+        value for this acquisition will be associated with ``amp==0.1``.
+        By default ``None``, no coords are added.
+        Not implemented for zhinst backend.
     acq_index
         Index of the register where the measurement is stored.
         If None specified, it will default to a list of zeros of len(qubits)
@@ -88,7 +96,8 @@ class CRCount(Operation):
         self,
         *qubits: str,
         acq_channel: Hashable | None = None,
-        acq_index: tuple[int, ...] | int | None = None,
+        coords: dict | None = None,
+        acq_index: tuple[int, ...] | tuple[None, ...] | int | None = None,
         # These are the currently supported acquisition protocols.
         acq_protocol: Literal[
             "Trace",
@@ -98,7 +107,7 @@ class CRCount(Operation):
         bin_mode: BinMode | None = None,
     ) -> None:
         device_elements = qubits
-        gen_acq_index: int | Iterable[int] = _generate_acq_indices_for_gate(
+        gen_acq_index: int | None | Iterable[int] | Iterable[None] = _generate_acq_indices_for_gate(
             device_elements=device_elements, acq_index=acq_index
         )
 
@@ -113,6 +122,7 @@ class CRCount(Operation):
                     "tex": r"CR",
                     "device_elements": list(device_elements),
                     "acq_channel_override": acq_channel,
+                    "coords": coords,
                     "acq_index": gen_acq_index,
                     "acq_protocol": acq_protocol,
                     "bin_mode": bin_mode,
@@ -126,12 +136,14 @@ class CRCount(Operation):
         gate_info = self.data["gate_info"]
         device_elements = map(lambda x: f"'{x}'", gate_info["device_elements"])
         acq_channel = gate_info["acq_channel_override"]
+        coords = gate_info["coords"]
         acq_index = gate_info["acq_index"]
         acq_protocol = gate_info["acq_protocol"]
         bin_mode = gate_info["bin_mode"]
         return (
             f"{self.__class__.__name__}({','.join(device_elements)}, "
             f"acq_channel={acq_channel}, "
+            f"coords={coords}, "
             f"acq_index={acq_index}, "
             f'acq_protocol="{acq_protocol}", '
             f"bin_mode={bin_mode!s})"

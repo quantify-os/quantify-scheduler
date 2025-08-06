@@ -660,6 +660,7 @@ class BasicElectronicNVElement(DeviceElement):
                     },
                     gate_info_factory_kwargs=[
                         "acq_channel_override",
+                        "coords",
                         "acq_index",
                         "bin_mode",
                         "acq_protocol",
@@ -704,6 +705,7 @@ class BasicElectronicNVElement(DeviceElement):
                     },
                     gate_info_factory_kwargs=[
                         "acq_channel_override",
+                        "coords",
                         "acq_index",
                         "bin_mode",
                         "acq_protocol",

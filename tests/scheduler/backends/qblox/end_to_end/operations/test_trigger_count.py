@@ -201,7 +201,7 @@ def test_trigger_count_distribution_exclusivity(
             port="qe0:optical_readout",
             clock="qe0.ge0",
             acq_channel=0,
-            acq_index=0,
+            acq_index=None,
             bin_mode=BinMode.DISTRIBUTION,
         )
     )

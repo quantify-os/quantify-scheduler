@@ -26,6 +26,7 @@ from quantify_scheduler.schedules.schedule import (
 
 if TYPE_CHECKING:
     from collections.abc import Hashable, Iterable
+    from typing import Any
 
     from quantify_scheduler.operations.operation import Operation
 
@@ -160,9 +161,7 @@ def _generate_acq_channels_data_for_protocol(
         protocol: str = acq_info["protocol"]
         bin_mode: BinMode = acq_info["bin_mode"]
 
-        # Coords is intended to be introduced later to the operation.
-        # coords: dict = acq_info["coords"]
-        coords: dict = {}
+        coords: dict = acq_info["coords"] or {}
 
         acq_index: int | None = acq_info["acq_index"]
         # If is_explicit_acq_index, then only acquisitions where acq_index
@@ -315,6 +314,32 @@ def _generate_acq_channels_data(
         )
 
 
+def _verify_shared_coords_key(acq_channels_data: AcquisitionChannelsData) -> None:
+    """
+    Checks if any two acquisition channels share the same coords keys.
+    This is unsupported currently, see https://gitlab.com/quantify-os/quantify-scheduler/-/issues/497.
+    """
+    coords_keys: dict[Any, Hashable] = dict()
+    for acq_channel, data in acq_channels_data.items():
+        keys = (
+            {key for d in data.coords for key in d}
+            if isinstance(data.coords, list)
+            else set(data.coords.keys())
+        )
+        for key in keys:
+            if (other_acq_channel := coords_keys.get(key)) is not None:
+                warnings.warn(
+                    (
+                        f"The coords key `{key}` is shared between "
+                        f"`{other_acq_channel}` and `{acq_channel}`. "
+                        f"This is not yet fully supported, please try different keys. "
+                        f"See https://gitlab.com/quantify-os/quantify-scheduler/-/issues/497."
+                    ),
+                )
+            else:
+                coords_keys[key] = acq_channel
+
+
 def generate_acq_channels_data(
     schedule: ScheduleBase,
 ) -> tuple[AcquisitionChannelsData, SchedulableLabelToAcquisitionIndex]:
@@ -363,5 +388,7 @@ def generate_acq_channels_data(
         full_schedulable_label=(),
         nested_loop_repetitions=[],
     )
+
+    _verify_shared_coords_key(acq_channels_data)
 
     return acq_channels_data, schedulable_label_to_acq_index
