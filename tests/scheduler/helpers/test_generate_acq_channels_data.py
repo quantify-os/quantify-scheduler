@@ -315,9 +315,9 @@ def test_binned_append(
             protocol=protocol_str,
             bin_mode=BinMode.APPEND,
             coords=[
-                {"acq_index_legacy": 0, "amp": 0.1, "freq": 1.0},
-                {"acq_index_legacy": 1},
-                {"acq_index_legacy": 1, "amp": 0.3, "freq": 3.0},
+                {"acq_index_legacy_0": 0, "amp": 0.1, "freq": 1.0},
+                {"acq_index_legacy_0": 1},
+                {"acq_index_legacy_0": 1, "amp": 0.3, "freq": 3.0},
             ],
         ),
     }
@@ -409,7 +409,7 @@ def test_binned_append_loop(
             protocol=protocol_str,
             bin_mode=BinMode.APPEND,
             coords=[
-                {"acq_index_legacy": 0, "loop_repetition": lr, "amp": 0.1, "freq": 1.0}
+                {"acq_index_legacy_0": 0, "loop_repetition_0": lr, "amp": 0.1, "freq": 1.0}
                 for lr in range(4 * 3)
             ],
         ),
@@ -605,7 +605,7 @@ def test_trigger_count_append(mock_setup_basic_transmon_with_standard_params):
             acq_index_dim_name="acq_index_1",
             protocol="TriggerCount",
             bin_mode=BinMode.APPEND,
-            coords=[{"acq_index_legacy": 0, "amp": 0.1, "freq": 1.0}],
+            coords=[{"acq_index_legacy_1": 0, "amp": 0.1, "freq": 1.0}],
         ),
     }
 

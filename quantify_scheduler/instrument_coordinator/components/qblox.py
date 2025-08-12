@@ -70,6 +70,8 @@ from quantify_scheduler.helpers.schedule import (
 )
 from quantify_scheduler.instrument_coordinator.components import base
 from quantify_scheduler.instrument_coordinator.utility import (
+    add_acquisition_coords_binned,
+    add_acquisition_coords_nonbinned,
     check_already_existing_acquisition,
     lazy_set,
     parameter_value_same_as_cache,
@@ -1848,8 +1850,10 @@ class _AcquisitionManagerBase(ABC):
 
         """
         # For binned acquisition protocols, the mapping is of QbloxAcquisitionBinMapping type,
-        # guaranteed by the QbloxAcquisitionIndexManager.
+        # guaranteed by the QbloxAcquisitionIndexManager, and coords is a list.
         assert isinstance(seq_channel_hardware_mapping, dict)
+        coords = self._acq_channels_data[acq_channel].coords
+        assert isinstance(coords, list)
 
         if _is_acquisition_binned_average(
             self._acq_channels_data[acq_channel].protocol,
@@ -1865,12 +1869,16 @@ class _AcquisitionManagerBase(ABC):
                     )
                 )
             acq_index_dim_name = self._acq_channels_data[acq_channel].acq_index_dim_name
-            return DataArray(
+            data_array = DataArray(
                 formatted_data,
                 dims=[acq_index_dim_name],
-                coords={acq_index_dim_name: list(seq_channel_hardware_mapping.keys())},
+                coords={
+                    acq_index_dim_name: list(seq_channel_hardware_mapping.keys()),
+                },
                 attrs=self._acq_channel_attrs(self._acq_channels_data[acq_channel].protocol),
             )
+            add_acquisition_coords_binned(data_array, coords, acq_index_dim_name)
+            return data_array
         elif _is_acquisition_binned_append(
             self._acq_channels_data[acq_channel].protocol,
             self._acq_channels_data[acq_channel].bin_mode,
@@ -1891,32 +1899,18 @@ class _AcquisitionManagerBase(ABC):
                         )
                     )
                 formatted_data.append(formatted_data_repetition)
-            acq_index_legacy = []
-            loop_repetition = []
-            for acq_index, _qblox_acq_index_bin in seq_channel_hardware_mapping.items():
-                acq_index_legacy.append(
-                    self._acq_channels_data[acq_channel]
-                    .coords[acq_index]
-                    .get("acq_index_legacy", np.nan)
-                )
-                loop_repetition.append(
-                    self._acq_channels_data[acq_channel]
-                    .coords[acq_index]
-                    .get("loop_repetition", np.nan)
-                )
-            loop_repetition_coord_name = f"loop_repetition_{acq_channel}"
             acq_index_dim_name = self._acq_channels_data[acq_channel].acq_index_dim_name
-            return DataArray(
+            data_array = DataArray(
                 formatted_data,
                 dims=["repetition", acq_index_dim_name],
                 coords={
-                    f"acq_index_legacy_{acq_channel}": (acq_index_dim_name, acq_index_legacy),
-                    loop_repetition_coord_name: (acq_index_dim_name, loop_repetition),
                     "repetition": list(range(self._repetitions)),
                     acq_index_dim_name: list(seq_channel_hardware_mapping.keys()),
                 },
                 attrs=self._acq_channel_attrs(self._acq_channels_data[acq_channel].protocol),
             )
+            add_acquisition_coords_binned(data_array, coords, acq_index_dim_name)
+            return data_array
         else:
             # In principle unreachable due to _check_bin_mode_compatible, but included for
             # completeness.
@@ -1992,16 +1986,18 @@ class _AcquisitionManagerBase(ABC):
                 return result
 
             result = _convert_from_cumulative(bin_data["avg_cnt"])
-            # TODO: QTFY-300, when interface can change,
+            # TODO: QTFY-913, when interface can change,
             # return data with proper coordinates;
             # no repetitions, and proper dimension name.
             # acq_index_dim_name = self._acq_channels_data[acq_channel].acq_index_dim_name
-            # return DataArray(
+            # data_array = DataArray(
             #    list(result.values())[::-1],
             #    dims=[acq_index_dim_name],
             #    coords={acq_index_dim_name: list(result.keys())[::-1]},
             #    attrs=self._acq_channel_attrs(self._acq_channels_data[acq_channel].protocol),
             # )
+            # add_acquisition_coords_nonbinned(data_array, coords, acq_index_dim_name)
+            # return data_array
             return DataArray(
                 [list(result.values())[::-1]],
                 dims=["repetition", "counts"],
@@ -2271,8 +2267,10 @@ class _QRMAcquisitionManager(_AcquisitionManagerBase):
                 f"are allowed."
             )
         # For scope acquisition protocols, the mapping is of QbloxAcquisitionIndex type,
-        # guaranteed by the QbloxAcquisitionIndexManager.
+        # guaranteed by the QbloxAcquisitionIndexManager and coords is a dict.
         assert isinstance(seq_channel_hardware_mapping, int)
+        coords = self._acq_channels_data[acq_channel].coords
+        assert isinstance(coords, dict)
 
         qblox_acq_index = seq_channel_hardware_mapping
         qblox_acq_name = self._qblox_acq_index_to_qblox_acq_name(qblox_acq_index)
@@ -2305,7 +2303,7 @@ class _QRMAcquisitionManager(_AcquisitionManagerBase):
 
         acq_index_dim_name = self._acq_channels_data[acq_channel].acq_index_dim_name
         trace_index_dim_name = f"trace_index_{acq_channel}"
-        return DataArray(
+        data_array = DataArray(
             data=(scope_data_i + scope_data_q * 1j).reshape((1, -1)),
             dims=[acq_index_dim_name, trace_index_dim_name],
             coords={
@@ -2314,6 +2312,8 @@ class _QRMAcquisitionManager(_AcquisitionManagerBase):
             },
             attrs=self._acq_channel_attrs(self._acq_channels_data[acq_channel].protocol),
         )
+        add_acquisition_coords_nonbinned(data_array, coords, acq_index_dim_name)
+        return data_array
 
     def _get_integration_weighted_separated_data(
         self,
@@ -2587,6 +2587,8 @@ class _QTMAcquisitionManager(_AcquisitionManagerBase):
         acq_duration: int,
         sequencer_name: str,
     ) -> DataArray:
+        coords = self._acq_channels_data[acq_channel].coords
+        assert isinstance(coords, dict)
         # We ignore the hardware_retrieved_acquisitions,
         # and use data from from the io channel.
         seq_idx = self._seq_name_to_idx_map[sequencer_name]
@@ -2594,7 +2596,7 @@ class _QTMAcquisitionManager(_AcquisitionManagerBase):
 
         acq_index_dim_name = self._acq_channels_data[acq_channel].acq_index_dim_name
         trace_index_dim_name = f"trace_index_{acq_channel}"
-        return DataArray(
+        data_array = DataArray(
             scope_data.reshape((1, -1)),
             dims=[acq_index_dim_name, trace_index_dim_name],
             coords={
@@ -2603,6 +2605,8 @@ class _QTMAcquisitionManager(_AcquisitionManagerBase):
             },
             attrs=self._acq_channel_attrs(self._acq_channels_data[acq_channel].protocol),
         )
+        add_acquisition_coords_nonbinned(data_array, coords, acq_index_dim_name)
+        return data_array
 
     def _get_timetag_trace_data(
         self,
@@ -2618,8 +2622,11 @@ class _QTMAcquisitionManager(_AcquisitionManagerBase):
 
         # For TimetagTrace distribution acquisition protocol,
         # the mapping is of QbloxAcquisitionBinMapping type,
-        # guaranteed by the QbloxAcquisitionIndexManager.
+        # guaranteed by the QbloxAcquisitionIndexManager,
+        # and coords is a list.
         assert isinstance(seq_channel_hardware_mapping, dict)
+        coords = self._acq_channels_data[acq_channel].coords
+        assert isinstance(coords, list)
 
         # There is only one Qblox acquisition index used for all
         # acquisitions and bins for this protocol; we only need to retrieve the first.
@@ -2655,34 +2662,20 @@ class _QTMAcquisitionManager(_AcquisitionManagerBase):
                     qblox_acq_index_bin.bin + repetition * qblox_acq_index_bin.stride
                 ]
                 rect_array[repetition][i][0 : len(timetag_traces_bin)] = timetag_traces_bin
-        acq_index_legacy = []
-        loop_repetition = []
-        for acq_index, _qblox_acq_index_bin in seq_channel_hardware_mapping.items():
-            acq_index_legacy.append(
-                self._acq_channels_data[acq_channel]
-                .coords[acq_index]
-                .get("acq_index_legacy", np.nan)
-            )
-            loop_repetition.append(
-                self._acq_channels_data[acq_channel]
-                .coords[acq_index]
-                .get("loop_repetition", np.nan)
-            )
-        loop_repetition_coord_name = f"loop_repetition_{acq_channel}"
         acq_index_dim_name = self._acq_channels_data[acq_channel].acq_index_dim_name
         trace_index_dim_name = f"trace_index_{acq_channel}"
-        return DataArray(
+        data_array = DataArray(
             rect_array,
             dims=["repetition", acq_index_dim_name, trace_index_dim_name],
             coords={
-                f"acq_index_legacy_{acq_channel}": (acq_index_dim_name, acq_index_legacy),
-                loop_repetition_coord_name: (acq_index_dim_name, loop_repetition),
                 "repetition": list(range(self._repetitions)),
                 acq_index_dim_name: list(seq_channel_hardware_mapping.keys()),
                 trace_index_dim_name: list(range(max_timetag_traces)),
             },
             attrs=self._acq_channel_attrs(self._acq_channels_data[acq_channel].protocol),
         )
+        add_acquisition_coords_binned(data_array, coords, acq_index_dim_name)
+        return data_array
 
     def _split_timetag_trace_data_per_window(
         self,

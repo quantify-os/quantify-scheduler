@@ -341,7 +341,6 @@ def test_thresholded_trigger_count_acquisition_qtm(
         threshold_passed.reshape(-1, 1),
         dims=["repetition", "acq_index_0"],
         coords={
-            "loop_repetition_0": ("acq_index_0", [np.nan]),
             "acq_index_legacy_0": ("acq_index_0", [0]),
             "repetition": range(len(threshold_passed)),
             "acq_index_0": [0],
@@ -439,7 +438,6 @@ def test_thresholded_trigger_count_acquisition_qrm(
         threshold_passed.reshape(-1, 1),
         dims=["repetition", "acq_index_0"],
         coords={
-            "loop_repetition_0": ("acq_index_0", [np.nan]),
             "acq_index_legacy_0": ("acq_index_0", [0]),
             "repetition": range(len(threshold_passed)),
             "acq_index_0": [0],

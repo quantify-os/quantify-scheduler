@@ -1160,9 +1160,33 @@ def test_trigger_count_append(
 
     # Define experiment schedule
     schedule = Schedule("test multiple measurements")
-    schedule.add(Measure("qe0", acq_index=0, acq_protocol="TriggerCount", bin_mode=BinMode.APPEND))
-    schedule.add(Measure("qe0", acq_index=1, acq_protocol="TriggerCount", bin_mode=BinMode.APPEND))
-    schedule.add(Measure("qe0", acq_index=2, acq_protocol="TriggerCount", bin_mode=BinMode.APPEND))
+    schedule.add(
+        Measure(
+            "qe0",
+            acq_index=0,
+            coords={"amp": 0.1, "freq": 1.0},
+            acq_protocol="TriggerCount",
+            bin_mode=BinMode.APPEND,
+        )
+    )
+    schedule.add(
+        Measure(
+            "qe0",
+            acq_index=1,
+            coords={"amp": 0.2, "freq": 2.0},
+            acq_protocol="TriggerCount",
+            bin_mode=BinMode.APPEND,
+        )
+    )
+    schedule.add(
+        Measure(
+            "qe0",
+            acq_index=2,
+            coords={"amp": 0.3, "freq": 3.0},
+            acq_protocol="TriggerCount",
+            bin_mode=BinMode.APPEND,
+        )
+    )
 
     # Setup dummy acquisition data
     ic_cluster0.instrument.set_dummy_binned_acquisition_data(
@@ -1194,9 +1218,10 @@ def test_trigger_count_append(
         [[100, 200, 300]],
         coords={
             "acq_index_legacy_0": ("acq_index_0", [0, 1, 2]),
-            "loop_repetition_0": ("acq_index_0", [np.nan, np.nan, np.nan]),
             "repetition": [0],
             "acq_index_0": [0, 1, 2],
+            "amp": ("acq_index_0", [0.1, 0.2, 0.3]),
+            "freq": ("acq_index_0", [1.0, 2.0, 3.0]),
         },
         dims=["repetition", "acq_index_0"],
         attrs={"acq_protocol": "TriggerCount"},
@@ -1267,7 +1292,6 @@ def test_trigger_count_append_legacy_hardware_cfg(
         [[100, 200, 300]],
         coords={
             "acq_index_legacy_0": ("acq_index_0", [0, 1, 2]),
-            "loop_repetition_0": ("acq_index_0", [np.nan, np.nan, np.nan]),
             "repetition": [0],
             "acq_index_0": [0, 1, 2],
         },
@@ -1344,9 +1368,33 @@ def test_trigger_count_append_qtm(
 
     # Define experiment schedule
     schedule = Schedule("test multiple measurements")
-    schedule.add(Measure("qe0", acq_index=0, acq_protocol="TriggerCount", bin_mode=BinMode.APPEND))
-    schedule.add(Measure("qe0", acq_index=1, acq_protocol="TriggerCount", bin_mode=BinMode.APPEND))
-    schedule.add(Measure("qe0", acq_index=2, acq_protocol="TriggerCount", bin_mode=BinMode.APPEND))
+    schedule.add(
+        Measure(
+            "qe0",
+            acq_index=0,
+            coords={"amp": 0.1, "freq": 1.0},
+            acq_protocol="TriggerCount",
+            bin_mode=BinMode.APPEND,
+        )
+    )
+    schedule.add(
+        Measure(
+            "qe0",
+            acq_index=1,
+            coords={"amp": 0.2, "freq": 2.0},
+            acq_protocol="TriggerCount",
+            bin_mode=BinMode.APPEND,
+        )
+    )
+    schedule.add(
+        Measure(
+            "qe0",
+            acq_index=2,
+            coords={"amp": 0.3, "freq": 3.0},
+            acq_protocol="TriggerCount",
+            bin_mode=BinMode.APPEND,
+        )
+    )
 
     # TODO remove these patches when the QTM dummy is available (SE-499)
     mocker.patch.object(ic_cluster0.instrument.module5.sequencer0.sync_en, "set")
@@ -1397,10 +1445,11 @@ def test_trigger_count_append_qtm(
     expected_dataarray = DataArray(
         [[100, 200, 300]],
         coords={
-            "loop_repetition_0": ("acq_index_0", [np.nan, np.nan, np.nan]),
             "acq_index_legacy_0": ("acq_index_0", [0, 1, 2]),
             "repetition": [0],
             "acq_index_0": [0, 1, 2],
+            "amp": ("acq_index_0", [0.1, 0.2, 0.3]),
+            "freq": ("acq_index_0", [1.0, 2.0, 3.0]),
         },
         dims=["repetition", "acq_index_0"],
         attrs={"acq_protocol": "TriggerCount"},
@@ -1639,8 +1688,10 @@ def test_mixed_binned_trace_measurements(mock_setup_basic_transmon, make_cluster
 
     # Define experiment schedule
     schedule = Schedule("test multiple measurements")
-    meas0 = Measure("q0", acq_protocol="SSBIntegrationComplex")
-    meas1 = Measure("q1", acq_protocol="Trace")
+    meas0 = Measure(
+        "q0", coords={"amp_0": 0.1, "freq_0": 1.0}, acq_protocol="SSBIntegrationComplex"
+    )
+    meas1 = Measure("q1", coords={"amp_1": 0.2, "freq_1": 2.0}, acq_protocol="Trace")
     schedule.add(meas0)
     schedule.add(meas1)
 
@@ -1681,13 +1732,22 @@ def test_mixed_binned_trace_measurements(mock_setup_basic_transmon, make_cluster
     assert isinstance(data, Dataset)
     expected_dataarray_trace = DataArray(
         [[1j] * 3000],
-        coords=[[0], range(3000)],
+        coords={
+            "acq_index_1": [0],
+            "trace_index_1": range(3000),
+            "amp_1": ("acq_index_1", [0.2]),
+            "freq_1": ("acq_index_1", [2.0]),
+        },
         dims=["acq_index_1", "trace_index_1"],
         attrs={"acq_protocol": "Trace"},
     )
     expected_dataarray_binned = DataArray(
         [0.02 + 0.04j],
-        coords=[[0]],
+        coords={
+            "acq_index_0": [0],
+            "amp_0": ("acq_index_0", [0.1]),
+            "freq_0": ("acq_index_0", [1.0]),
+        },
         dims=["acq_index_0"],
         attrs={"acq_protocol": "SSBIntegrationComplex"},
     )
@@ -2673,7 +2733,6 @@ def test_append_measurements(mock_setup_basic_transmon, make_cluster_component):
                 [[2 + 3j, 4 + 5j], [6 + 7j, 8 + 9j], [10 + 11j, 12 + 13j]],
                 coords={
                     "acq_index_legacy_1": ("acq_index_1", [0, 1]),
-                    "loop_repetition_1": ("acq_index_1", [np.nan, np.nan]),
                     "repetition": [0, 1, 2],
                     "acq_index_1": [0, 1],
                 },

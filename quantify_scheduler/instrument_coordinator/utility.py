@@ -10,8 +10,11 @@ from typing import TYPE_CHECKING
 import numpy as np
 import xarray
 from qcodes.parameters.parameter import Parameter
+from xarray import DataArray
 
 if TYPE_CHECKING:
+    from collections.abc import Hashable
+
     from qcodes.instrument.base import InstrumentBase
 
 logger = logging.getLogger(__name__)
@@ -169,3 +172,65 @@ def check_already_existing_acquisition(
             f"The following indices are defined multiple times.\n"
             f"{conflicting_indices_str}"
         )
+
+
+def add_acquisition_coords_binned(
+    data_array: DataArray,
+    coords: list[dict],
+    acq_index_dim_name: Hashable,
+) -> None:
+    """
+    Modifies the argument data_array,
+    it adds the coords to it.
+
+    This function only applies to binned acquisitions.
+
+    Coordinates in the acquisition channels data is a list of dictionary,
+    and each dictionary is a coordinate. In the return data however,
+    it should be a dict, for each coords key it should store a list of the values.
+
+    xarray requires the coordinates to specify on which xarray dimension they are applied to.
+    That's why the acq_index_dim_name is used here. Note: dimension and coords are different.
+    """
+    data_array_coords = {}
+    len_acq_indices = len(coords)
+
+    all_keys = set()
+    for coord_dict in coords:
+        all_keys.update(coord_dict.keys())
+
+    for key in all_keys:
+        data_array_coords[key] = (acq_index_dim_name, [np.nan] * len_acq_indices)
+
+    for acq_index in data_array[acq_index_dim_name].values:
+        coord_dict = coords[acq_index]
+        for key, value in coord_dict.items():
+            data_array_coords[key][1][acq_index] = value
+
+    data_array.coords.update(data_array_coords)
+
+
+def add_acquisition_coords_nonbinned(
+    data_array: DataArray,
+    coords: dict,
+    acq_index_dim_name: Hashable,
+) -> None:
+    """
+    Modifies the argument data_array,
+    it adds the coords to it.
+
+    This function only applies to nonbinned acquisitions.
+
+    Coordinates in the acquisition channels data is a dictionary,
+    and each dictionary is a coordinate. In the return data however,
+    it should be a dict, for each coords key it should store a list of the values.
+
+    xarray requires the coordinates to specify on which xarray dimension they are applied to.
+    That's why the acq_index_dim_name is used here. Note: dimension and coords are different.
+    """
+    data_array_coords = {}
+
+    for key, value in coords.items():
+        data_array_coords[key] = (acq_index_dim_name, [value])
+
+    data_array.coords.update(data_array_coords)
