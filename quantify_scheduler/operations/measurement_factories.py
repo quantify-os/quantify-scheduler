@@ -266,7 +266,6 @@ def _dispersive_measurement(  # noqa: PLR0915
                     bin_mode=bin_mode,
                     t0=acq_delay,
                     feedback_trigger_label=feedback_trigger_label,
-                    acq_rotation=acq_rotation,
                     acq_threshold=acq_threshold,
                 ),
                 ref_pt="start",

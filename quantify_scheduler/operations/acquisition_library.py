@@ -734,9 +734,9 @@ class NumericalWeightedIntegration(NumericalSeparatedWeightedIntegration):
         self._update()
 
 
-class WeightedThresholdedAcquisition(NumericalSeparatedWeightedIntegration):
+class WeightedThresholdedAcquisition(NumericalWeightedIntegration):
     """
-    Subclass of :class:`~NumericalSeparatedWeightedIntegration` but Thresholded.
+    Subclass of :class:`~NumericalWeightedIntegration` but Thresholded.
 
     Acquisition protocol allowing to control rotation and threshold.
 
@@ -825,9 +825,20 @@ class WeightedThresholdedAcquisition(NumericalSeparatedWeightedIntegration):
         phase: float = 0,
         t0: float = 0,
         feedback_trigger_label: str | None = None,
-        acq_rotation: float = 0,
+        acq_rotation: float | None = None,  # deprecated
         acq_threshold: float = 0,
     ) -> None:
+        if acq_rotation is not None:
+            warnings.warn(
+                "Using the `acq_rotation` argument in `WeightedThresholdedAcquisition` "
+                "is deprecated, and will be removed from the public interface "
+                "in quantify-scheduler >= 0.25.0. "
+                "The underlying integration protocol now inherently provides the necessary "
+                "effective rotation of 360-45 degrees.",
+                FutureWarning,
+                stacklevel=2,
+            )
+
         super().__init__(
             port=port,
             clock=clock,
@@ -845,7 +856,7 @@ class WeightedThresholdedAcquisition(NumericalSeparatedWeightedIntegration):
         self.data["acquisition_info"][0]["protocol"] = "WeightedThresholdedAcquisition"
         self.data["acquisition_info"][0]["feedback_trigger_label"] = feedback_trigger_label
         self.data["acquisition_info"][0]["acq_threshold"] = acq_threshold
-        self.data["acquisition_info"][0]["acq_rotation"] = acq_rotation
+        self.data["acquisition_info"][0]["acq_rotation"] = 360 - 45
         self.data["acquisition_info"][0]["acq_return_type"] = (
             float if bin_mode == BinMode.AVERAGE else np.int32
         )

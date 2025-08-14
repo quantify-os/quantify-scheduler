@@ -316,7 +316,6 @@ def test_weighted_acquisition():
         acq_index=2,
         bin_mode=BinMode.APPEND,
         t0=16e-9,
-        acq_rotation=56,
         acq_threshold=0.546,
     )
     expected = {
@@ -330,7 +329,6 @@ def test_weighted_acquisition():
         "bin_mode": BinMode.APPEND,
         "protocol": "WeightedThresholdedAcquisition",
         "acq_return_type": np.int32,
-        "acq_rotation": 56,
         "acq_threshold": 0.546,
     }
     for k, v in expected.items():
