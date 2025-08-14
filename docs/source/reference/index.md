@@ -13,6 +13,7 @@ zhinst/index
 :caption: Advanced concepts
 :maxdepth: 1
 
+sweepable_gate_parameters
 acquisition_framework
 acquisition_protocols
 control_flow
