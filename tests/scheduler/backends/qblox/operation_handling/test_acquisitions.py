@@ -2850,3 +2850,218 @@ def test_looped_measurements(mock_setup_basic_transmon, make_cluster_component):
     xr.testing.assert_identical(data, expected_dataset)
 
     instr_coordinator.remove_component("ic_cluster0")
+
+
+def test_multiple_modules_same_channel(mock_setup_basic_transmon, make_cluster_component):
+    hardware_cfg = {
+        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+        "hardware_description": {
+            "cluster0": {
+                "instrument_type": "Cluster",
+                "modules": {
+                    "3": {"instrument_type": "QRM"},
+                    "4": {"instrument_type": "QRM_RF"},
+                },
+                "ref": "internal",
+            }
+        },
+        "hardware_options": {
+            "modulation_frequencies": {
+                "q0:res-q0.ro": {"interm_freq": 50000000.0},
+                "q1:res-q1.ro": {"interm_freq": 50000000.0},
+            }
+        },
+        "connectivity": {
+            "graph": [
+                ["cluster0.module3.complex_output_0", "q0:res"],
+                ["cluster0.module4.complex_output_0", "q1:res"],
+            ]
+        },
+    }
+
+    # Setup objects needed for experiment
+    mock_setup = mock_setup_basic_transmon
+    ic_cluster0 = make_cluster_component("cluster0")
+
+    instr_coordinator = mock_setup["instrument_coordinator"]
+    instr_coordinator.add_component(ic_cluster0)
+
+    quantum_device = mock_setup["quantum_device"]
+    quantum_device.hardware_config(hardware_cfg)
+
+    q0 = mock_setup["q0"]
+    q1 = mock_setup["q1"]
+    q0.clock_freqs.readout(50e6)
+    q1.clock_freqs.readout(50e6)
+
+    # Define experiment schedule
+    schedule = Schedule("test multiple measurements")
+    schedule.add(
+        SSBIntegrationComplex(
+            port="q0:res", clock="q0.ro", duration=5e-6, acq_channel=0, acq_index=0
+        )
+    )
+    schedule.add(
+        SSBIntegrationComplex(
+            port="q1:res", clock="q1.ro", duration=5e-6, acq_channel=0, acq_index=1
+        )
+    )
+
+    # Change acq delay, duration and channel
+    q1.clock_freqs.readout(7404000000.0)
+
+    # Setup dummy acquisition data
+    ic_cluster0.instrument.set_dummy_binned_acquisition_data(
+        slot_idx=3,
+        sequencer=0,
+        acq_index_name="0",
+        data=[
+            DummyBinnedAcquisitionData(data=(10000, 15000), thres=0, avg_cnt=0),
+        ],
+    )
+    ic_cluster0.instrument.set_dummy_binned_acquisition_data(
+        slot_idx=4,
+        sequencer=0,
+        acq_index_name="0",
+        data=[
+            DummyBinnedAcquisitionData(data=(20000, 25000), thres=0, avg_cnt=0),
+        ],
+    )
+
+    # Generate compiled schedule
+    compiler = SerialCompiler(name="compiler")
+    compiled_sched = compiler.compile(
+        schedule=schedule, config=quantum_device.generate_compilation_config()
+    )
+
+    # Upload schedule and run experiment
+    instr_coordinator.prepare(compiled_sched)
+    instr_coordinator.start()
+    data = instr_coordinator.retrieve_acquisition()
+    instr_coordinator.stop()
+
+    # Assert intended behaviour
+    assert isinstance(data, Dataset)
+    expected_dataset = Dataset(
+        {
+            0: DataArray(
+                [2 + 3j, 4 + 5j],
+                coords=[[0, 1]],
+                dims=["acq_index_0"],
+                attrs={"acq_protocol": "SSBIntegrationComplex"},
+            ),
+        }
+    )
+
+    xr.testing.assert_identical(data, expected_dataset)
+
+    instr_coordinator.remove_component("ic_cluster0")
+
+
+def test_conflicting_retrieve_multiple_acquisitions(
+    mock_setup_basic_transmon, make_cluster_component
+):
+    hardware_cfg = {
+        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+        "hardware_description": {
+            "cluster0": {
+                "instrument_type": "Cluster",
+                "modules": {
+                    "3": {"instrument_type": "QRM"},
+                    "4": {"instrument_type": "QRM_RF"},
+                },
+                "ref": "internal",
+            }
+        },
+        "hardware_options": {
+            "modulation_frequencies": {
+                "q0:res-q0.ro": {"interm_freq": 50000000.0},
+                "q1:res-q1.ro": {"interm_freq": 50000000.0},
+            }
+        },
+        "connectivity": {
+            "graph": [
+                ["cluster0.module3.complex_output_0", "q0:res"],
+                ["cluster0.module4.complex_output_0", "q1:res"],
+            ]
+        },
+    }
+
+    # Setup objects needed for experiment
+    mock_setup = mock_setup_basic_transmon
+    ic_cluster0 = make_cluster_component("cluster0")
+
+    instr_coordinator = mock_setup["instrument_coordinator"]
+    instr_coordinator.add_component(ic_cluster0)
+
+    quantum_device = mock_setup["quantum_device"]
+    quantum_device.hardware_config(hardware_cfg)
+
+    q0 = mock_setup["q0"]
+    q1 = mock_setup["q1"]
+    q0.clock_freqs.readout(50e6)
+    q1.clock_freqs.readout(50e6)
+
+    # Define experiment schedule
+    schedule = Schedule("test multiple measurements")
+    schedule.add(
+        SSBIntegrationComplex(
+            port="q0:res", clock="q0.ro", duration=5e-6, acq_channel=0, acq_index=0
+        )
+    )
+    schedule.add(
+        SSBIntegrationComplex(
+            port="q1:res", clock="q1.ro", duration=5e-6, acq_channel=0, acq_index=1
+        )
+    )
+
+    # Change acq delay, duration and channel
+    q1.clock_freqs.readout(7404000000.0)
+
+    # Setup dummy acquisition data
+    ic_cluster0.instrument.set_dummy_binned_acquisition_data(
+        slot_idx=3,
+        sequencer=0,
+        acq_index_name="0",
+        data=[
+            DummyBinnedAcquisitionData(data=(10000, 15000), thres=0, avg_cnt=0),
+        ],
+    )
+    ic_cluster0.instrument.set_dummy_binned_acquisition_data(
+        slot_idx=4,
+        sequencer=0,
+        acq_index_name="0",
+        data=[
+            DummyBinnedAcquisitionData(data=(20000, 25000), thres=0, avg_cnt=0),
+        ],
+    )
+
+    # Generate compiled schedule
+    compiler = SerialCompiler(name="compiler")
+    compiled_sched = compiler.compile(
+        schedule=schedule, config=quantum_device.generate_compilation_config()
+    )
+
+    # Emulate incorrect data mapping for InstrumentCoordinator
+    # to retrieve data for the same acquisition index.
+    compiled_sched["compiled_instructions"]["cluster0"]["cluster0_module4"][
+        "acq_hardware_mapping"
+    ] = compiled_sched["compiled_instructions"]["cluster0"]["cluster0_module3"][
+        "acq_hardware_mapping"
+    ]
+
+    # Upload schedule and run experiment
+    instr_coordinator.prepare(compiled_sched)
+    instr_coordinator.start()
+    with pytest.raises(
+        RuntimeError,
+        match="Attempting to gather acquisitions. "
+        "Make sure an acq_channel, acq_index corresponds to not more than one acquisition.\n"
+        "The following indices are defined multiple times.\n"
+        "acq_channel=0; acq_index_0=0",
+    ):
+        instr_coordinator.retrieve_acquisition()
+
+    instr_coordinator.stop()
+
+    instr_coordinator.remove_component("ic_cluster0")

@@ -2960,7 +2960,7 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
                 check_already_existing_acquisition(
                     new_dataset=comp_acq, current_dataset=acquisitions
                 )
-                acquisitions.update(comp_acq)
+                acquisitions = acquisitions.merge(comp_acq)
 
         return acquisitions if len(acquisitions) > 0 else None
 

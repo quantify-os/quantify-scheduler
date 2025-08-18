@@ -144,25 +144,28 @@ def check_already_existing_acquisition(
     """
     conflicting_indices_str = []
     for acq_channel, _data_array in new_dataset.items():
-        if acq_channel in current_dataset:
-            # The return values are two `DataArray`s with only coordinates
-            # which are common in the inputs.
-            common_0, common_1 = xarray.align(
-                new_dataset[acq_channel], current_dataset[acq_channel], join="inner"
-            )
+        if acq_channel not in current_dataset:
+            continue
+        # The return values are two `DataArray`s with only coordinates
+        # which are common in the inputs.
+        common_0, common_1 = xarray.align(
+            new_dataset[acq_channel], current_dataset[acq_channel], join="inner"
+        )
 
-            # We need to check if the values are `math.nan`, because if they are,
-            # that means there is no value at that position (xarray standard).
-            def mask_func(x: float, y: float) -> int:
-                return 0 if np.isnan(x) or np.isnan(y) else 1
+        # We need to check if the values are `math.nan`, because if they are,
+        # that means there is no value at that position (xarray standard).
+        def mask_func(x: float, y: float) -> int:
+            return 0 if np.isnan(x) or np.isnan(y) else 1
 
+        if len(common_0) and len(common_1):
             conflict_mask = xarray.apply_ufunc(mask_func, common_0, common_1, vectorize=True)
             for conflict in conflict_mask:
-                if conflict.values == [1]:
-                    conflicting_coords = [("acq_channel", acq_channel)]
-                    conflicting_coords += [(dim, conflict[dim].values) for dim in conflict.coords]
-                    coords_str = [f"{dim}={coord}" for dim, coord in conflicting_coords]
-                    conflicting_indices_str.append("; ".join(coords_str))
+                if conflict.values != [1]:
+                    continue
+                conflicting_coords = [("acq_channel", acq_channel)]
+                conflicting_coords += [(dim, conflict[dim].values) for dim in conflict.coords]
+                coords_str = [f"{dim}={coord}" for dim, coord in conflicting_coords]
+                conflicting_indices_str.append("; ".join(coords_str))
 
     if conflicting_indices_str:
         conflicting_indices_str = "\n".join(conflicting_indices_str)
@@ -193,7 +196,7 @@ def add_acquisition_coords_binned(
     That's why the acq_index_dim_name is used here. Note: dimension and coords are different.
     """
     data_array_coords = {}
-    len_acq_indices = len(coords)
+    len_acq_indices = len(data_array[acq_index_dim_name].values)
 
     all_keys = set()
     for coord_dict in coords:
@@ -202,10 +205,10 @@ def add_acquisition_coords_binned(
     for key in all_keys:
         data_array_coords[key] = (acq_index_dim_name, [np.nan] * len_acq_indices)
 
-    for acq_index in data_array[acq_index_dim_name].values:
+    for i, acq_index in enumerate(data_array[acq_index_dim_name].values):
         coord_dict = coords[acq_index]
         for key, value in coord_dict.items():
-            data_array_coords[key][1][acq_index] = value
+            data_array_coords[key][1][i] = value
 
     data_array.coords.update(data_array_coords)
 
