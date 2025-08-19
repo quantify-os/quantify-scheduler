@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import warnings
 from copy import copy
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
@@ -20,6 +20,9 @@ from quantify_scheduler.enums import (
 )
 from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.resources import DigitalClockResource
+
+if TYPE_CHECKING:
+    from collections.abc import Hashable
 
 
 class Acquisition(Operation):
@@ -104,7 +107,7 @@ class Trace(Acquisition):
         duration: float,
         port: str,
         clock: str,
-        acq_channel: int = 0,
+        acq_channel: Hashable = 0,
         coords: dict | None = None,
         acq_index: int | None = 0,
         bin_mode: BinMode | str = BinMode.AVERAGE,
@@ -206,7 +209,7 @@ class WeightedIntegratedSeparated(Acquisition):
         port: str,
         clock: str,
         duration: float,
-        acq_channel: int = 0,
+        acq_channel: Hashable = 0,
         coords: dict | None = None,
         acq_index: int | None = 0,
         bin_mode: BinMode | str = BinMode.APPEND,
@@ -296,7 +299,7 @@ class SSBIntegrationComplex(Acquisition):
         port: str,
         clock: str,
         duration: float,
-        acq_channel: int = 0,
+        acq_channel: Hashable = 0,
         coords: dict | None = None,
         acq_index: int | None = 0,
         bin_mode: BinMode | str = BinMode.AVERAGE,
@@ -401,7 +404,7 @@ class ThresholdedAcquisition(Acquisition):
         The clock used to demodulate the acquisition.
     duration : float
         The acquisition duration in seconds.
-    acq_channel : int
+    acq_channel
         The data channel in which the acquisition is stored, by default 0.
         Describes the "where" information of the  measurement, which
         typically corresponds to a device element idx.
@@ -441,7 +444,7 @@ class ThresholdedAcquisition(Acquisition):
         port: str,
         clock: str,
         duration: float,
-        acq_channel: int = 0,
+        acq_channel: Hashable = 0,
         coords: dict | None = None,
         acq_index: int | None = 0,
         bin_mode: BinMode | str = BinMode.AVERAGE,
@@ -572,7 +575,7 @@ class NumericalSeparatedWeightedIntegration(WeightedIntegratedSeparated):
         weights_b: list[complex] | np.ndarray,
         weights_sampling_rate: float = 1e9,
         interpolation: str = "linear",
-        acq_channel: int = 0,
+        acq_channel: Hashable = 0,
         coords: dict | None = None,
         acq_index: int | None = 0,
         bin_mode: BinMode | str = BinMode.APPEND,
@@ -709,7 +712,7 @@ class NumericalWeightedIntegration(NumericalSeparatedWeightedIntegration):
         weights_b: list[complex] | np.ndarray,
         weights_sampling_rate: float = 1e9,
         interpolation: str = "linear",
-        acq_channel: int = 0,
+        acq_channel: Hashable = 0,
         coords: dict | None = None,
         acq_index: int | None = 0,
         bin_mode: BinMode | str = BinMode.APPEND,
@@ -818,7 +821,7 @@ class WeightedThresholdedAcquisition(NumericalWeightedIntegration):
         weights_b: list[complex] | np.ndarray,
         weights_sampling_rate: float = 1e9,
         interpolation: str = "linear",
-        acq_channel: int = 0,
+        acq_channel: Hashable = 0,
         coords: dict | None = None,
         acq_index: int | None = 0,
         bin_mode: BinMode | str = BinMode.APPEND,
@@ -932,7 +935,7 @@ class TriggerCount(Acquisition):
         port: str,
         clock: str,
         duration: float,
-        acq_channel: int = 0,
+        acq_channel: Hashable = 0,
         coords: dict | None = None,
         acq_index: int | None = 0,
         bin_mode: BinMode | str = BinMode.APPEND,
@@ -1067,7 +1070,7 @@ class TimetagTrace(Acquisition):
         duration: float,
         port: str,
         clock: str = DigitalClockResource.IDENTITY,
-        acq_channel: int = 0,
+        acq_channel: Hashable = 0,
         coords: dict | None = None,
         acq_index: int | None = 0,
         bin_mode: BinMode | str = BinMode.APPEND,
@@ -1208,7 +1211,7 @@ class Timetag(Acquisition):
         duration: float,
         port: str,
         clock: str = DigitalClockResource.IDENTITY,
-        acq_channel: int = 0,
+        acq_channel: Hashable = 0,
         coords: dict | None = None,
         acq_index: int | None = 0,
         bin_mode: BinMode | str = BinMode.APPEND,
@@ -1325,7 +1328,7 @@ class ThresholdedTriggerCount(Acquisition):
         feedback_trigger_condition: (
             str | TriggerCondition
         ) = TriggerCondition.GREATER_THAN_EQUAL_TO,
-        acq_channel: int = 0,
+        acq_channel: Hashable = 0,
         coords: dict | None = None,
         acq_index: int | None = 0,
         bin_mode: BinMode | str = BinMode.APPEND,
@@ -1455,7 +1458,7 @@ class DualThresholdedTriggerCount(Acquisition):
         label_mid: str | None = None,
         label_high: str | None = None,
         label_invalid: str | None = None,
-        acq_channel: int = 0,
+        acq_channel: Hashable = 0,
         coords: dict | None = None,
         acq_index: int | None = 0,
         bin_mode: BinMode | str = BinMode.APPEND,

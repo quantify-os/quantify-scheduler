@@ -14,6 +14,8 @@ from quantify_scheduler.operations.pulse_library import IdlePulse, SquarePulse
 from quantify_scheduler.resources import ClockResource
 
 if TYPE_CHECKING:
+    from collections.abc import Hashable
+
     from numpy.typing import NDArray
 
 
@@ -26,7 +28,7 @@ def acquisition_staircase_sched(
     port: str,
     clock: str,
     init_duration: float = 1e-6,
-    acq_channel: int = 0,
+    acq_channel: Hashable = 0,
     repetitions: int = 1,
 ) -> Schedule:
     """
@@ -120,7 +122,7 @@ def awg_staircase_sched(
     mw_clock: str,
     ro_clock: str,
     init_duration: float = 1e-6,
-    acq_channel: int = 0,
+    acq_channel: Hashable = 0,
     repetitions: int = 1,
 ) -> Schedule:
     """
@@ -270,7 +272,7 @@ def multiplexing_staircase_sched(
         ref_op: Operation,
         amp: float | complex,
         clock: str,
-        acq_channel: int,
+        acq_channel: Hashable,
         acq_index: int | None,
         delay: float,
     ) -> Schedule:
