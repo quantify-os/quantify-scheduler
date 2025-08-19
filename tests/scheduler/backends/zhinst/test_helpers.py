@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from itertools import combinations
 import json
 from pathlib import Path
 from typing import Any
@@ -10,6 +11,83 @@ from zhinst.qcodes.base import ZIBaseInstrument
 
 from quantify_scheduler.backends.zhinst import helpers as zi_helpers
 from quantify_scheduler.helpers import time
+from quantify_scheduler.enums import BinMode, TriggerCondition
+from quantify_scheduler.operations.acquisition_library import (
+    NumericalSeparatedWeightedIntegration,
+    NumericalWeightedIntegration,
+    SSBIntegrationComplex,
+    ThresholdedAcquisition,
+    ThresholdedTriggerCount,
+    Timetag,
+    TimetagTrace,
+    Trace,
+    TriggerCount,
+    WeightedThresholdedAcquisition,
+)
+from quantify_scheduler.schedules.schedule import Schedule
+
+ALL_ACQUISITION_PROTOCOLS = [
+    Trace(
+        duration=16e-9,
+        port="q0:res",
+        clock="q0.ro",
+    ),
+    SSBIntegrationComplex(
+        port="q0:res",
+        clock="q0.ro",
+        duration=100e-9,
+    ),
+    NumericalSeparatedWeightedIntegration(
+        weights_a=np.zeros(3, dtype=complex),
+        weights_b=np.ones(3, dtype=complex),
+        port="q0:res",
+        clock="q0.ro",
+    ),
+    NumericalWeightedIntegration(
+        weights_a=np.zeros(3, dtype=complex),
+        weights_b=np.ones(3, dtype=complex),
+        port="q0:res",
+        clock="q0.ro",
+    ),
+    TriggerCount(
+        port="q0:res",
+        clock="q0.ro",
+        duration=100e-9,
+    ),
+    ThresholdedAcquisition(
+        port="q0:res",
+        clock="q0.ro",
+        duration=100e-9,
+    ),
+    WeightedThresholdedAcquisition(
+        weights_a=np.zeros(3, dtype=complex),
+        weights_b=np.ones(3, dtype=complex),
+        port="q0:res",
+        clock="q0.ro",
+    ),
+    Timetag(
+        port="q0:res",
+        clock="q0.ro",
+        duration=100e-9,
+    ),
+    TimetagTrace(
+        port="q0:res",
+        clock="q0.ro",
+        duration=100e-9,
+    ),
+    ThresholdedTriggerCount(
+        port="q0:res",
+        clock="q0.ro",
+        duration=100e-9,
+        threshold=10,
+        feedback_trigger_condition=TriggerCondition.GREATER_THAN_EQUAL_TO,
+        feedback_trigger_label="q0",
+    ),
+]
+
+ALL_BIN_MODES = [bin_mode for bin_mode in BinMode]  # type: ignore
+
+
 
 
 @pytest.mark.parametrize(
@@ -440,3 +518,46 @@ def test_set_and_compile_awg_seqc_upload_timeout(mocker):
 
     # Assert
     assert str(execinfo.value) == "Program upload timed out!"
+
+
+def test_extract_acquisition_metadata_from_schedule(compiled_two_qubit_t1_schedule):
+    comp_t1_sched = compiled_two_qubit_t1_schedule
+    acq_metadata = zi_helpers.extract_acquisition_metadata_from_schedule(comp_t1_sched)
+
+    assert acq_metadata.acq_protocol == "SSBIntegrationComplex"
+    assert acq_metadata.bin_mode == BinMode.AVERAGE
+    assert acq_metadata.acq_return_type is complex
+
+    # keys correspond to acquisition channels
+    assert set(acq_metadata.acq_channels_metadata.keys()) == {0, 1}
+    assert acq_metadata.acq_channels_metadata[0].acq_channel == 0
+    assert acq_metadata.acq_channels_metadata[1].acq_channel == 1
+    assert acq_metadata.acq_channels_metadata[0].acq_indices == list(np.arange(20))
+    assert acq_metadata.acq_channels_metadata[1].acq_indices == list(np.arange(20))
+
+
+@pytest.mark.parametrize("operation_a, operation_b", combinations(ALL_ACQUISITION_PROTOCOLS, 2))
+def test_conflicting_acquisitions_raises(operation_a, operation_b):
+    sched = Schedule("")
+    sched.add(operation_a)
+    sched.add(operation_b)
+    with pytest.raises(
+        RuntimeError, match="All acquisitions in a Schedule must be of the same kind"
+    ):
+        zi_helpers.extract_acquisition_metadata_from_schedule(sched)
+
+
+@pytest.mark.parametrize("bin_mode_a, bin_mode_b", combinations(ALL_BIN_MODES, 2))
+def test_conflicting_bin_modes_raises(bin_mode_a, bin_mode_b):
+    sched = Schedule("")
+    sched.add(
+        SSBIntegrationComplex(port="q0:res", clock="q0.ro", duration=100e-9, bin_mode=bin_mode_a)
+    )
+    sched.add(
+        SSBIntegrationComplex(port="q0:res", clock="q0.ro", duration=100e-9, bin_mode=bin_mode_b)
+    )
+
+    with pytest.raises(
+        RuntimeError, match="All acquisitions in a Schedule must be of the same kind"
+    ):
+        zi_helpers.extract_acquisition_metadata_from_schedule(sched)

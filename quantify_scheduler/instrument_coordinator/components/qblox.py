@@ -86,10 +86,7 @@ if TYPE_CHECKING:
     from qcodes.instrument.instrument_base import InstrumentBase
 
     from quantify_scheduler.backends.types.common import ThresholdedTriggerCountMetadata
-    from quantify_scheduler.schedules.schedule import (
-        AcquisitionMetadata,
-        CompiledSchedule,
-    )
+    from quantify_scheduler.schedules.schedule import CompiledSchedule
 
 ComponentTypeProperties = namedtuple(
     "ComponentTypeProperties",
@@ -1794,13 +1791,6 @@ class _AcquisitionManagerBase(ABC):
                 f"acquisition index {qblox_acq_index}).\n"
                 f"{hardware_retrieved_acquisitions=}"
             )
-
-    def _get_acquisitions_from_instrument(
-        self,
-        seq_idx: int,
-        acquisition_metadata: AcquisitionMetadata,  # noqa: ARG002, unused parameter
-    ) -> dict:
-        return self.instrument.get_acquisitions(seq_idx)
 
     @staticmethod
     def _acq_channel_attrs(

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from copy import deepcopy
+from copy import copy, deepcopy
 from textwrap import dedent
 from typing import Any, Generator
 from unittest.mock import ANY, call
@@ -17,10 +17,15 @@ from quantify_scheduler.backends.graph_compilation import (
     CompilationConfig,
     SimpleNodeConfig,
 )
+from quantify_scheduler import enums, json_utils
 from quantify_scheduler.backends.types import common, zhinst
 from quantify_scheduler.backends.zhinst import settings
 from quantify_scheduler.backends.zhinst.zhinst_hardware_config_old_style import (
     hardware_config as zhinst_hardware_config_old_style,
+)
+from quantify_scheduler.backends.types.zhinst import (
+    AcquisitionChannelMetadata,
+    AcquisitionMetadata,
 )
 from quantify_scheduler.backends.zhinst_backend import flatten_schedule
 from quantify_scheduler.compilation import _determine_absolute_timing
@@ -1600,3 +1605,42 @@ def test_flatten_schedule():
     timed_sched = _determine_absolute_timing(outer, time_unit="ideal")
     flat = flatten_schedule(timed_sched)
     assert len(flat.data["schedulables"]) == 4
+
+
+def test_acquisition_metadata():
+    metadata = None
+    for binmode in enums.BinMode:
+        metadata = AcquisitionMetadata(
+            acq_protocol="SSBIntegrationComplex",
+            bin_mode=binmode,
+            acq_return_type=complex,
+            acq_channels_metadata={0: AcquisitionChannelMetadata(acq_channel=0, acq_indices=[0])},
+            repetitions=1,
+        )
+        # test whether the copy function works correctly
+        metadata_copy = copy(metadata)
+        assert metadata_copy == metadata
+        assert enums.BinMode(metadata_copy.bin_mode)
+        assert isinstance(metadata_copy.acq_return_type, type)
+
+    for return_type in complex, float, int, bool, str, np.ndarray:
+        metadata = AcquisitionMetadata(
+            acq_protocol="SSBIntegrationComplex",
+            bin_mode=enums.BinMode.AVERAGE,
+            acq_return_type=return_type,
+            acq_channels_metadata={0: AcquisitionChannelMetadata(acq_channel=0, acq_indices=[0])},
+            repetitions=1,
+        )
+        # test whether the copy function works correctly
+        metadata_copy = copy(metadata)
+        assert metadata_copy == metadata
+        assert enums.BinMode(metadata_copy.bin_mode)
+        assert isinstance(metadata_copy.acq_return_type, type)
+
+    # Test that json serialization works correctly
+    serialized = json.dumps(metadata, cls=json_utils.SchedulerJSONEncoder)
+    # Test that json deserialization works correctly
+    metadata_copy = json.loads(serialized, cls=json_utils.SchedulerJSONDecoder)
+    assert metadata_copy == metadata
+    assert enums.BinMode(metadata_copy.bin_mode)
+    assert isinstance(metadata_copy.acq_return_type, type)

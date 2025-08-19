@@ -4,19 +4,19 @@
 
 from __future__ import annotations
 
-from quantify_scheduler.compatibility_check import check_zhinst_compatibility
-
-check_zhinst_compatibility()
-
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from enum import Enum, unique
-from typing import Literal, Union
+from typing import TYPE_CHECKING, Literal, Union
 
 from pydantic import Field, field_validator
 from typing_extensions import Annotated
 
 from quantify_scheduler.backends.types import common
+from quantify_scheduler.helpers.importers import export_python_object_to_path_string
 from quantify_scheduler.structure.model import DataStructure
+
+if TYPE_CHECKING:
+    from quantify_scheduler.backends.types.common import ThresholdedTriggerCountMetadata
 
 
 @unique
@@ -627,3 +627,85 @@ class ZIHardwareOptions(common.HardwareOptions):
     Dictionary containing the gain settings (values) that should be applied
     to the outputs that are connected to a certain port-clock combination (keys).
     """
+
+
+@dataclass
+class AcquisitionChannelMetadata:
+    """A description of the acquisition channel and it's indices."""
+
+    acq_channel: Hashable
+    """The acquisition channel given in the schedule."""
+    acq_indices: list[int]
+    """The indices reserved for this acquisition channel."""
+    thresholded_trigger_count: ThresholdedTriggerCountMetadata | None = None
+    """
+    Optional metadata for ThresholdedTriggerCount. Must be filled in if the this protocol is used.
+    The metadata is allowed to be different per acquisition channel.
+    """
+
+    def __getstate__(self) -> dict[str, Any]:
+        data = asdict(self)
+        return {
+            "deserialization_type": export_python_object_to_path_string(self.__class__),
+            "data": data,
+        }
+
+    def __setstate__(self, state: dict[str, Any]) -> None:
+        self.__init__(**state["data"])
+
+
+@dataclass
+class AcquisitionMetadata:
+    """
+    A description of the shape and type of data that a schedule will return when executed.
+
+    .. note::
+
+        The acquisition protocol, bin-mode and return types are assumed to be the same
+        for all acquisitions in a schedule.
+    """
+
+    acq_protocol: str
+    """The acquisition protocol that is used for all acquisitions in the schedule."""
+    bin_mode: enums.BinMode
+    """How the data is stored in the bins indexed by acq_channel and acq_index."""
+    acq_return_type: type
+    """The datatype returned by the individual acquisitions."""
+    acq_channels_metadata: dict[int, AcquisitionChannelMetadata]
+    """A dictionary mapping a numeric key, to the corresponding channel metadata."""
+    repetitions: int
+    """How many times the acquisition was repeated on this specific sequencer."""
+
+    def __getstate__(self) -> dict[str, Any]:
+        data = asdict(self)
+        return {
+            "deserialization_type": export_python_object_to_path_string(self.__class__),
+            "data": data,
+        }
+
+    def __setstate__(self, state: dict[str, Any]) -> None:
+        self.__init__(**state["data"])
+        self.acq_channels_metadata = {}
+        for numeric_key, acq_channel_metadata in state["data"]["acq_channels_metadata"].items():
+            # TODO this is ugly, but won't be needed after changing these classes to
+            # pydantic models.
+            thresholded_trigger_count = (
+                ThresholdedTriggerCountMetadata(**acq_channel_metadata["thresholded_trigger_count"])
+                if acq_channel_metadata["thresholded_trigger_count"] is not None
+                else None
+            )
+            self.acq_channels_metadata[int(numeric_key)] = AcquisitionChannelMetadata(
+                acq_channel_metadata["acq_channel"],
+                acq_channel_metadata["acq_indices"],
+                thresholded_trigger_count=thresholded_trigger_count,
+            )
+
+    def acq_channel_metadata_by_acq_channel_name(
+        self, acq_channel: Hashable
+    ) -> AcquisitionChannelMetadata:
+        """Retrieve acq_channel_metadata by acq_channel."""
+        for md in self.acq_channels_metadata.values():
+            if md.acq_channel == acq_channel:
+                return md
+        else:  # noqa: PLW0120  # ruff doesn't pick up return statement
+            raise KeyError(f"{acq_channel=} is not present.")

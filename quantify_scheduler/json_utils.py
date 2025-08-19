@@ -313,6 +313,7 @@ def _get_type_from_string_deprecated(deserialization_type: str) -> type:
     from quantify_scheduler.backends.qblox.operations.stitched_pulse import (
         StitchedPulse as QbloxStitchedPulse,
     )
+    from quantify_scheduler.backends.types.zhinst import AcquisitionMetadata
     from quantify_scheduler.device_under_test import transmon_element
     from quantify_scheduler.device_under_test.composite_square_edge import (
         CompositeSquareEdge,
@@ -326,7 +327,7 @@ def _get_type_from_string_deprecated(deserialization_type: str) -> type:
         pulse_library,
         shared_native_library,
     )
-    from quantify_scheduler.schedules.schedule import AcquisitionMetadata, Schedulable
+    from quantify_scheduler.schedules.schedule import Schedulable
 
     classes = inspect_helpers.get_classes(
         operation,

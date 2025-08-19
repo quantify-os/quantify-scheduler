@@ -191,7 +191,6 @@ class SequencerCompiler(ABC):
         self.port = port
         self.clock = clock
         self.op_strategies: list[IOperationStrategy] = []
-        self._num_acq_per_channel: dict[Hashable, int] = {}
 
         self.static_hw_properties = static_hw_properties
 
@@ -723,12 +722,6 @@ class SequencerCompiler(ABC):
             elif isinstance(operation, ControlFlowReturnStrategy):
                 return self.ParseOperationStatus.EXITED_CONTROL_FLOW
             else:
-                if operation.operation_info.is_acquisition:
-                    acq_channel = operation.operation_info.data.get("acq_channel")
-                    if acq_channel not in self._num_acq_per_channel:
-                        self._num_acq_per_channel[acq_channel] = acquisition_multiplier
-                    else:
-                        self._num_acq_per_channel[acq_channel] += acquisition_multiplier
                 qasm.conditional_manager.update(operation)
                 self._insert_qasm(operation, qasm)
 

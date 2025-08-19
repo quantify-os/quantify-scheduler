@@ -37,7 +37,6 @@ from quantify_scheduler.enums import BinMode, TimeRef, TimeSource
 from quantify_scheduler.helpers.qblox_dummy_instrument import (
     start_dummy_cluster_armed_sequencers,
 )
-from quantify_scheduler.helpers.schedule import AcquisitionChannelMetadata
 from quantify_scheduler.instrument_coordinator.components import qblox
 from quantify_scheduler.operations.acquisition_library import (
     SSBIntegrationComplex,
@@ -56,7 +55,6 @@ from quantify_scheduler.resources import ClockResource
 from quantify_scheduler.schedules.schedule import (
     AcquisitionChannelData,
     AcquisitionChannelsData,
-    AcquisitionMetadata,
     Schedule,
 )
 from quantify_scheduler.schemas.examples import utils

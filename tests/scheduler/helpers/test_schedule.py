@@ -11,12 +11,7 @@ from quantify_scheduler import Schedule
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.enums import BinMode
 from quantify_scheduler.helpers.collections import make_hash
-from quantify_scheduler.helpers.schedule import (
-    extract_acquisition_metadata_from_schedule,
-    get_acq_info_by_uuid,
-    get_acq_uuid,
-    get_pulse_uuid,
-)
+from quantify_scheduler.helpers.schedule import get_acq_info_by_uuid, get_acq_uuid, get_pulse_uuid
 from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
 from quantify_scheduler.operations.gate_library import X90, Measure, Reset
 
@@ -107,22 +102,6 @@ def test_schedule_timing_table(mock_setup_basic_transmon_with_standard_params):
     ]
     actual_abs_timing = schedule.timing_table.data.abs_time
     assert all(expected_abs_timing == actual_abs_timing)
-
-
-def test_extract_acquisition_metadata_from_schedule(compiled_two_qubit_t1_schedule):
-    comp_t1_sched = compiled_two_qubit_t1_schedule
-    acq_metadata = extract_acquisition_metadata_from_schedule(comp_t1_sched)
-
-    assert acq_metadata.acq_protocol == "SSBIntegrationComplex"
-    assert acq_metadata.bin_mode == BinMode.AVERAGE
-    assert acq_metadata.acq_return_type is complex
-
-    # keys correspond to acquisition channels
-    assert set(acq_metadata.acq_channels_metadata.keys()) == {0, 1}
-    assert acq_metadata.acq_channels_metadata[0].acq_channel == 0
-    assert acq_metadata.acq_channels_metadata[1].acq_channel == 1
-    assert acq_metadata.acq_channels_metadata[0].acq_indices == list(np.arange(20))
-    assert acq_metadata.acq_channels_metadata[1].acq_indices == list(np.arange(20))
 
 
 def test_get_used_port_clocks(create_schedule_with_pulse_info):

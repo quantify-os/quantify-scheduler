@@ -13,9 +13,7 @@ from quantify_scheduler import Schedule
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.gettables import ScheduleGettable
 from quantify_scheduler.gettables_profiled import ProfiledScheduleGettable
-from quantify_scheduler.helpers.schedule import (
-    extract_acquisition_metadata_from_schedule,
-)
+from quantify_scheduler.helpers.generate_acq_channels_data import generate_acq_channels_data
 from quantify_scheduler.schedules.spectroscopy_schedules import (
     heterodyne_spec_sched,
     nv_dark_esr_sched,
@@ -130,18 +128,15 @@ def test_schedule_gettable_batched_allxy(mock_setup_basic_transmon_with_standard
         )
         * np.exp(1j * np.deg2rad(45))
     ).astype(np.complex64)
-    acq_metadata = extract_acquisition_metadata_from_schedule(comp_allxy_sched)
-    first_acq_channel = next(iter(acq_metadata.acq_channels_metadata.values()))
-    acq_channel, acq_indices = (
-        first_acq_channel.acq_channel,
-        first_acq_channel.acq_indices,
-    )
+    acq_channels_data, _ = generate_acq_channels_data(comp_allxy_sched)
+    acq_channel = next(iter(acq_channels_data.keys()))
+    coords = acq_channels_data[acq_channel].coords
     # SSBIntegrationComplex, bin_mode.AVERAGE
     expected_data = Dataset(
         {
             acq_channel: (
                 [f"acq_index_{acq_channel}"],
-                data.reshape((len(acq_indices),)),
+                data.reshape((len(coords),)),
                 {"acq_protocol": "SSBIntegrationComplex"},
             ),
         }
@@ -210,18 +205,15 @@ def test_schedule_gettable_append_readout_cal(
 
     data = (np.tile(np.arange(2, dtype=np.float64), repetitions) * np.exp(1j)).astype(np.complex64)
 
-    acq_metadata = extract_acquisition_metadata_from_schedule(comp_ssro_sched)
-    first_acq_channel = next(iter(acq_metadata.acq_channels_metadata.values()))
-    acq_channel, acq_indices = (
-        first_acq_channel.acq_channel,
-        first_acq_channel.acq_indices,
-    )
+    acq_channels_data, _ = generate_acq_channels_data(comp_ssro_sched)
+    acq_channel = next(iter(acq_channels_data.keys()))
+    coords = acq_channels_data[acq_channel].coords
     # SSBIntegrationComplex, BinMode.APPEND
     expected_data = Dataset(
         {
             acq_channel: (
                 ["a_repetition_index", "an_acq_index"],
-                data.reshape((repetitions, len(acq_indices))),
+                data.reshape((repetitions, len(coords))),
                 {"acq_protocol": "SSBIntegrationComplex"},
             )
         }

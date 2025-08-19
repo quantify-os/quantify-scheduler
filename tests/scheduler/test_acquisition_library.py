@@ -11,9 +11,6 @@ import numpy as np
 import pytest
 
 from quantify_scheduler.enums import BinMode, TriggerCondition
-from quantify_scheduler.helpers.schedule import (
-    extract_acquisition_metadata_from_schedule,
-)
 from quantify_scheduler.json_utils import SchedulerJSONDecoder, SchedulerJSONEncoder
 from quantify_scheduler.operations.acquisition_library import (
     NumericalSeparatedWeightedIntegration,
@@ -92,33 +89,6 @@ ALL_ACQUISITION_PROTOCOLS = [
 ]
 
 ALL_BIN_MODES = [bin_mode for bin_mode in BinMode]  # type: ignore
-
-
-@pytest.mark.parametrize("operation_a, operation_b", combinations(ALL_ACQUISITION_PROTOCOLS, 2))
-def test_conflicting_acquisitions_raises(operation_a, operation_b):
-    sched = Schedule("")
-    sched.add(operation_a)
-    sched.add(operation_b)
-    with pytest.raises(
-        RuntimeError, match="All acquisitions in a Schedule must be of the same kind"
-    ):
-        extract_acquisition_metadata_from_schedule(sched)
-
-
-@pytest.mark.parametrize("bin_mode_a, bin_mode_b", combinations(ALL_BIN_MODES, 2))
-def test_conflicting_bin_modes_raises(bin_mode_a, bin_mode_b):
-    sched = Schedule("")
-    sched.add(
-        SSBIntegrationComplex(port="q0:res", clock="q0.ro", duration=100e-9, bin_mode=bin_mode_a)
-    )
-    sched.add(
-        SSBIntegrationComplex(port="q0:res", clock="q0.ro", duration=100e-9, bin_mode=bin_mode_b)
-    )
-
-    with pytest.raises(
-        RuntimeError, match="All acquisitions in a Schedule must be of the same kind"
-    ):
-        extract_acquisition_metadata_from_schedule(sched)
 
 
 def test_ssb_integration_complex():

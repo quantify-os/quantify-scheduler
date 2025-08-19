@@ -19,7 +19,6 @@ from quantify_scheduler.backends.types.qblox import (
     StaticTimetagModuleProperties,
 )
 from quantify_scheduler.enums import BinMode, TimeRef, TimeSource
-from quantify_scheduler.helpers.schedule import AcquisitionChannelMetadata, AcquisitionMetadata
 
 
 def test_set_time_ref_channel_success():

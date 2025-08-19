@@ -17,7 +17,6 @@ import numpy as np
 import pandas as pd
 
 from quantify_scheduler import enums, resources
-from quantify_scheduler.backends.types.common import ThresholdedTriggerCountMetadata
 from quantify_scheduler.helpers.collections import make_hash
 from quantify_scheduler.helpers.importers import (
     export_python_object_to_path_string,
@@ -1174,85 +1173,3 @@ class CompiledSchedule(ScheduleBase):
                 }
                 component["acq_channels_data"] = deserialized_acq_channels
         super().__setstate__(state)
-
-
-@dataclasses.dataclass
-class AcquisitionChannelMetadata:
-    """A description of the acquisition channel and it's indices."""
-
-    acq_channel: Hashable
-    """The acquisition channel given in the schedule."""
-    acq_indices: list[int]
-    """The indices reserved for this acquisition channel."""
-    thresholded_trigger_count: ThresholdedTriggerCountMetadata | None = None
-    """
-    Optional metadata for ThresholdedTriggerCount. Must be filled in if the this protocol is used.
-    The metadata is allowed to be different per acquisition channel.
-    """
-
-    def __getstate__(self) -> dict[str, Any]:
-        data = dataclasses.asdict(self)
-        return {
-            "deserialization_type": export_python_object_to_path_string(self.__class__),
-            "data": data,
-        }
-
-    def __setstate__(self, state: dict[str, Any]) -> None:
-        self.__init__(**state["data"])
-
-
-@dataclasses.dataclass
-class AcquisitionMetadata:
-    """
-    A description of the shape and type of data that a schedule will return when executed.
-
-    .. note::
-
-        The acquisition protocol, bin-mode and return types are assumed to be the same
-        for all acquisitions in a schedule.
-    """
-
-    acq_protocol: str
-    """The acquisition protocol that is used for all acquisitions in the schedule."""
-    bin_mode: enums.BinMode
-    """How the data is stored in the bins indexed by acq_channel and acq_index."""
-    acq_return_type: type
-    """The datatype returned by the individual acquisitions."""
-    acq_channels_metadata: dict[int, AcquisitionChannelMetadata]
-    """A dictionary mapping a numeric key, to the corresponding channel metadata."""
-    repetitions: int
-    """How many times the acquisition was repeated on this specific sequencer."""
-
-    def __getstate__(self) -> dict[str, Any]:
-        data = dataclasses.asdict(self)
-        return {
-            "deserialization_type": export_python_object_to_path_string(self.__class__),
-            "data": data,
-        }
-
-    def __setstate__(self, state: dict[str, Any]) -> None:
-        self.__init__(**state["data"])
-        self.acq_channels_metadata = {}
-        for numeric_key, acq_channel_metadata in state["data"]["acq_channels_metadata"].items():
-            # TODO this is ugly, but won't be needed after changing these classes to
-            # pydantic models.
-            thresholded_trigger_count = (
-                ThresholdedTriggerCountMetadata(**acq_channel_metadata["thresholded_trigger_count"])
-                if acq_channel_metadata["thresholded_trigger_count"] is not None
-                else None
-            )
-            self.acq_channels_metadata[int(numeric_key)] = AcquisitionChannelMetadata(
-                acq_channel_metadata["acq_channel"],
-                acq_channel_metadata["acq_indices"],
-                thresholded_trigger_count=thresholded_trigger_count,
-            )
-
-    def acq_channel_metadata_by_acq_channel_name(
-        self, acq_channel: Hashable
-    ) -> AcquisitionChannelMetadata:
-        """Retrieve acq_channel_metadata by acq_channel."""
-        for md in self.acq_channels_metadata.values():
-            if md.acq_channel == acq_channel:
-                return md
-        else:  # noqa: PLW0120  # ruff doesn't pick up return statement
-            raise KeyError(f"{acq_channel=} is not present.")

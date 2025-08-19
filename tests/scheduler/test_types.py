@@ -1,11 +1,10 @@
-import copy
 import json
 
 import numpy as np
 import pandas as pd
 import pytest
 
-from quantify_scheduler import enums, json_utils
+from quantify_scheduler import json_utils
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.json_utils import SchedulerJSONDecoder
 from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
@@ -15,8 +14,6 @@ from quantify_scheduler.operations.operation import Operation
 from quantify_scheduler.operations.pulse_library import SquarePulse
 from quantify_scheduler.resources import BasebandClockResource, ClockResource
 from quantify_scheduler.schedules.schedule import (
-    AcquisitionChannelMetadata,
-    AcquisitionMetadata,
     CompiledSchedule,
     Schedule,
 )
@@ -342,45 +339,6 @@ def test_sched_hardware_waveform_dict(t1_schedule, compile_config_basic_transmon
 
     for waveform_id in hardware_timing_table.waveform_id:
         assert isinstance(compiled_schedule.hardware_waveform_dict.get(waveform_id), np.ndarray)
-
-
-def test_acquisition_metadata():
-    metadata = None
-    for binmode in enums.BinMode:
-        metadata = AcquisitionMetadata(
-            acq_protocol="SSBIntegrationComplex",
-            bin_mode=binmode,
-            acq_return_type=complex,
-            acq_channels_metadata={0: AcquisitionChannelMetadata(acq_channel=0, acq_indices=[0])},
-            repetitions=1,
-        )
-        # test whether the copy function works correctly
-        metadata_copy = copy.copy(metadata)
-        assert metadata_copy == metadata
-        assert enums.BinMode(metadata_copy.bin_mode)
-        assert isinstance(metadata_copy.acq_return_type, type)
-
-    for return_type in complex, float, int, bool, str, np.ndarray:
-        metadata = AcquisitionMetadata(
-            acq_protocol="SSBIntegrationComplex",
-            bin_mode=enums.BinMode.AVERAGE,
-            acq_return_type=return_type,
-            acq_channels_metadata={0: AcquisitionChannelMetadata(acq_channel=0, acq_indices=[0])},
-            repetitions=1,
-        )
-        # test whether the copy function works correctly
-        metadata_copy = copy.copy(metadata)
-        assert metadata_copy == metadata
-        assert enums.BinMode(metadata_copy.bin_mode)
-        assert isinstance(metadata_copy.acq_return_type, type)
-
-    # Test that json serialization works correctly
-    serialized = json.dumps(metadata, cls=json_utils.SchedulerJSONEncoder)
-    # Test that json deserialization works correctly
-    metadata_copy = json.loads(serialized, cls=json_utils.SchedulerJSONDecoder)
-    assert metadata_copy == metadata
-    assert enums.BinMode(metadata_copy.bin_mode)
-    assert isinstance(metadata_copy.acq_return_type, type)
 
 
 def test_nested_schedule_to_from_json():

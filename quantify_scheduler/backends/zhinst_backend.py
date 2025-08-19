@@ -1452,7 +1452,7 @@ def compile_backend(  # noqa: PLR0912
             acq_config: ZIAcquisitionConfig | None = None
 
         elif device.device_type == zhinst.DeviceType.UHFQA:
-            acq_metadata = schedule_helpers.extract_acquisition_metadata_from_schedule(schedule)
+            acq_metadata = zi_helpers.extract_acquisition_metadata_from_schedule(schedule)
             bin_mode = acq_metadata.bin_mode
 
             builder, acq_config = _compile_for_uhfqa(
@@ -2378,3 +2378,4 @@ def construct_waveform_table(
             )
             numerical_wf_dict[row["waveform_id"]] = corr_wf
     return numerical_wf_dict
+
