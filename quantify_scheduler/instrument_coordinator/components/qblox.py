@@ -2291,6 +2291,11 @@ class _QRMAcquisitionManager(_AcquisitionManagerBase):
         scope_data_i = np.array(path0["data"][:acq_duration])
         scope_data_q = np.array(path1["data"][:acq_duration])
 
+        # If using a dummy setup and there's no scope data set, then return NaN's
+        if self.parent.instrument.is_dummy and (len(scope_data_i) == len(scope_data_q) == 0):
+            scope_data_i = np.asarray([float("nan")] * acq_duration)
+            scope_data_q = np.asarray([float("nan")] * acq_duration)
+
         acq_index_dim_name = self._acq_channels_data[acq_channel].acq_index_dim_name
         trace_index_dim_name = f"trace_index_{acq_channel}"
         data_array = DataArray(

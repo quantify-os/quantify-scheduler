@@ -25,7 +25,9 @@ from qblox_instruments import (
 from qcodes.instrument import Instrument, InstrumentChannel, InstrumentModule
 
 from quantify_core.data.handling import get_datadir
+from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.backends.graph_compilation import SerialCompiler
+from quantify_scheduler.backends.qblox import constants
 from quantify_scheduler.backends.qblox.operation_handling.bin_mode_compat import (
     IncompatibleBinModeError,
 )
@@ -37,6 +39,7 @@ from quantify_scheduler.enums import BinMode, TimeRef, TimeSource
 from quantify_scheduler.helpers.qblox_dummy_instrument import (
     start_dummy_cluster_armed_sequencers,
 )
+from quantify_scheduler.instrument_coordinator import InstrumentCoordinator
 from quantify_scheduler.instrument_coordinator.components import qblox
 from quantify_scheduler.operations.acquisition_library import (
     SSBIntegrationComplex,
@@ -57,6 +60,7 @@ from quantify_scheduler.schedules.schedule import (
     AcquisitionChannelsData,
     Schedule,
 )
+from quantify_scheduler.schedules.trace_schedules import trace_schedule
 from quantify_scheduler.schemas.examples import utils
 
 EXAMPLE_QBLOX_HARDWARE_CONFIG_NV_CENTER = utils.load_json_example_scheme(
@@ -2530,6 +2534,41 @@ def test_channel_map_off_with_marker_pulse(make_cluster_component, slot_idx, mod
     for param_name, param in seq0.parameters.items():
         if "connect" in param_name:
             assert param.get() == "off"
+
+
+def test_run_dummy_scope(
+    make_cluster_component,
+    compile_config_basic_transmon_qblox_hardware,
+):
+    ic_cluster = make_cluster_component("cluster0")
+
+    ic = InstrumentCoordinator("coordinator")
+    ic.add_component(ic_cluster)
+
+    sched = trace_schedule(
+        pulse_amp=1.0,
+        pulse_duration=400e-9,
+        pulse_delay=0,
+        frequency=7.5e9,
+        acquisition_delay=148e-9,
+        integration_time=120e-9,
+        port="q0:res",
+        clock="q0.ro",
+    )
+
+    compiler = SerialCompiler(name="compiler")
+    compiled_schedule = compiler.compile(
+        sched,
+        config=compile_config_basic_transmon_qblox_hardware,
+    )
+
+    ic.prepare(compiled_schedule)
+    ic.start()
+    ds = ic.retrieve_acquisition()
+    complex_nan_array = np.asarray(ds.data_vars[0].data.flat)
+    assert complex_nan_array.size == round(120e-9 * constants.SAMPLING_RATE)
+    assert np.iscomplexobj(complex_nan_array)
+    assert np.all(np.isnan(complex_nan_array))
 
 
 @pytest.mark.parametrize(
