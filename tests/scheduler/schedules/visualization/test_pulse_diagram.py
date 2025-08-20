@@ -17,6 +17,7 @@ from quantify_scheduler.operations.pulse_library import (
 from quantify_scheduler.resources import BasebandClockResource
 from quantify_scheduler.schedules._visualization.pulse_diagram import (
     SampledPulse,
+    _extract_signal_component,
     get_window_operations,
     merge_pulses_and_offsets,
     plot_acquisition_operations,
@@ -108,34 +109,35 @@ def test_pulse_diagram_matplotlib_multiple_subplots() -> None:
     assert len(axs) == 2
     np.testing.assert_array_almost_equal(
         axs[0].get_lines()[0].get_xdata(),
-        np.array([-0.02e-9, 0.0, 2e-9, 3.98e-9, 4e-9]),
+        np.array([-0.02e-9, 0.0, 3.98e-9, 4e-9]),
         decimal=9,
     )
+
     np.testing.assert_array_almost_equal(
         axs[0].get_lines()[0].get_ydata(),
-        np.array([0.0, 0.2, 0.2, 0.2, 0.0]),
+        np.array([0.0, 0.2, 0.2, 0.0]),
         decimal=9,
     )
 
     np.testing.assert_array_almost_equal(
         axs[0].get_lines()[1].get_xdata(),
-        np.array([5.98e-9, 6e-9, 8e-9, 1e-8, 1.198e-8, 1.2e-8]),
+        np.array([5.98e-9, 6e-9, 1.198e-8, 1.2e-8]),
         decimal=9,
     )
     np.testing.assert_array_almost_equal(
         axs[0].get_lines()[1].get_ydata(),
-        np.array([0.0, 0.3, 0.3, 0.3, 0.3, 0.0]),
+        np.array([0.0, 0.3, 0.3, 0.0]),
         decimal=9,
     )
 
     np.testing.assert_array_almost_equal(
         axs[1].get_lines()[0].get_xdata(),
-        np.array([-0.02e-9, 0.0, 2e-9, 4e-9, 5.98e-9, 6e-9]),
+        np.array([-0.02e-9, 0.0, 5.98e-9, 6e-9]),
         decimal=9,
     )
     np.testing.assert_array_almost_equal(
         axs[1].get_lines()[0].get_ydata(),
-        np.array([0.0, -0.2, -0.2, -0.2, -0.2, 0.0]),
+        np.array([0.0, -0.2, -0.2, 0.0]),
         decimal=9,
     )
 
@@ -179,34 +181,34 @@ def test_sample_schedule() -> None:
 
     np.testing.assert_array_almost_equal(
         waveforms["SDP"][0][1].time,
-        np.array([-0.02e-9, 0.0, 2e-9, 3.98e-9, 4e-9]),
+        np.array([-0.02e-9, 0.0, 3.98e-9, 4e-9]),
         decimal=9,
     )
     np.testing.assert_array_almost_equal(
         waveforms["SDP"][0][1].signal,
-        np.array([0.0, 0.2, 0.2, 0.2, 0.0]),
+        np.array([0.0, 0.2, 0.2, 0.0]),
         decimal=9,
     )
 
     np.testing.assert_array_almost_equal(
         waveforms["T"][0][0].time,
-        np.array([-0.02e-9, 0.0, 2e-9, 4e-9, 5.98e-9, 6e-9]),
+        np.array([-0.02e-9, 0.0, 5.98e-9, 6e-9]),
         decimal=9,
     )
     np.testing.assert_array_almost_equal(
         waveforms["T"][0][0].signal,
-        np.array([0.0, -0.2, -0.2, -0.2, -0.2, 0.0]),
+        np.array([0.0, -0.2, -0.2, 0.0]),
         decimal=9,
     )
 
     np.testing.assert_array_almost_equal(
         waveforms["SDP"][0][2].time,
-        np.array([5.98e-9, 6e-9, 8e-9, 1e-8, 1.198e-8, 1.2e-8]),
+        np.array([5.98e-9, 6e-9, 1.198e-8, 1.2e-8]),
         decimal=9,
     )
     np.testing.assert_array_almost_equal(
         waveforms["SDP"][0][2].signal,
-        np.array([0.0, 0.3, 0.3, 0.3, 0.3, 0.0]),
+        np.array([0.0, 0.3, 0.3, 0.0]),
         decimal=9,
     )
 
@@ -226,26 +228,30 @@ def test_sample_schedule_voltage_offsets() -> None:
 
     np.testing.assert_array_almost_equal(
         waveforms["SDP"][0][0].time,
-        np.array([0.0, 1.3e-8, 1.4e-8, 2.1e-8, 2.2e-8, 2.6e-8]),
+        np.array([0.0, 1.399e-8, 1.4e-8, 2.199e-8, 2.2e-8]),
         decimal=9,
     )
     np.testing.assert_array_almost_equal(
         waveforms["SDP"][0][0].signal,
-        np.array([0.2 - 0.2j, 0.2 - 0.2j, -0.3 + 0.3j, -0.3 + 0.3j, 0.0, 0.0]),
+        np.array([0.2 - 0.2j, 0.2 - 0.2j, -0.3 + 0.3j, -0.3 + 0.3j, 0.0]),
         decimal=9,
     )
 
     np.testing.assert_array_almost_equal(
         waveforms["T"][0][0].time,
         np.array(
-            [1.4e-8, 2.1e-8, 2.2e-8, 2.6e-8],
+            [1.4e-8, 2.1e-8, 2.2e-8],
         ),
         decimal=9,
     )
     np.testing.assert_array_almost_equal(
         waveforms["T"][0][0].signal,
         np.array(
-            [0.3 - 0.3j, 0.3 - 0.3j, 0.0, 0.0],
+            [
+                0.3 - 0.3j,
+                0.3 - 0.3j,
+                0.0,
+            ],
         ),
         decimal=9,
     )
@@ -253,14 +259,14 @@ def test_sample_schedule_voltage_offsets() -> None:
     np.testing.assert_array_almost_equal(
         waveforms["T"][0][1].time,
         np.array(
-            [7.98e-9, 8e-9, 1e-8, 1.2e-8, 1.398e-8, 1.4e-8],
+            [7.98e-9, 8e-9, 1.398e-8, 1.4e-8],
         ),
         decimal=9,
     )
     np.testing.assert_array_almost_equal(
         waveforms["T"][0][1].signal,
         np.array(
-            [0.0, -0.2, -0.2, -0.2, -0.2, 0.0],
+            [0.0, -0.2, -0.2, 0.0],
         ),
         decimal=9,
     )
@@ -281,37 +287,34 @@ def test_sample_schedule_voltage_offsets_combine_waveforms() -> None:
 
     np.testing.assert_array_almost_equal(
         waveforms["SDP"][0][0].time,
-        np.array([0.0, 1.3e-8, 1.4e-8, 2.1e-8, 2.2e-8, 2.6e-8]),
+        np.array([0.0, 1.399e-8, 1.4e-8, 2.199e-8, 2.2e-8]),
         decimal=9,
     )
     np.testing.assert_array_almost_equal(
         waveforms["SDP"][0][0].signal,
-        np.array([0.2 - 0.2j, 0.2 - 0.2j, -0.3 + 0.3j, -0.3 + 0.3j, 0.0, 0.0]),
+        np.array([0.2 - 0.2j, 0.2 - 0.2j, -0.3 + 0.3j, -0.3 + 0.3j, 0.0]),
         decimal=9,
     )
 
     np.testing.assert_array_almost_equal(
         waveforms["T"][0][0].time,
         np.array(
-            [
-                7.98e-9,
-                8e-9,
-                1e-8,
-                1.2e-8,
-                1.398e-8,
-                1.4e-8,
-                1.4e-8,
-                2.199e-8,
-                2.2e-8,
-                2.6e-8,
-            ],
+            [7.98e-9, 8e-9, 1.398e-8, 1.4e-8, 1.4e-8, 2.199e-8, 2.2e-8],
         ),
         decimal=9,
     )
     np.testing.assert_array_almost_equal(
         waveforms["T"][0][0].signal,
         np.array(
-            [0.0, -0.2, -0.2, -0.2, -0.2, 0.3 - 0.3j, 0.3 - 0.3j, 0.3 - 0.3j, 0.0, 0.0],
+            [
+                0.0,
+                -0.2,
+                -0.2,
+                0.3 - 0.3j,
+                0.3 - 0.3j,
+                0.3 - 0.3j,
+                0.0,
+            ],
         ),
         decimal=9,
     )
@@ -345,13 +348,13 @@ def test_sample_modulated_waveform() -> None:
                 0.11755705 + 0.161803399j,
                 -0.061803399 + 0.190211303j,
                 -0.189620381 + 0.063593327j,
-                0.0 + 0.0j,
+                -0.0 + 0.0j,
             ]
         ),
         decimal=9,
     )
     np.testing.assert_array_almost_equal(
-        waveforms["T"][0][0].signal, np.array([0.0, 0.2, 0.2, 0.2, 0.2, 0.0]), decimal=9
+        waveforms["T"][0][0].signal, np.array([0.0, 0.2, 0.2, 0.0]), decimal=9
     )
 
 
@@ -447,3 +450,14 @@ def test_schedule_repetitions_are_not_sampled():
             all_times.extend(pulse.time)
 
     assert max(all_times) <= 3e-9
+
+
+def test_extract_signal_component() -> None:
+    # Test empty pulses
+    pulses = []
+    signal_time, signal_amp, offset_time, offset_value = _extract_signal_component(pulses)
+
+    assert signal_time.size == 0
+    assert signal_amp.size == 0
+    assert offset_time.size == 0
+    np.testing.assert_array_equal([0 + 0j], offset_value)

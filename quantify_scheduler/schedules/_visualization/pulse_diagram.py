@@ -34,6 +34,8 @@ from quantify_scheduler.waveforms import interpolated_complex_waveform
 if TYPE_CHECKING:
     from quantify_scheduler import CompiledSchedule, Operation, Schedule
 
+from collections import Counter
+
 logger = logging.getLogger(__name__)
 
 
@@ -134,8 +136,10 @@ def get_sampled_pulses_from_voltage_offsets(
                     signal.append(signal[-1])
                 time.append(info.time)
                 signal.append(info.op_info["offset_path_I"] + 1j * info.op_info["offset_path_Q"])
-            time.append(schedule.duration / schedule.repetitions)
-            signal.append(signal[-1])
+            if signal[-1] != 0:
+                # If the offset is not 0, let it run to the end of the schedule.
+                time.append(schedule.duration / schedule.repetitions)
+                signal.append(signal[-1])
 
             # Filter in time: Keep one point before and one point after the limit (if
             # possible).
@@ -262,12 +266,23 @@ def get_sampled_pulses(
             waveform = np.concatenate(([0], waveform, [0]))
 
             if modulation == "clock":
-                waveform = modulate_waveform(
-                    t, waveform, schedule.resources[info.op_info["clock"]]["freq"]
-                )
+                freq = schedule.resources[info.op_info["clock"]]["freq"]
+            elif modulation == "if":
+                freq = modulation_if
+            elif modulation == "off":
+                freq = 0
+            else:
+                raise ValueError(f"Unknown modulation {modulation}")
 
-            if modulation == "if":
-                waveform = modulate_waveform(t, waveform, modulation_if)
+            wf_func_name = info.op_info["wf_func"].rsplit(".", maxsplit=1)[-1]
+            is_linear = wf_func_name in ["square", "ramp"]
+
+            if freq == 0 and is_linear:
+                # In certain case only 4 points are needed
+                waveform = np.concatenate((waveform[:2], waveform[-2:]))
+                t = np.concatenate((t[:2], t[-2:]))
+            else:
+                waveform = modulate_waveform(t, waveform, freq)
 
             waveform = np.real_if_close(waveform)
             label = f"{info.op_name}, clock {info.op_info['clock']}"
@@ -656,13 +671,206 @@ def deduplicate_legend_handles_labels(ax: mpl.axes.Axes) -> None:
     ax.legend(by_label.values(), by_label.keys())
 
 
+def _multiset_intersection_with_duplicates(array1: np.ndarray, array2: np.ndarray) -> np.ndarray:
+    """
+    Compute the multiset intersection of two arrays, preserving duplicates.
+    The result contains each common element repeated the minimum number of times
+    it appears in both input arrays, sorted in ascending order.
+
+    Parameters
+    ----------
+    array1 :
+        First input array.
+    array2 :
+        Second input array.
+
+    Returns
+    -------
+    np.ndarray
+        Sorted array of elements present in both arrays, including duplicates.
+
+
+    """
+    counter1 = Counter(array1)
+    counter2 = Counter(array2)
+    intersection_counter = counter1 & counter2  # min counts for each element
+
+    result_list = []
+    for element, count in intersection_counter.items():
+        result_list.extend([element] * count)
+
+    return np.array(sorted(result_list))
+
+
+def _merge_signal_and_offset(
+    signal_x: np.ndarray,
+    signal_y: np.ndarray,
+    offset_x: np.ndarray,
+    offset_y: np.ndarray,
+    scale: float = 1e9,
+) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Merge signal and stepwise offset into a unified time and value vector,
+    preserving exact offsets and only interpolating where necessary.
+    Time is returned in seconds.
+
+    Parameters
+    ----------
+    signal_x
+        Time points of the signal.
+    signal_y
+        Signal values at `signal_x`.
+    offset_x
+        Time points of the offset.
+    offset_y
+        Offset values at `offset_x`.
+    scale
+        Scaling factor to convert time to integer domain (default is 1e9 for nanoseconds).
+
+    Returns
+    -------
+    tuple of np.ndarray
+        Tuple containing:
+        - merged time vector in seconds,
+        - merged signal + offset values.
+
+    """
+    signal_x = np.asarray(signal_x)
+    signal_y = np.asarray(signal_y)
+    offset_x = np.asarray(offset_x)
+    offset_y = np.asarray(offset_y)
+
+    # Convert time values to scaled integers for exact comparison
+    signal_x_int = np.round(signal_x * scale).astype(np.int64)
+    offset_x_int = np.round(offset_x * scale).astype(np.int64)
+
+    # Detect duplicated time points between signal and offset
+    common_time_int = _multiset_intersection_with_duplicates(signal_x_int, offset_x_int)
+    offset_unique_int = offset_x_int[~np.isin(offset_x_int, common_time_int)]
+
+    # Merge signal and offset time points (excluding offset duplicates)
+    all_time_int = np.sort(np.concatenate([signal_x_int, offset_unique_int]))
+
+    # Initialize merged signal and offset arrays
+    merged_signal_y = np.zeros(len(all_time_int), dtype=signal_y.dtype)
+    merged_offset_y = np.zeros(len(all_time_int), dtype=offset_y.dtype)
+
+    # Assign signal values
+    signal_indices = np.where(np.isin(all_time_int, signal_x_int))[0]
+    merged_signal_y[signal_indices] = signal_y
+
+    # Assign and fill stepwise offset values
+    offset_indices = np.where(np.isin(all_time_int, offset_x_int))[0]
+    if len(offset_indices) > len(offset_y):
+        offset_indices = offset_indices[: len(offset_y)]
+    merged_offset_y[offset_indices] = offset_y
+
+    # Fill gaps in offset with previous nonzero step value
+    for i in range(len(offset_indices) - 1):
+        start = offset_indices[i]
+        end = offset_indices[i + 1]
+        val = merged_offset_y[start]
+        merged_offset_y[start:end] = val
+
+    # Extend last value forward if any
+    if offset_indices.size > 0:
+        merged_offset_y[offset_indices[-1] :] = merged_offset_y[offset_indices[-1]]
+
+    # Convert time back to float in seconds
+    merged_time = all_time_int.astype(np.float64) / scale
+    merged_values = merged_signal_y + merged_offset_y
+
+    return merged_time, merged_values
+
+
+def _extract_signal_component(
+    pulses: list[SampledPulse],
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Extracts time and amplitude data from a list of sampled pulses for plotting.
+
+    Parameters
+    ----------
+    pulses:
+        List of SampledPulse objects.
+
+    Returns
+    -------
+        A tuple containing:
+            - signal_time: np.ndarray of time values for the main signal.
+            - signal_amp: np.ndarray of amplitude values for the main signal.
+            - offset_time: np.ndarray of time values for offset pulses.
+            - offset_value: np.ndarray of amplitude values for offset pulses.
+
+    """
+    signal_time = np.empty(0, dtype=float)
+    signal_amp = np.empty(0, dtype=complex)
+    offset_time = np.empty(0, dtype=float)
+    offset_value = np.array([0.0 + 0 * 1j], dtype=complex)
+
+    for pulse in pulses:
+        label = pulse.label.split(",")[0]
+        pulse_time = np.asarray(pulse.time, dtype=float)
+        signal = np.asarray(pulse.signal, dtype=complex)
+        part_values = signal
+
+        if label == "VoltageOffset":
+            if pulse_time[0] != 0:
+                offset_time = np.concatenate((offset_time, [0.0]))
+                offset_value = np.concatenate((offset_value, [0.0 + 0 * 1j]))
+            offset_time = np.concatenate((offset_time, [pulse_time[0], *pulse_time]))
+            offset_value = np.concatenate((offset_value, part_values))
+        else:
+            signal_time = np.concatenate((signal_time, pulse_time))
+            signal_amp = np.concatenate((signal_amp, part_values))
+
+    if signal_time.size > 0 and signal_time[0] < 0:
+        signal_time = signal_time[1:]
+        signal_amp = signal_amp[1:]
+
+    return signal_time, signal_amp, offset_time, offset_value
+
+
+def _clean_flat_artifacts(x_data: np.ndarray, y_data: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Remove artifacts where 4 identical consecutive x-values occur by discarding
+    the two middle points in each block.
+
+    Args:
+        x_data: The x-values of the signal.
+        y_data: The y-values of the signal.
+
+    Returns:
+        A tuple of filtered x and y arrays with flat artifacts removed.
+
+    """
+    scale = 1e9
+    x_data = np.asarray(x_data)
+    x_data = np.round(x_data * scale).astype(np.int64)
+    y_data = np.asarray(y_data)
+
+    keep = np.ones(len(x_data), dtype=bool)
+
+    # Detect sequences of 4 repeated x values
+    repeated = (
+        (x_data[:-3] == x_data[1:-2]) & (x_data[:-3] == x_data[2:-1]) & (x_data[:-3] == x_data[3:])
+    )
+    idx_start = np.where(repeated)[0]
+
+    for i in idx_start:
+        keep[i + 1] = False
+        keep[i + 2] = False
+
+    return x_data[keep] / scale, y_data[keep]
+
+
 def plot_single_subplot_mpl(
     sampled_schedule: dict[str, list[SampledPulse]],
     ax: mpl.axes.Axes | None = None,
     title: str = "Pulse diagram",
 ) -> tuple[mpl.figure.Figure, mpl.axes.Axes]:
     """
-    Plot all pulses for all ports in the schedule in the same subplot.
+    Plot all pulses for all ports in the same subplot using Matplotlib.
 
     Pulses in the same port have the same color and legend entry, and each port
     has its own legend entry.
@@ -670,20 +878,18 @@ def plot_single_subplot_mpl(
     Parameters
     ----------
     sampled_schedule :
-        Dictionary that maps each used port to the sampled pulses played on that port.
+        Dictionary mapping port names to lists of SampledPulse objects.
     ax :
-        A pre-existing Axes object to plot the pulses in. If ``None`` (default), this
-        object is created within the function.
-    title :
-        Plot title.
+        Existing axes to draw on. If None, a new figure and axes will be created.
+    title : str, optional
+        Title of the plot (default is "Pulse diagram").
 
     Returns
     -------
     fig :
-        A matplotlib :class:`matplotlib.figure.Figure` containing the subplot.
-
+        The matplotlib figure object.
     ax :
-        The Axes of the subplot belonging to the Figure.
+        The axes used for the subplot.
 
     """
     if ax is None:
@@ -691,26 +897,25 @@ def plot_single_subplot_mpl(
     else:
         fig = ax.get_figure()
 
-    for i, (port, data) in enumerate(sampled_schedule.items()):
-        for pulse in data:
-            ax.plot(pulse.time, pulse.signal.real, color=f"C{i}", label=f"port {port}")
-            ax.fill_between(pulse.time, pulse.signal.real, color=f"C{i}", alpha=0.2)
+    ax.set_title(title)
 
-            if np.iscomplexobj(pulse.signal):
-                ax.plot(
-                    pulse.time,
-                    pulse.signal.imag,
-                    color=f"C{i}",
-                    linestyle="--",
-                    label=f"port {port} (imag)",
-                )
-                ax.fill_between(pulse.time, pulse.signal.imag, color=f"C{i}", alpha=0.4)
+    for i, (port, pulses) in enumerate(sampled_schedule.items()):
+        time, value, offset_time, offset_value = _extract_signal_component(pulses)
+        time, value = _clean_flat_artifacts(time, value)
+        time, value = _merge_signal_and_offset(time, value, offset_time, offset_value)
+
+        ax.plot(time, value.real, color=f"C{i}", label=f"port {port}")
+        ax.fill_between(time, value.real, color=f"C{i}", alpha=0.2)
+
+        if np.any(np.imag(value) != 0):
+            ax.plot(time, value.imag, color=f"C{i}", label=f"port {port}", linestyle="--")
+            ax.fill_between(time, value.imag, color=f"C{i}", alpha=0.2)
 
     deduplicate_legend_handles_labels(ax)
     set_xlabel(label="Time", unit="s", axis=ax)
-    set_ylabel(label="Amplitude", unit="V", axis=ax)
-
+    set_ylabel(label=r"$\dfrac{V}{V_{max}}$", unit="", axis=ax)
     ax.set_title(title)
+
     return fig, ax
 
 

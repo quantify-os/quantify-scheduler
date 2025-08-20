@@ -436,7 +436,7 @@ class ScheduleBase(JSONSchemaValMixin, JSONSerializable, UserDict, ABC):
 
             return pulse_diagram_matplotlib(
                 sampled_pulses_and_acqs=sampled_pulses_and_acqs,
-                title=self["name"],
+                title=self["name"] + f" repeated {self.repetitions} times",
                 **backend_kwargs,
             )
         if plot_backend == "plotly":
