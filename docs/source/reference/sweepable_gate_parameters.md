@@ -30,7 +30,7 @@ def resonator_punchout_schedule(
     freqs, ro_pulse_amps = np.unique(freqs), np.unique(ro_pulse_amps)
     for freq in freqs:
         for amp in ro_pulse_amps:
-            sched.add(Measure(qubit.name, acq_index=index, freq=freq, pulse_amp=amp))
+            sched.add(Measure(qubit.name, freq=freq, pulse_amp=amp))
             sched.add(IdlePulse(8e-9))
             index += 1
     return sched

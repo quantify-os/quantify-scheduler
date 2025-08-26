@@ -171,8 +171,8 @@ def test_compilation_measure_qblox_hardware(mock_setup_basic_nv_qblox_hardware):
     schedule = Schedule(name="Measure", repetitions=1)
     label = "measure pulse"
 
-    _ = schedule.add(Measure("qe0", acq_index=0), label=label)
-    measure_hash = Measure("qe0", acq_index=0).hash
+    _ = schedule.add(Measure("qe0"), label=label)
+    measure_hash = Measure("qe0").hash
 
     # We can plot the circuit diagram
     schedule.plot_circuit_diagram()

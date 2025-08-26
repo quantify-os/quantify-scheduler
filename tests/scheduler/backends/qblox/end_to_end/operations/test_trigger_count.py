@@ -50,7 +50,7 @@ def test_trigger_count_bin_mode_sum_qrm(
     dataarray = xr.DataArray(
         count,
         dims=["acq_index_0"],
-        coords={"acq_index_0": list(range(2))},
+        coords={"acq_index_0": list(range(2)), "index": ("acq_index_0", [0, 1])},
         attrs={"acq_protocol": "TriggerCount"},
     )
     expected_dataset = xr.Dataset({0: dataarray})
@@ -64,7 +64,7 @@ def test_trigger_count_bin_mode_sum_qrm(
             duration=1e-6,
             port="qe0:optical_readout",
             clock="qe0.ge0",
-            acq_index=0,
+            coords={"index": 0},
             bin_mode=BinMode.SUM,
         )
     )
@@ -73,7 +73,7 @@ def test_trigger_count_bin_mode_sum_qrm(
             duration=1e-6,
             port="qe0:optical_readout",
             clock="qe0.ge0",
-            acq_index=1,
+            coords={"index": 1},
             bin_mode=BinMode.SUM,
         ),
         rel_time=100e-9,
@@ -138,7 +138,7 @@ def test_trigger_count_bin_mode_sum_qtm(
     dataarray = xr.DataArray(
         count,
         dims=["acq_index_0"],
-        coords={"acq_index_0": list(range(2))},
+        coords={"acq_index_0": [0, 1], "index": ("acq_index_0", [0, 1])},
         attrs={"acq_protocol": "TriggerCount"},
     )
     expected_dataset = xr.Dataset({0: dataarray})
@@ -152,7 +152,7 @@ def test_trigger_count_bin_mode_sum_qtm(
             duration=1e-6,
             port="qe1:optical_readout",
             clock="qe1.ge0",
-            acq_index=0,
+            coords={"index": 0},
             bin_mode=BinMode.SUM,
         )
     )
@@ -161,7 +161,7 @@ def test_trigger_count_bin_mode_sum_qtm(
             duration=1e-6,
             port="qe1:optical_readout",
             clock="qe1.ge0",
-            acq_index=1,
+            coords={"index": 1},
             bin_mode=BinMode.SUM,
         ),
         rel_time=100e-9,
@@ -201,7 +201,6 @@ def test_trigger_count_distribution_exclusivity(
             port="qe0:optical_readout",
             clock="qe0.ge0",
             acq_channel=0,
-            acq_index=None,
             bin_mode=BinMode.DISTRIBUTION,
         )
     )
@@ -211,7 +210,7 @@ def test_trigger_count_distribution_exclusivity(
             port="qe0:optical_readout",
             clock="qe0.ge0",
             acq_channel=1,
-            acq_index=0,
+            coords={"index": 0},
             bin_mode=BinMode.SUM,
         ),
         rel_time=100e-9,

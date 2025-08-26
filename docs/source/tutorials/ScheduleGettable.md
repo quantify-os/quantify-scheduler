@@ -157,7 +157,7 @@ def t1_sched(times, repetitions=1):
         schedule.add(X("q0"), label=f"pi {i}")
         # Measure tau seconds after the start of the X gate
         schedule.add(
-            Measure("q0", acq_index=i),
+            Measure("q0"),
             ref_pt="start",
             rel_time=tau,
             label=f"Measurement {i}",
@@ -403,7 +403,7 @@ from quantify_scheduler import QuantumDevice, ScheduleGettable
 
 def schedule_function(q0: str, repetitions: int):
     schedule = Schedule("Example schedule")
-    schedule.add(Measure(q0, acq_index=0))
+    schedule.add(Measure(q0))
     return schedule
 
 quantum_device = QuantumDevice(name="quantum_sample")
@@ -432,7 +432,7 @@ from quantify_scheduler import QuantumDevice, ScheduleGettable
 
 def schedule_function(q0: str, repetitions: int = 2):
     schedule = Schedule("Example schedule", repetitions=repetitions)
-    schedule.add(Measure(q0, acq_index=0))
+    schedule.add(Measure(q0))
     return schedule
 
 quantum_device = QuantumDevice(name="quantum_sample")
@@ -606,9 +606,9 @@ def chevron_schedule_not_batched(duration, amp, repetitions=1):
     square = sched.add(SquarePulse(amp=amp, duration=duration, port="q0:mw", clock="q0.01"))
     sched.add(X90("q0"), ref_op=square)  # Start at the end of the square pulse
     sched.add(X90("q1"), ref_op=square)
-    sched.add(Measure("q0", acq_index=acq_idx), label=f"M q0 {acq_idx}")
+    sched.add(Measure("q0"), label=f"M q0 {acq_idx}")
     sched.add(
-        Measure("q1", acq_index=acq_idx),
+        Measure("q1"),
         label=f"M q1 {acq_idx}",
         ref_pt="start",  # Start at the same time as the other measure
     )
@@ -701,9 +701,9 @@ def chevron_schedule_batched(duration, amps, repetitions=1):
         square = sched.add(SquarePulse(amp=amp, duration=duration, port="q0:mw", clock="q0.01"))
         sched.add(X90("q0"), ref_op=square)
         sched.add(X90("q1"), ref_op=square)
-        sched.add(Measure("q0", acq_index=acq_idx), label=f"M q0 {acq_idx}")
+        sched.add(Measure("q0"), label=f"M q0 {acq_idx}")
         sched.add(
-            Measure("q1", acq_index=acq_idx),
+            Measure("q1"),
             label=f"M q1 {acq_idx}",
             ref_pt="start",
         )

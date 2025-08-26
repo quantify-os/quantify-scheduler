@@ -198,7 +198,6 @@ schedule.add(
         port="q0:res",
         clock="q0.ro",
         acq_channel=0,
-        acq_index=0,
     ),
     ref_pt="start",
     rel_time=time_of_flight
@@ -258,7 +257,7 @@ instrument_coordinator.stop()
 acquisition
 ```
 
-The acquisition data is stored as an {class}`xarray.Dataset`. While it typically consists of multiple {class}`xarray.DataArray`s, this particular dataset contains only one {class}`xarray.DataArray`. This array corresponds to `acq_channel=0` as that was the only acquisition channel we used. Each `acq_index_<acq_channel>` value represents a 1 ns measurement, given that the Qblox backend employs a trace acquisition with a granularity of 1 ns. The real and imaginary parts of the data correspond to the I and Q components, respectively.
+The acquisition data is stored as an {class}`xarray.Dataset`. While it typically consists of multiple {class}`xarray.DataArray`s, this particular dataset contains only one {class}`xarray.DataArray`. This array corresponds to `acq_channel=0` as that was the only acquisition channel we used. Each `trace_index_<acq_channel>` value represents a 1 ns measurement, given that the Qblox backend employs a trace acquisition with a granularity of 1 ns. The real and imaginary parts of the data correspond to the I and Q components, respectively.
 
 We can also plot these results with the following commands. Notice, that because the data is an {class}`xarray.Dataset`, it's very easy to plot and format the data. We only ran the schedule once, so `repetition=0`.
 
@@ -310,7 +309,7 @@ from quantify_scheduler.enums import BinMode
 schedule = Schedule("ssb_acquisition_tutorial")
 schedule.add(IdlePulse(duration=1e-6))
 
-def pulse_and_acquisition(pulse_level, acq_channel, acq_index, schedule, bin_mode=BinMode.AVERAGE):
+def pulse_and_acquisition(pulse_level, acq_channel, schedule, bin_mode=BinMode.AVERAGE):
     schedule.add(
         SquarePulse(
             duration=pulse_duration,
@@ -327,17 +326,16 @@ def pulse_and_acquisition(pulse_level, acq_channel, acq_index, schedule, bin_mod
             port="q0:res",
             clock="q0.ro",
             acq_channel=acq_channel,
-            acq_index=acq_index,
             bin_mode=bin_mode,
         ),
         ref_pt="start",
         rel_time=time_of_flight
     )
 
-pulse_and_acquisition(pulse_level=0.125,  acq_channel=0, acq_index=0, schedule=schedule)
-pulse_and_acquisition(pulse_level=0.125j, acq_channel=0, acq_index=1, schedule=schedule)
-pulse_and_acquisition(pulse_level=0.25,   acq_channel=1, acq_index=0, schedule=schedule)
-pulse_and_acquisition(pulse_level=0.25j,  acq_channel=1, acq_index=1, schedule=schedule)
+pulse_and_acquisition(pulse_level=0.125,  acq_channel=0, schedule=schedule)
+pulse_and_acquisition(pulse_level=0.125j, acq_channel=0, schedule=schedule)
+pulse_and_acquisition(pulse_level=0.25,   acq_channel=1, schedule=schedule)
+pulse_and_acquisition(pulse_level=0.25j,  acq_channel=1, schedule=schedule)
 ```
 
 Notice, that the amplitude is double in the case of `acq_channel=1` compared to `acq_channel=0`. Also, the amplitude is complex: in case `acq_index_<acq_channel>=0` the amplitude is real, and in case `acq_index_<acq_channel>=1` the amplitude is imaginary.
@@ -427,7 +425,6 @@ schedule.add(
         port="q0:res",
         clock="q0.ro",
         acq_channel=acq_channel,
-        acq_index=acq_index,
         bin_mode=BinMode.AVERAGE,
     )
 )
@@ -449,8 +446,8 @@ from quantify_scheduler.enums import BinMode
 schedule = Schedule("append_tutorial", repetitions=3)
 schedule.add(IdlePulse(duration=1e-6))
 
-pulse_and_acquisition(pulse_level=0.125, acq_channel=0, acq_index=0, schedule=schedule, bin_mode=BinMode.APPEND)
-pulse_and_acquisition(pulse_level=0.25,  acq_channel=0, acq_index=1, schedule=schedule, bin_mode=BinMode.APPEND)
+pulse_and_acquisition(pulse_level=0.125, acq_channel=0, schedule=schedule, bin_mode=BinMode.APPEND)
+pulse_and_acquisition(pulse_level=0.25,  acq_channel=0, schedule=schedule, bin_mode=BinMode.APPEND)
 ```
 
 ```{code-cell} ipython3
@@ -528,7 +525,6 @@ schedule.add(IdlePulse(duration=1e-6))
 def add_pulse_and_weighted_acquisition_to_schedule(
     weights_a,
     weights_b,
-    acq_index,
     schedule,
     acq_channel=0,
     weights_sampling_rate=1e9,
@@ -552,7 +548,6 @@ def add_pulse_and_weighted_acquisition_to_schedule(
             weights_b=weights_b,
             weights_sampling_rate=weights_sampling_rate,
             acq_channel=acq_channel,
-            acq_index=acq_index,
             bin_mode=bin_mode,
         ),
         ref_pt="start",
@@ -567,7 +562,6 @@ add_pulse_and_weighted_acquisition_to_schedule(
     weights_b=square_weights,
     weights_sampling_rate=1e9,
     acq_channel=0,
-    acq_index=0,
     schedule=schedule,
 )
 
@@ -575,7 +569,6 @@ half_value_weights = square_weights / 2
 add_pulse_and_weighted_acquisition_to_schedule(
     weights_a=half_value_weights,
     weights_b=square_weights,
-    acq_index=1,
     schedule=schedule,
 )
 
@@ -583,7 +576,6 @@ sine_weights = np.sin(2 * np.pi * np.linspace(0, 1, 1000))
 add_pulse_and_weighted_acquisition_to_schedule(
     weights_a=sine_weights,
     weights_b=square_weights,
-    acq_index=2,
     schedule=schedule,
 )
 ```
@@ -695,7 +687,6 @@ schedule.add(
         port="q0:res",
         clock="q0.ro",
         acq_channel=0,
-        acq_index=0,
         bin_mode=BinMode.APPEND,
     ),
     ref_pt="start",
@@ -796,7 +787,6 @@ thres_acq_sched.add(
         port="q0:res",
         clock="q0.ro",
         acq_channel=0,
-        acq_index=0,
         bin_mode=BinMode.APPEND,
     ),
     ref_pt="start",
@@ -852,9 +842,9 @@ Let's consider an example where we execute a schedule three times:
 - during the 2nd run, one trigger is acquired,
 - during the 3rd run, one trigger is acquired.
 
-The result would then be the list `[3, 1, 1]` for acquisition index 0.
+The result would then be the list `[3, 1, 1]` for acquisition the first acquisition operation.
 
-In the **sum** bin mode, counts in repeated acquisitions with the same acquisition index are simply accumulated. Given the same experiment as above, the returned amount of counts for acquisition index 0 would be `5` with this bin mode.
+In the **sum** bin mode, counts of repeated triggers are simply accumulated. Given the same experiment as above, the returned amount of counts for acquisition index 0 would be `5` with this bin mode.
 
 In the **distribution** bin mode, the result is a _distribution_ that maps the trigger count numbers to the number of occurrences of each trigger count number.
 This provides insights into the overall occurrence of triggers when running the acquisition multiple times. Let's consider the exact same experimental example as above, where a schedule is executed three times.
@@ -1431,7 +1421,7 @@ schedule = Schedule("gate_level_ssb_acquisition_tutorial")
 schedule.add(IdlePulse(duration=1e-6))
 
 schedule.add(
-    Measure("q0", acq_index=0),
+    Measure("q0"),
     rel_time=1e-6,
 )
 ```

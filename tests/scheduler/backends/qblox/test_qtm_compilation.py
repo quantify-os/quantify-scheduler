@@ -749,7 +749,7 @@ def test_incorrect_multiple_trace_acq(mock_setup_basic_nv, assert_equal_q1asm):
             port="qe1:optical_readout",
             clock="qe1.ge0",
             acq_channel=0,
-            acq_index=0,
+            coords={"index": 0},
             bin_mode=BinMode.FIRST,
         )
     )
@@ -759,7 +759,7 @@ def test_incorrect_multiple_trace_acq(mock_setup_basic_nv, assert_equal_q1asm):
             port="qe1:optical_readout",
             clock="qe1.ge0",
             acq_channel=1,
-            acq_index=0,
+            coords={"index": 0},
             bin_mode=BinMode.FIRST,
         ),
         rel_time=20e-9,
@@ -791,7 +791,7 @@ def test_multiple_trace_acq(mock_setup_basic_nv, assert_equal_q1asm):
             port="qe1:switch",
             clock="digital",
             acq_channel=0,
-            acq_index=0,
+            coords={"index": 0},
             bin_mode=BinMode.FIRST,
         )
     )
@@ -801,7 +801,7 @@ def test_multiple_trace_acq(mock_setup_basic_nv, assert_equal_q1asm):
             port="qe1:optical_readout",
             clock="qe1.ge0",
             acq_channel=1,
-            acq_index=0,
+            coords={"index": 0},
             bin_mode=BinMode.FIRST,
         ),
         rel_time=20e-9,
@@ -894,11 +894,13 @@ def test_multiple_timetagtrace_acq(mock_setup_basic_nv, assert_equal_q1asm):
             duration=16e-6,
             port="qe1:optical_readout",
             clock="qe1.ge0",
-            acq_index=0,
+            coords={"index": 0},
         )
     )
     schedule.add(
-        TimetagTrace(duration=16e-6, port="qe1:optical_readout", clock="qe1.ge0", acq_index=1),
+        TimetagTrace(
+            duration=16e-6, port="qe1:optical_readout", clock="qe1.ge0", coords={"index": 1}
+        ),
         rel_time=20e-9,
     )
 
@@ -1260,7 +1262,7 @@ def test_timetag_fine_delay_error_between_op(mock_setup_basic_nv):
             time_ref=TimeRef.TIMESTAMP,
             fine_start_delay=1750e-12,
             fine_end_delay=0,
-            acq_index=0,
+            coords={"index": 0},
         ),
         rel_time=100e-9,
     )
@@ -1274,7 +1276,7 @@ def test_timetag_fine_delay_error_between_op(mock_setup_basic_nv):
             time_ref=TimeRef.TIMESTAMP,
             fine_start_delay=50e-12,
             fine_end_delay=0,
-            acq_index=1,
+            coords={"index": 1},
         ),
         rel_time=4e-9,
     )

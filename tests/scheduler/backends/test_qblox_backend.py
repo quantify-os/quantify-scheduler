@@ -327,8 +327,8 @@ def duplicate_measure_schedule():
     sched = Schedule("gate_only_schedule")
     sched.add(Reset("q0"))
     x_gate = sched.add(X("q0"))
-    sched.add(Measure("q0", acq_index=0), ref_op=x_gate, rel_time=1e-6, ref_pt="end")
-    sched.add(Measure("q0", acq_index=1), ref_op=x_gate, rel_time=3e-6, ref_pt="end")
+    sched.add(Measure("q0", coords={"index": 0}), ref_op=x_gate, rel_time=1e-6, ref_pt="end")
+    sched.add(Measure("q0", coords={"index": 1}), ref_op=x_gate, rel_time=3e-6, ref_pt="end")
     return sched
 
 
@@ -1241,7 +1241,7 @@ def test_compile_acq_measurement_with_clock_phase_reset(
         schedule.add(X(q1), label=f"pi {i} {q1}", ref_pt="start")
 
         schedule.add(
-            Measure(q0, acq_index=i),
+            Measure(q0, coords={"index": i}),
             ref_pt="start",
             rel_time=tau,
             label=f"Measurement {q0}{i}",
@@ -1316,9 +1316,9 @@ def test_acquisitions_back_to_back(
     compile_config_basic_transmon_qblox_hardware,
 ):
     sched = Schedule("acquisitions_back_to_back")
-    meas_op = sched.add(Measure("q0", acq_index=0))
+    meas_op = sched.add(Measure("q0", coords={"index": 0}))
     # Add another one too quickly
-    sched.add(Measure("q0", acq_index=1), ref_op=meas_op, ref_pt="start", rel_time=200e-9)
+    sched.add(Measure("q0", coords={"index": 1}), ref_op=meas_op, ref_pt="start", rel_time=200e-9)
 
     with pytest.raises(ValueError) as error:
         compiler = SerialCompiler(name="compiler")
@@ -3631,7 +3631,7 @@ def test_add_acquisition_to_control_module_raises(
             port="q0:mw",
             clock="q0.01",
             acq_channel=0,
-            acq_index=0,
+            coords={"index": 0},
         ),
     )
 

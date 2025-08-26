@@ -256,8 +256,8 @@ class ScheduleBase(JSONSchemaValMixin, JSONSerializable, UserDict, ABC):
                 sched.add(X90("q1"), ref_pt="start", rel_time=0)
                 sched.add(CZ(qC="q0", qT="q1"))
                 sched.add(Rxy(theta=45, phi=0, qubit="q0") )
-                sched.add(Measure("q0", acq_index=0))
-                sched.add(Measure("q1", acq_index=0), ref_pt="start")
+                sched.add(Measure("q0"))
+                sched.add(Measure("q1"), ref_pt="start")
 
                 sched.plot_circuit_diagram();
 
@@ -580,8 +580,8 @@ class ScheduleBase(JSONSchemaValMixin, JSONSerializable, UserDict, ABC):
                 schedule.add(Reset("q0", "q4"))
                 schedule.add(X("q0"))
                 schedule.add(Y("q4"))
-                schedule.add(Measure("q0", acq_channel=0, acq_index=0))
-                schedule.add(Measure("q4", acq_channel=1, acq_index=0))
+                schedule.add(Measure("q0", acq_channel=0))
+                schedule.add(Measure("q4", acq_channel=1))
 
                 compiled_schedule = compiler.compile(schedule)
                 compiled_schedule.timing_table

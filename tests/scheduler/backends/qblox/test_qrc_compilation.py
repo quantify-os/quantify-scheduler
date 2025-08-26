@@ -28,7 +28,7 @@ def test_simple_qrc_schedule_compilation_end_to_end(
     schedule = Schedule(name="Test", repetitions=1)
 
     schedule.add(SquarePulse(amp=0.1, duration=40e-9, port="q8:mw", clock="q8.01"))
-    schedule.add(Measure("q8", acq_index=0))
+    schedule.add(Measure("q8", coords={"index": 0}))
 
     schedule.add_resource(ClockResource("q8.01", 5e9))
     schedule.add_resource(ClockResource("q8.ro", 6e9))

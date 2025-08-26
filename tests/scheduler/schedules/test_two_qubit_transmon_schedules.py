@@ -118,5 +118,8 @@ class TestChevronCZSched:
         # Num amp Flux operations (amplitude is different for every setpoint)
         # Num amp Measure gates (acq_index different for every setpoint)
         assert len(self.uncomp_sched.operations) == (
-            1 + 2 + len(self.sched_kwargs["amplitudes"]) * 2
+            1 + 2 + 1 + len(self.sched_kwargs["amplitudes"])
+        )
+        assert len(self.uncomp_sched.schedulables) == (
+            len(self.sched_kwargs["amplitudes"]) * (1 + 2 + 1 + 1)
         )

@@ -170,6 +170,7 @@ def test_rxy_angle_modulo() -> None:
         Measure("q0", "q6"),
         Measure("q0"),
         Measure("q0", "q6", acq_index=92),
+        Measure("q0", "q6", coords={"index": 92}),
         SpectroscopyOperation("q0"),
         ChargeReset("q0"),
         S("q0"),
@@ -489,7 +490,7 @@ def test_conditional_acquire_without_control_flow_raises(
         Measure(
             "q0",
             feedback_trigger_label="q0",
-            acq_index=0,
+            coords={"index": 0},
             acq_protocol="ThresholdedAcquisition",
         )
     )
@@ -497,7 +498,7 @@ def test_conditional_acquire_without_control_flow_raises(
         Measure(
             "q0",
             feedback_trigger_label="q0",
-            acq_index=1,
+            coords={"index": 1},
             acq_protocol="WeightedThresholdedAcquisition",
         )
     )

@@ -245,7 +245,8 @@ class TestT1Sched(_CompilesAllBackends):
         _ = compiler.compile(schedule=sched, config=device_compile_config_basic_transmon)
 
     def test_operations(self):
-        assert len(self.uncomp_sched.operations) == 2 + 21  # init, pi and 21*measure
+        assert len(self.uncomp_sched.operations) == 3  # init, pi and measure
+        assert len(self.uncomp_sched.schedulables) == 21 * 3  # init, pi and 21*measure
 
 
 class TestCPMGSched(_CompilesAllBackends):
@@ -264,13 +265,13 @@ class TestCPMGSched(_CompilesAllBackends):
 
     def test_operations(self):
         if self.sched_kwargs["artificial_detuning"] == 0:
-            assert len(self.uncomp_sched.operations) == 3 + 2 * len(
-                self.sched_kwargs["times"]
-            )  # 3 for (init + X90 + Rxy90) and then 2*(number of loop and measure)
+            # 3 for (init + X90 + Rxy90) and then 2 measurements
+            assert len(self.uncomp_sched.operations) == 3 + 1 + len(self.sched_kwargs["times"])
+            assert len(self.uncomp_sched.schedulables) == (3 + 2) * len(self.sched_kwargs["times"])
         else:
-            assert len(self.uncomp_sched.operations) == 2 + 3 * len(
-                self.sched_kwargs["times"]
-            )  # 3 for (init + X90 + Rxy90) and then 3*(number of loop and measure and Rxy)
+            # 3 for (init + X90 + Rxy90) and then 3 acquisitions
+            assert len(self.uncomp_sched.operations) == 3 + 2 * len(self.sched_kwargs["times"])
+            assert len(self.uncomp_sched.schedulables) == (2 + 3) * len(self.sched_kwargs["times"])
 
     def test_repetitions(self):
         assert self.uncomp_sched.repetitions == self.sched_kwargs["repetitions"]
@@ -391,8 +392,9 @@ class TestRamseySchedDetuning(_CompilesAllBackends):
         )
 
     def test_operations(self):
-        # 2 initial pi/2, 20 acquisitions + 6 unique rotation angles for 2nd pi/2
-        assert len(self.uncomp_sched.operations) == 2 + 20 + 6
+        # 2 initial pi/2, 1 unique acquisition + 6 unique rotation angles for 2nd pi/2
+        assert len(self.uncomp_sched.operations) == 2 + 1 + 6
+        assert len(self.uncomp_sched.schedulables) == 20 * (2 + 1 + 1)
 
 
 class TestRamseySched(_CompilesAllBackends):
@@ -431,7 +433,10 @@ class TestRamseySched(_CompilesAllBackends):
         _ = compiler.compile(schedule=sched, config=device_compile_config_basic_transmon)
 
     def test_operations(self):
-        assert len(self.uncomp_sched.operations) == 3 + 20  # init, x90, Rxy(90,0) and 20 * measure
+        assert len(self.uncomp_sched.operations) == 3 + 1  # init, x90, Rxy(90,0) and measure
+        assert (
+            len(self.uncomp_sched.schedulables) == (3 + 1) * 20
+        )  # init, x90, Rxy(90,0) and measure
 
 
 class TestEchoSched(_CompilesAllBackends):
@@ -476,7 +481,8 @@ class TestEchoSched(_CompilesAllBackends):
 
     def test_operations(self):
         # 4 for an echo
-        assert len(self.uncomp_sched.operations) == 23  # init, x90, X and 20x measure
+        assert len(self.uncomp_sched.operations) == 4  # init, x90, X and measure
+        assert len(self.uncomp_sched.schedulables) == 5 * 20  # init, x90, X and measure 20x
 
 
 class TestAllXYSched(_CompilesAllBackends):
@@ -497,8 +503,9 @@ class TestAllXYSched(_CompilesAllBackends):
                 assert schedulable["label"][:11] == "Measurement"
 
     def test_operations(self):
-        # 6 +21 operations (x90, y90, X180, Y180, idle, reset, 21*measurement)
-        assert len(self.uncomp_sched.operations) == 6 + 21
+        # 6 +1 operations (x90, y90, X180, Y180, idle, reset, measurement)
+        assert len(self.uncomp_sched.operations) == 7
+        assert len(self.uncomp_sched.schedulables) == 84
 
 
 class TestAllXYSchedElement(_CompilesAllBackends):

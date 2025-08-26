@@ -61,13 +61,13 @@ def two_qubit_t1_schedule() -> Schedule:
         sched.add(X(q1), label=f"pi {i} {q1}", ref_pt="start")
 
         sched.add(
-            Measure(q0, acq_index=i),
+            Measure(q0, coords={"index": i}),
             ref_pt="start",
             rel_time=tau,
             label=f"Measurement {q0}{i}",
         )
         sched.add(
-            Measure(q1, acq_index=i),
+            Measure(q1, coords={"index": i}),
             ref_pt="start",
             rel_time=tau,
             label=f"Measurement {q1}{i}",
@@ -89,13 +89,13 @@ def two_qubit_schedule_with_edge() -> Schedule:
         sched.add(CZ(q0, q2))
 
         sched.add(
-            Measure(q0, acq_index=i),
+            Measure(q0, coords={"index": i}),
             ref_pt="start",
             rel_time=tau,
             label=f"Measurement {q0}{i}",
         )
         sched.add(
-            Measure(q2, acq_index=i),
+            Measure(q2, coords={"index": i}),
             ref_pt="start",
             rel_time=tau,
             label=f"Measurement {q2}{i}",

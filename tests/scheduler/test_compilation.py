@@ -361,7 +361,9 @@ def test_measurement_specification_of_binmode(device_compile_config_basic_transm
 
     schedule = Schedule("binmode-test", 1)
     schedule.add(Reset(qubit), label=f"Reset {0}")
-    schedule.add(Measure(qubit, acq_index=0, bin_mode=BinMode.APPEND), label=f"Measurement {0}")
+    schedule.add(
+        Measure(qubit, coords={"index": 0}, bin_mode=BinMode.APPEND), label=f"Measurement {0}"
+    )
 
     compiler = SerialCompiler(name="compiler")
     comp_sched = compiler.compile(
@@ -379,7 +381,9 @@ def test_measurement_specification_of_binmode(device_compile_config_basic_transm
 
     schedule = Schedule("binmode-test", 1)
     schedule.add(Reset(qubit), label=f"Reset {0}")
-    schedule.add(Measure(qubit, acq_index=0, bin_mode=BinMode.AVERAGE), label=f"Measurement {0}")
+    schedule.add(
+        Measure(qubit, coords={"index": 0}, bin_mode=BinMode.AVERAGE), label=f"Measurement {0}"
+    )
 
     comp_sched = compiler.compile(
         schedule=schedule,
@@ -396,7 +400,7 @@ def test_measurement_specification_of_binmode(device_compile_config_basic_transm
 
     schedule = Schedule("binmode-test", 1)
     schedule.add(Reset(qubit), label=f"Reset {0}")
-    schedule.add(Measure(qubit, acq_index=0), label=f"Measurement {0}")
+    schedule.add(Measure(qubit, coords={"index": 0}), label=f"Measurement {0}")
 
     comp_sched = compiler.compile(
         schedule=schedule,
@@ -721,7 +725,7 @@ def test_multiple_timing_constraints_asap(
     # Create a schedule with multiple timing constraints
     sched = Schedule("Test schedule with multiple timing constraints")
 
-    for acq_idx, theta in enumerate(np.linspace(0, 360, 21)):
+    for idx, theta in enumerate(np.linspace(0, 360, 21)):
         sched.add(Reset("q0", "q2"))
         x0 = sched.add(X90("q0"))
         sched.add(X90("q2"), ref_pt="start")  # Start at the same time as the other X90
@@ -729,9 +733,9 @@ def test_multiple_timing_constraints_asap(
         cz.add_timing_constraint(ref_schedulable=x0)  # Required in case x1 is longer than x0
         sched.add(Rxy(theta=theta, phi=0, qubit="q0"))
 
-        sched.add(Measure("q0", acq_index=acq_idx), label=f"M q0 {theta:.2f} deg")
+        sched.add(Measure("q0", coords={"index": idx}), label=f"M q0 {theta:.2f} deg")
         sched.add(
-            Measure("q2", acq_index=acq_idx),
+            Measure("q2", coords={"index": idx}),
             label=f"M q2 {theta:.2f} deg",
             ref_pt="start",  # Start at the same time as the other measure
         )

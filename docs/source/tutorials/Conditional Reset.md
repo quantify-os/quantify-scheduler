@@ -396,7 +396,7 @@ In other cases, however, we need to pass extra arguments to {{ ConditionalReset 
 
 ### Example: Modifying the T1 schedule
 
-In this example, we use the schedule function {{ t1_sched }} using the {{ ConditionalReset }} instead of the standard {{ Reset }}. When using multiple consecutive {{ ConditionalReset }} on the same qubit, we need to increment the `acq_index` for each one, similar to when adding multiple {{ Measure }} to the schedule. We also need to ensure that all acquisition protocols in the schedule are equal to `"ThresholdedAcquisition"`. 
+In this example, we use the schedule function {{ t1_sched }} using the {{ ConditionalReset }} instead of the standard {{ Reset }}. We need to ensure that all acquisition protocols in the schedule are equal to `"ThresholdedAcquisition"`. 
 
 ```{code-cell} ipython3
 from quantify_scheduler.qblox.operations import ConditionalReset
@@ -415,7 +415,7 @@ def t1_sched(
         schedule.add(Reset(qubit), label=f"Reset {i}")
         schedule.add(X(qubit), label=f"pi {i}")
         schedule.add(
-            Measure(qubit, acq_index=i),
+            Measure(qubit),
             ref_pt="start",
             rel_time=tau,
             label=f"Measurement {i}",
@@ -433,14 +433,13 @@ def t1_sched(
     schedule = Schedule("T1", repetitions)
     for i, tau in enumerate(times):
         schedule.add(
-            ConditionalReset(qubit, acq_index=i, acq_channel=0),
+            ConditionalReset(qubit, acq_channel=0),
             label=f"Reset {i}",
         )
         schedule.add(X(qubit), label=f"pi {i}")
         schedule.add(
             Measure(
                 qubit,
-                acq_index=i,
                 acq_protocol="ThresholdedAcquisition",
                 acq_channel=1,
             ),

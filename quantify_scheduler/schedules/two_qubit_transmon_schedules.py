@@ -110,7 +110,7 @@ def chevron_cz_sched(
 
         # Measure system
         sched.add(
-            Measure(lf_qubit, hf_qubit, acq_index=acq_index),
+            Measure(lf_qubit, hf_qubit),
             label=f"Measure({lf_qubit},{hf_qubit}) {acq_index}",
         )
 

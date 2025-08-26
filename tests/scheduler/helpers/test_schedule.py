@@ -116,7 +116,7 @@ def test_get_used_port_clocks(create_schedule_with_pulse_info):
             duration=1e-6,
             port="q0:ro",
             clock="q0.res",
-            acq_index=0,
+            coords={"index": 0},
             acq_channel=0,
         )
     )

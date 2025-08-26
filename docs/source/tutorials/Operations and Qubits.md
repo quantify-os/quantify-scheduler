@@ -110,16 +110,16 @@ from quantify_scheduler.operations import CZ, Measure, Reset, Rxy, X90
 
 sched = Schedule("Bell experiment")
 
-for acq_idx, theta in enumerate(np.linspace(0, 360, 21)):
+for theta in np.linspace(0, 360, 21):
     sched.add(Reset(q0, q1))
     sched.add(X90(q0))
     sched.add(X90(q1), ref_pt="start")  # Start at the same time as the other X90
     sched.add(CZ(q0, q1))
     sched.add(Rxy(theta=theta, phi=0, qubit=q0))
 
-    sched.add(Measure(q0, acq_index=acq_idx), label="M q0 {:.2f} deg".format(theta))
+    sched.add(Measure(q0), label="M q0 {:.2f} deg".format(theta))
     sched.add(  
-        Measure(q1, acq_index=acq_idx),
+        Measure(q1),
         label="M q1 {:.2f} deg".format(theta),
         ref_pt="start",  # Start at the same time as the other measure
     )
@@ -131,7 +131,7 @@ sched
 By scheduling 7 operations for 21 different values for {code}`theta` we indeed get a schedule containing 7\*21=147 operations. To minimize the size of the schedule, identical operations are stored only once. For example, the {class}`~quantify_scheduler.operations.gate_library.CZ` operation is stored only once but used 21 times, which leaves only 66 unique operations in the schedule.
 
 ```{note}
-The acquisitions are different for every iteration due to their different {code}`acq_index`. The {class}`~quantify_scheduler.operations.gate_library.Rxy`-gate rotates over a different angle every iteration and must therefore also be different for every iteration (except for the last since {math}`R^{360}=R^0`). Hence the number of unique operations is 3\*21-1+4=66.
+The acquisitions are different for every iteration. The {class}`~quantify_scheduler.operations.gate_library.Rxy`-gate rotates over a different angle every iteration and must therefore also be different for every iteration (except for the last since {math}`R^{360}=R^0`). Hence the number of unique operations is 3\*21-1+4=66.
 ```
 
 (sec-tutorial-ops-qubits-vis)=
@@ -325,24 +325,21 @@ from quantify_scheduler import ClockResource, Schedule
 from quantify_scheduler.operations import Measure, Reset, SquarePulse, X, X90
 
 sched = Schedule("Chevron Experiment")
-acq_idx = 0
 
 for duration in np.linspace(start=20e-9, stop=60e-9, num=6):
-    for amp in np.linspace(start=0.1, stop=1.0, num=10):
+    for acq_idx, amp in enumerate(np.linspace(start=0.1, stop=1.0, num=10)):
         reset = sched.add(Reset("q0", "q1"))
         sched.add(X("q0"), ref_op=reset, ref_pt="end")  # Start at the end of the reset
         # We specify a clock for tutorial purposes, Chevron experiments do not necessarily use modulated square pulses
         square = sched.add(SquarePulse(amp=amp, duration=duration, port="q0:mw", clock="q0.01"))
         sched.add(X90("q0"), ref_op=square)  # Start at the end of the square pulse
         sched.add(X90("q1"), ref_op=square)
-        sched.add(Measure(q0, acq_index=acq_idx), label=f"M q0 {acq_idx}")
+        sched.add(Measure(q0), label=f"M q0 {acq_idx} {duration}")
         sched.add(
-            Measure(q1, acq_index=acq_idx),
-            label=f"M q1 {acq_idx}",
+            Measure(q1),
+            label=f"M q1 {acq_idx} {duration}",
             ref_pt="start",  # Start at the same time as the other measure
         )
-
-        acq_idx += 1
 
 
 # Specify the frequencies for the clocks; this can also be done via the DeviceElement (BasicTransmonElement) instead
@@ -420,10 +417,10 @@ sched = Schedule("Rabi")
 amps = np.linspace(start=0.1, stop=1.0, num=10)
 durations = np.linspace(start=1e-6, stop=1e-4, num=10)
 
-for i, (amp, duration) in enumerate(zip(amps, durations)):
+for amp, duration in zip(amps, durations):
     sched.add(Reset("q0"))
     sched.add(X("q0", duration=duration, motzoi=0.5/amp))
-    sched.add(Measure("q0", acq_index=i))
+    sched.add(Measure("q0"))
 
 sched.add_resources([ClockResource("q0.01", 6.02e9), ClockResource("q0.ro", 5.02e9)]) 
 

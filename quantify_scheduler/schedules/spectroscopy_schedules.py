@@ -546,11 +546,11 @@ def nv_dark_esr_sched(
     sched = Schedule("Dark ESR Schedule", repetitions=repetitions)
 
     sched.add(ChargeReset(device_element), label="Charge reset")
-    sched.add(CRCount(device_element, acq_index=0), label="CRCount pre")
+    sched.add(CRCount(device_element), label="CRCount pre")
     sched.add(Reset(device_element), label="Reset")
     sched.add(SpectroscopyOperation(device_element), label="Spectroscopy")
-    sched.add(Measure(device_element, acq_index=1), label="Measure")
-    sched.add(CRCount(device_element, acq_index=2), label="CRCount post")
+    sched.add(Measure(device_element), label="Measure")
+    sched.add(CRCount(device_element), label="CRCount post")
     return sched
 
 
@@ -588,7 +588,7 @@ def nv_dark_esr_sched_nco(
     sched = Schedule("Dark ESR Schedule (NCO sweep)", repetitions=repetitions)
 
     sched.add(ChargeReset(device_element), label="Charge reset pre 0")
-    sched.add(CRCount(device_element, acq_index=0), label="CRCount pre 0")
+    sched.add(CRCount(device_element), label="CRCount pre 0")
 
     for idx, spec_freq in enumerate(spec_frequencies):
         sched.add(
@@ -597,7 +597,7 @@ def nv_dark_esr_sched_nco(
         )
         sched.add(Reset(device_element), label=f"Reset {idx}")
         sched.add(SpectroscopyOperation(device_element), label=f"Spectroscopy ({spec_freq:e} Hz)")
-        sched.add(Measure(device_element, acq_index=idx * 2 + 1), label=f"Measure {idx}")
-        sched.add(CRCount(device_element, acq_index=idx * 2 + 2), label=f"CRCount post {idx}")
+        sched.add(Measure(device_element), label=f"Measure {idx}")
+        sched.add(CRCount(device_element), label=f"CRCount post {idx}")
 
     return sched

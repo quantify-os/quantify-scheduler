@@ -99,7 +99,6 @@ def acquisition_staircase_sched(
                 duration=integration_time,
                 port=port,
                 clock=clock,
-                acq_index=acq_index,
                 acq_channel=acq_channel,
             ),
             ref_op=pulse,
@@ -201,7 +200,6 @@ def awg_staircase_sched(
                 duration=integration_time,
                 port=ro_port,
                 clock=ro_clock,
-                acq_index=acq_index,
                 acq_channel=acq_channel,
             ),
             ref_op=pulse,
@@ -273,7 +271,6 @@ def multiplexing_staircase_sched(
         amp: float | complex,
         clock: str,
         acq_channel: Hashable,
-        acq_index: int | None,
         delay: float,
     ) -> Schedule:
         pulse = sched.add(
@@ -292,7 +289,6 @@ def multiplexing_staircase_sched(
                 duration=integration_time,
                 port=ro_port,
                 clock=clock,
-                acq_index=acq_index,
                 acq_channel=acq_channel,
             ),
             ref_op=pulse,
@@ -312,14 +308,13 @@ def multiplexing_staircase_sched(
     pulse_amps_reversed = np.flip(pulse_amps)
 
     ref_pulse = sched.add(IdlePulse(duration=init_duration))
-    for acq_index, (pulse_amp0, pulse_amp1) in enumerate(zip(pulse_amps, pulse_amps_reversed)):
+    for pulse_amp0, pulse_amp1 in zip(pulse_amps, pulse_amps_reversed):
         add_staircase_step(
             sched,
             ref_pulse,
             pulse_amp0,
             ro_clock0,
             acq_channel=0,
-            acq_index=acq_index,
             delay=acquisition_delay,
         )
         ref_pulse = add_staircase_step(
@@ -328,7 +323,6 @@ def multiplexing_staircase_sched(
             pulse_amp1,
             ro_clock1,
             acq_channel=1,
-            acq_index=acq_index,
             delay=acquisition_delay,
         )
     sched.repetitions = repetitions

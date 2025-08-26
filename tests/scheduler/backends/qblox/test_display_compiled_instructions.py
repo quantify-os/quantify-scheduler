@@ -31,7 +31,7 @@ def compiled_schedule(compile_config_basic_transmon_qblox_hardware_cluster):
     schedule = Schedule("demo compiled instructions")
     schedule.add(Reset("q0"))
     schedule.add(X("q0"))
-    schedule.add(Measure("q0", acq_index=0))
+    schedule.add(Measure("q0", coords={"index": 0}))
 
     compiler = SerialCompiler("compiler")
     yield compiler.compile(schedule, config=compile_config_basic_transmon_qblox_hardware_cluster)

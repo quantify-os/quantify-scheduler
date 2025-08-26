@@ -76,7 +76,6 @@ def test_binned_average(
         schedule.add(
             protocol(
                 acq_channel=0,
-                acq_index=0,
                 bin_mode=BinMode.AVERAGE,
                 coords={"amp": 0.1, "freq": 1.0},
                 port="q0:res",
@@ -89,7 +88,6 @@ def test_binned_average(
         schedule.add(
             protocol(
                 acq_channel=0,
-                acq_index=1,
                 bin_mode=BinMode.AVERAGE,
                 coords={"amp": 0.2, "freq": 2.0},
                 port="q0:res",
@@ -102,7 +100,6 @@ def test_binned_average(
         schedule.add(
             protocol(
                 acq_channel=1,
-                acq_index=0,
                 bin_mode=BinMode.AVERAGE,
                 coords={"amp": 0.3, "freq": 3.0},
                 port="q0:res",
@@ -115,7 +112,6 @@ def test_binned_average(
         schedule.add(
             protocol(
                 acq_channel=1,
-                acq_index=1,
                 bin_mode=BinMode.AVERAGE,
                 coords={"amp": 0.4, "freq": 4.0},
                 port="q0:res",
@@ -128,7 +124,6 @@ def test_binned_average(
         schedule.add(
             protocol(
                 acq_channel=1,
-                acq_index=2,
                 bin_mode=BinMode.AVERAGE,
                 coords=None,
                 port="q0:res",
@@ -141,7 +136,6 @@ def test_binned_average(
         schedule.add(
             protocol(
                 acq_channel=1,
-                acq_index=3,
                 bin_mode=BinMode.AVERAGE,
                 coords={"amp": 0.6, "freq": 6.0},
                 port="q0:res",
@@ -154,7 +148,6 @@ def test_binned_average(
         schedule.add(
             protocol(
                 acq_channel=2,
-                acq_index=0,
                 bin_mode=BinMode.AVERAGE,
                 coords={"amp": 0.7, "freq": 7.0},
                 port="q0:res",
@@ -264,7 +257,6 @@ def test_binned_append(
         schedule.add(
             protocol(
                 acq_channel=0,
-                acq_index=0,
                 bin_mode=BinMode.APPEND,
                 coords={"amp": 0.1, "freq": 1.0},
                 port="q0:res",
@@ -277,7 +269,6 @@ def test_binned_append(
         schedule.add(
             protocol(
                 acq_channel=0,
-                acq_index=1,
                 bin_mode=BinMode.APPEND,
                 coords=None,
                 port="q0:res",
@@ -290,7 +281,6 @@ def test_binned_append(
         schedule.add(
             protocol(
                 acq_channel=0,
-                acq_index=1,
                 bin_mode=BinMode.APPEND,
                 coords={"amp": 0.3, "freq": 3.0},
                 port="q0:res",
@@ -315,9 +305,9 @@ def test_binned_append(
             protocol=protocol_str,
             bin_mode=BinMode.APPEND,
             coords=[
-                {"acq_index_legacy_0": 0, "amp": 0.1, "freq": 1.0},
-                {"acq_index_legacy_0": 1},
-                {"acq_index_legacy_0": 1, "amp": 0.3, "freq": 3.0},
+                {"amp": 0.1, "freq": 1.0},
+                {},
+                {"amp": 0.3, "freq": 3.0},
             ],
         ),
     }
@@ -383,7 +373,6 @@ def test_binned_append_loop(
     inner_inner_sched.add(
         protocol(
             acq_channel=0,
-            acq_index=0,
             bin_mode=BinMode.APPEND,
             coords={"amp": 0.1, "freq": 1.0},
             port="q0:res",
@@ -408,10 +397,7 @@ def test_binned_append_loop(
             acq_index_dim_name="acq_index_0",
             protocol=protocol_str,
             bin_mode=BinMode.APPEND,
-            coords=[
-                {"acq_index_legacy_0": 0, "loop_repetition_0": lr, "amp": 0.1, "freq": 1.0}
-                for lr in range(4 * 3)
-            ],
+            coords=[{"loop_repetition_0": lr, "amp": 0.1, "freq": 1.0} for lr in range(4 * 3)],
         ),
     }
 
@@ -458,7 +444,6 @@ def test_trace_and_binned(mock_setup_basic_transmon_with_standard_params):
         schedule.add(
             SSBIntegrationComplex(
                 acq_channel=0,
-                acq_index=0,
                 bin_mode=BinMode.AVERAGE,
                 coords=None,
                 port="q0:res",
@@ -471,7 +456,6 @@ def test_trace_and_binned(mock_setup_basic_transmon_with_standard_params):
         schedule.add(
             Trace(
                 acq_channel=1,
-                acq_index=0,
                 bin_mode=BinMode.AVERAGE,
                 coords={"amp": 0.1, "freq": 1.0},
                 port="q0:res",
@@ -524,7 +508,6 @@ def test_trigger_count_distribution(mock_setup_basic_transmon_with_standard_para
         schedule.add(
             TriggerCount(
                 acq_channel=1,
-                acq_index=None,
                 bin_mode=BinMode.DISTRIBUTION,
                 port="q0:res",
                 clock="q0.ro",
@@ -537,7 +520,6 @@ def test_trigger_count_distribution(mock_setup_basic_transmon_with_standard_para
         schedule.add(
             TriggerCount(
                 acq_channel=1,
-                acq_index=None,
                 bin_mode=BinMode.DISTRIBUTION,
                 port="q0:res",
                 clock="q0.ro",
@@ -581,7 +563,6 @@ def test_trigger_count_append(mock_setup_basic_transmon_with_standard_params):
         schedule.add(
             TriggerCount(
                 acq_channel=1,
-                acq_index=0,
                 bin_mode=BinMode.APPEND,
                 coords={"amp": 0.1, "freq": 1.0},
                 port="q0:res",
@@ -605,7 +586,7 @@ def test_trigger_count_append(mock_setup_basic_transmon_with_standard_params):
             acq_index_dim_name="acq_index_1",
             protocol="TriggerCount",
             bin_mode=BinMode.APPEND,
-            coords=[{"acq_index_legacy_1": 0, "amp": 0.1, "freq": 1.0}],
+            coords=[{"amp": 0.1, "freq": 1.0}],
         ),
     }
 
@@ -628,7 +609,6 @@ def test_trigger_count_sum(mock_setup_basic_transmon_with_standard_params):
         schedule.add(
             TriggerCount(
                 acq_channel=1,
-                acq_index=0,
                 bin_mode=BinMode.SUM,
                 coords={"amp": 0.1, "freq": 1.0},
                 port="q0:res",
@@ -642,7 +622,6 @@ def test_trigger_count_sum(mock_setup_basic_transmon_with_standard_params):
         schedule.add(
             TriggerCount(
                 acq_channel=1,
-                acq_index=1,
                 bin_mode=BinMode.SUM,
                 coords=None,
                 port="q0:res",
@@ -691,7 +670,6 @@ def test_shared_coords_warning(
         schedule.add(
             SSBIntegrationComplex(
                 acq_channel=0,
-                acq_index=0,
                 bin_mode=BinMode.AVERAGE,
                 coords={"amp": 0.1},
                 port="q0:res",
@@ -704,7 +682,6 @@ def test_shared_coords_warning(
         schedule.add(
             SSBIntegrationComplex(
                 acq_channel=1,
-                acq_index=0,
                 bin_mode=BinMode.AVERAGE,
                 coords={"amp": 0.2, "freq": 2.0},
                 port="q0:res",

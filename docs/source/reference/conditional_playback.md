@@ -56,29 +56,7 @@ schedule.add(ConditionalReset("q0"))
 schedule.add(...)
 ```
 
-Internally, {{ ConditionalReset }} performs a {{ ThresholdedAcquisition }}. If a
-schedule includes multiple acquisitions on the same qubit, each
-{{ ConditionalReset }} and {{ ThresholdedAcquisition }} must have a unique `acq_index`.
-
-For example:
-
-```python
-schedule = Schedule("conditional")
-schedule.add(ConditionalReset("q0", acq_index=0))
-schedule.add(Measure("q0", acq_index=1, acq_protocol="ThresholdedAcquisition"))
-```
-
-When using multiple consecutive {{ ConditionalReset }} on the same qubit, increment the `acq_index` for each:
-
-```python
-schedule = Schedule()
-schedule.add(ConditionalReset("q0"))
-schedule.add(...)
-schedule.add(ConditionalReset("q0", acq_index=1))
-schedule.add(...)
-schedule.add(ConditionalReset("q0", acq_index=2))
-```
-
+Internally, {{ ConditionalReset }} performs a {{ ThresholdedAcquisition }}.
 Since the {{ ConditionalReset }} performs a {{ ThresholdedAcquisition }}, the measured
 state of the qubit (0 or 1) will be saved in the acquisition dataset.
 
@@ -230,7 +208,7 @@ schedule = Schedule("Rabi", repetitions)
 schedule.add_resource(ClockResource(name=clock, freq=frequency))
 
 for i, (amp, duration) in enumerate(zip(amps, durations)):
-    schedule.add(ConditionalReset("q0", acq_index = 2*i), label=f"Reset {i}")
+    schedule.add(ConditionalReset("q0"), label=f"Reset {i}")
     schedule.add(
         DRAGPulse(
             duration=duration,
@@ -242,7 +220,7 @@ for i, (amp, duration) in enumerate(zip(amps, durations)):
         ),
         label=f"Rabi_pulse {i}",
     )
-    schedule.add(Measure("q0", acq_index=2*i+1), label=f"Measurement {i}")
+    schedule.add(Measure("q0"), label=f"Measurement {i}")
 ```
 
 where the relevant data is saved in the *odd* (`2*i+1`) acquisition indices. Currently, it is not possible to disregard the measurement data related to {{ ConditionalReset }}. 
@@ -266,7 +244,7 @@ schedule = Schedule("Rabi", repetitions)
 schedule.add_resource(ClockResource(name=clock, freq=frequency))
 
 for i, (amp, duration) in enumerate(zip(amps, durations)):
-    schedule.add(ConditionalReset("q0c", acq_index=i), label=f"Reset {i}")
+    schedule.add(ConditionalReset("q0c"), label=f"Reset {i}")
     schedule.add(
         DRAGPulse(
             duration=duration,
@@ -278,7 +256,7 @@ for i, (amp, duration) in enumerate(zip(amps, durations)):
         ),
         label=f"Rabi_pulse {i}",
     )
-    schedule.add(Measure("q0", acq_index=i), label=f"Measurement {i}")
+    schedule.add(Measure("q0"), label=f"Measurement {i}")
 ```
 
 Here, `qubit_c` and `qubit` will correspond to the same physical qubit and are controlled by the same port on the hardware, but the measurements will use two different sequencers and the data will be stored in two different acquisition channels. Note that this will limit your ability to do multiplexed readout. 

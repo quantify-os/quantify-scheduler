@@ -532,8 +532,8 @@ def test_extract_acquisition_metadata_from_schedule(compiled_two_qubit_t1_schedu
     assert set(acq_metadata.acq_channels_metadata.keys()) == {0, 1}
     assert acq_metadata.acq_channels_metadata[0].acq_channel == 0
     assert acq_metadata.acq_channels_metadata[1].acq_channel == 1
-    assert acq_metadata.acq_channels_metadata[0].acq_indices == list(np.arange(20))
-    assert acq_metadata.acq_channels_metadata[1].acq_indices == list(np.arange(20))
+    assert acq_metadata.acq_channels_metadata[0].acq_indices == [None] * 20
+    assert acq_metadata.acq_channels_metadata[1].acq_indices == [None]
 
 
 @pytest.mark.parametrize("operation_a, operation_b", combinations(ALL_ACQUISITION_PROTOCOLS, 2))

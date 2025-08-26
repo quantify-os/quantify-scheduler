@@ -33,12 +33,15 @@ def complicated_schedule(pulse_duration):
     )
 
     body.add(Y("q0"))
-    body.add(Measure("q0", acq_protocol="ThresholdedAcquisition", acq_index=1))
+    body.add(Measure("q0", acq_protocol="ThresholdedAcquisition", coords={"index": 1}))
 
     schedule = Schedule("test")
     schedule.add(
         Measure(
-            "q0", acq_protocol="ThresholdedAcquisition", acq_index=0, feedback_trigger_label="q0"
+            "q0",
+            acq_protocol="ThresholdedAcquisition",
+            coords={"index": 0},
+            feedback_trigger_label="q0",
         )
     )
     schedule.add(ConditionalOperation(body=body, qubit_name="q0"), label="complicated_label")

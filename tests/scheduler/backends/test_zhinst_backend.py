@@ -1516,7 +1516,7 @@ def test_too_long_acquisition_raises_readable_exception(
             duration=2.4e-6,  # this is longer than the allowed 4096 samples.
             port=port,
             clock=clock,
-            acq_index=0,
+            coords={"index": 0},
             acq_channel=0,
         ),
     )

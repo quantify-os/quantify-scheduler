@@ -148,7 +148,7 @@ def simple_schedule(ref_mag=None):
     )
 
     schedule.add(
-        Measure(qubit, acq_index=0, acq_protocol="SSBIntegrationComplex"),
+        Measure(qubit, coords={"index": 0}, acq_protocol="SSBIntegrationComplex"),
         label="Multiplexed measurement",
         rel_time=max_duration,
         ref_pt="start",

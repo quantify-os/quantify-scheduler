@@ -970,7 +970,6 @@ def test_retrieve_acquisition_qtm(
         count.reshape(-1, 1),
         dims=["repetition", "acq_index_0"],
         coords={
-            "acq_index_legacy_0": ("acq_index_0", [0]),
             "repetition": range(repetitions),
             "acq_index_0": [0],
         },
@@ -1096,7 +1095,6 @@ def test_timetag_acquisition_qtm_append(
         np.array([t / 2048 for t in raw_timetags]).reshape(3, 1),
         dims=["repetition", "acq_index_0"],
         coords={
-            "acq_index_legacy_0": ("acq_index_0", [0]),
             "repetition": [0, 1, 2],
             "acq_index_0": [0],
         },
@@ -1314,7 +1312,6 @@ def test_retrieve_timetag_trace_acquisition_qtm(
         rel_times.reshape((1, 1, 4)),
         dims=["repetition", "acq_index_0", "trace_index_0"],
         coords={
-            "acq_index_legacy_0": ("acq_index_0", [0]),
             "repetition": [0],
             "acq_index_0": [0],
             "trace_index_0": list(range(4)),
@@ -1399,7 +1396,6 @@ def test_retrieve_empty_timetag_trace_acquisition_qtm(
         [[[]]],
         dims=["repetition", "acq_index_0", "trace_index_0"],
         coords={
-            "acq_index_legacy_0": ("acq_index_0", [0]),
             "repetition": [0],
             "acq_index_0": [0],
             "trace_index_0": [],
@@ -1506,7 +1502,6 @@ def test_multiple_retrieve_timetag_trace_acquisition_qtm(
         rel_times.reshape((2, 1, 4)),
         dims=["repetition", "acq_index_0", "trace_index_0"],
         coords={
-            "acq_index_legacy_0": ("acq_index_0", [0]),
             "repetition": [0, 1],
             "acq_index_0": [0],
             "trace_index_0": list(range(4)),
@@ -1596,7 +1591,6 @@ def test_multiple_retrieve_empty_timetag_trace_acquisition_qtm(
         [[[]], [[]]],
         dims=["repetition", "acq_index_0", "trace_index_0"],
         coords={
-            "acq_index_legacy_0": ("acq_index_0", [0]),
             "repetition": [0, 1],
             "acq_index_0": [0],
             "trace_index_0": [],

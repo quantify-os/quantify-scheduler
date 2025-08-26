@@ -98,6 +98,7 @@ def test_ssb_integration_complex():
         clock="q0.01",
         acq_channel=-1337,
         acq_index=1234,
+        coords={"index": 5678},
         bin_mode=BinMode.APPEND,
         phase=0,
         t0=20e-9,
@@ -114,6 +115,7 @@ def test_valid_acquisition():
         clock="q0.01",
         acq_channel=-1337,
         acq_index=1234,
+        coords={"index": 5678},
         bin_mode=BinMode.APPEND,
         phase=0,
         t0=20e-9,
@@ -155,6 +157,7 @@ def test_trace():
         clock="q0.ro",
         acq_channel=4815162342,
         acq_index=4815162342,
+        coords={"index": 5678},
         bin_mode=BinMode.AVERAGE,
         t0=12e-9,
     )
@@ -170,6 +173,7 @@ def test_trigger_count():
         duration=0.001,
         acq_channel=4815162342,
         acq_index=None,
+        coords={"index": 5678},
         bin_mode=BinMode.DISTRIBUTION,
         t0=12e-9,
     )
@@ -196,6 +200,7 @@ def test_trigger_count_invalid_index_distribution_mode():
             duration=0.001,
             acq_channel=0,
             acq_index=1,
+            coords={"index": 5678},
             bin_mode=BinMode.DISTRIBUTION,
             t0=12e-9,
         )
@@ -211,7 +216,6 @@ def test_trigger_count_average_mode_warning():
             clock="q0.ro",
             duration=0.001,
             acq_channel=0,
-            acq_index=None,
             bin_mode=BinMode.AVERAGE,
             t0=12e-9,
         )
@@ -226,6 +230,7 @@ def test_weighted_acquisition():
         interpolation="linear",
         acq_channel=1,
         acq_index=2,
+        coords={"index": 1234},
         bin_mode=BinMode.APPEND,
         t0=16e-9,
     )
@@ -255,6 +260,7 @@ def test_weighted_acquisition():
         interpolation="linear",
         acq_channel=1,
         acq_index=2,
+        coords={"index": 1234},
         bin_mode=BinMode.APPEND,
         t0=16e-9,
     )
@@ -284,6 +290,7 @@ def test_weighted_acquisition():
         interpolation="linear",
         acq_channel=1,
         acq_index=2,
+        coords={"index": 1234},
         bin_mode=BinMode.APPEND,
         t0=16e-9,
         acq_threshold=0.546,

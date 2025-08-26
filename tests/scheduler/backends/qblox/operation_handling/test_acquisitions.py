@@ -1159,7 +1159,6 @@ def test_trigger_count_append(
     schedule.add(
         Measure(
             "qe0",
-            acq_index=0,
             coords={"amp": 0.1, "freq": 1.0},
             acq_protocol="TriggerCount",
             bin_mode=BinMode.APPEND,
@@ -1168,7 +1167,6 @@ def test_trigger_count_append(
     schedule.add(
         Measure(
             "qe0",
-            acq_index=1,
             coords={"amp": 0.2, "freq": 2.0},
             acq_protocol="TriggerCount",
             bin_mode=BinMode.APPEND,
@@ -1177,7 +1175,6 @@ def test_trigger_count_append(
     schedule.add(
         Measure(
             "qe0",
-            acq_index=2,
             coords={"amp": 0.3, "freq": 3.0},
             acq_protocol="TriggerCount",
             bin_mode=BinMode.APPEND,
@@ -1213,7 +1210,6 @@ def test_trigger_count_append(
     expected_dataarray = DataArray(
         [[100, 200, 300]],
         coords={
-            "acq_index_legacy_0": ("acq_index_0", [0, 1, 2]),
             "repetition": [0],
             "acq_index_0": [0, 1, 2],
             "amp": ("acq_index_0", [0.1, 0.2, 0.3]),
@@ -1254,9 +1250,15 @@ def test_trigger_count_append_legacy_hardware_cfg(
 
     # Define experiment schedule
     schedule = Schedule("test multiple measurements")
-    schedule.add(Measure("qe0", acq_index=0, acq_protocol="TriggerCount", bin_mode=BinMode.APPEND))
-    schedule.add(Measure("qe0", acq_index=1, acq_protocol="TriggerCount", bin_mode=BinMode.APPEND))
-    schedule.add(Measure("qe0", acq_index=2, acq_protocol="TriggerCount", bin_mode=BinMode.APPEND))
+    schedule.add(
+        Measure("qe0", coords={"index": 0}, acq_protocol="TriggerCount", bin_mode=BinMode.APPEND)
+    )
+    schedule.add(
+        Measure("qe0", coords={"index": 1}, acq_protocol="TriggerCount", bin_mode=BinMode.APPEND)
+    )
+    schedule.add(
+        Measure("qe0", coords={"index": 2}, acq_protocol="TriggerCount", bin_mode=BinMode.APPEND)
+    )
 
     # Setup dummy acquisition data
     ic_cluster0.instrument.set_dummy_binned_acquisition_data(
@@ -1287,9 +1289,9 @@ def test_trigger_count_append_legacy_hardware_cfg(
     expected_dataarray = DataArray(
         [[100, 200, 300]],
         coords={
-            "acq_index_legacy_0": ("acq_index_0", [0, 1, 2]),
             "repetition": [0],
             "acq_index_0": [0, 1, 2],
+            "index": ("acq_index_0", [0, 1, 2]),
         },
         dims=["repetition", "acq_index_0"],
         attrs={"acq_protocol": "TriggerCount"},
@@ -1367,7 +1369,6 @@ def test_trigger_count_append_qtm(
     schedule.add(
         Measure(
             "qe0",
-            acq_index=0,
             coords={"amp": 0.1, "freq": 1.0},
             acq_protocol="TriggerCount",
             bin_mode=BinMode.APPEND,
@@ -1376,7 +1377,6 @@ def test_trigger_count_append_qtm(
     schedule.add(
         Measure(
             "qe0",
-            acq_index=1,
             coords={"amp": 0.2, "freq": 2.0},
             acq_protocol="TriggerCount",
             bin_mode=BinMode.APPEND,
@@ -1385,7 +1385,6 @@ def test_trigger_count_append_qtm(
     schedule.add(
         Measure(
             "qe0",
-            acq_index=2,
             coords={"amp": 0.3, "freq": 3.0},
             acq_protocol="TriggerCount",
             bin_mode=BinMode.APPEND,
@@ -1441,7 +1440,6 @@ def test_trigger_count_append_qtm(
     expected_dataarray = DataArray(
         [[100, 200, 300]],
         coords={
-            "acq_index_legacy_0": ("acq_index_0", [0, 1, 2]),
             "repetition": [0],
             "acq_index_0": [0, 1, 2],
             "amp": ("acq_index_0", [0.1, 0.2, 0.3]),
@@ -1481,13 +1479,19 @@ def test_trigger_count_append_gettables(
     def _schedule_function(repetitions):
         schedule = Schedule("test multiple measurements", repetitions=repetitions)
         schedule.add(
-            Measure("qe0", acq_index=0, acq_protocol="TriggerCount", bin_mode=BinMode.APPEND)
+            Measure(
+                "qe0", coords={"index": 0}, acq_protocol="TriggerCount", bin_mode=BinMode.APPEND
+            )
         )
         schedule.add(
-            Measure("qe0", acq_index=1, acq_protocol="TriggerCount", bin_mode=BinMode.APPEND)
+            Measure(
+                "qe0", coords={"index": 1}, acq_protocol="TriggerCount", bin_mode=BinMode.APPEND
+            )
         )
         schedule.add(
-            Measure("qe0", acq_index=2, acq_protocol="TriggerCount", bin_mode=BinMode.APPEND)
+            Measure(
+                "qe0", coords={"index": 2}, acq_protocol="TriggerCount", bin_mode=BinMode.APPEND
+            )
         )
         return schedule
 
@@ -2493,52 +2497,64 @@ def test_multiple_binned_measurements(mock_setup_basic_transmon, make_cluster_co
 
     # Define experiment schedule
     schedule = Schedule("test multiple measurements")
-    schedule.add(Measure("q0", acq_index=0, acq_protocol="SSBIntegrationComplex"))
-    schedule.add(Measure("q0", acq_index=1, acq_protocol="SSBIntegrationComplex"))
+    schedule.add(Measure("q0", coords={"index_0": 0}, acq_protocol="SSBIntegrationComplex"))
+    schedule.add(Measure("q0", coords={"index_0": 1}, acq_protocol="SSBIntegrationComplex"))
     schedule.add(
         SSBIntegrationComplex(
-            port="q0:res", clock="q0.ro", duration=5e-6, acq_channel=0, acq_index=2
+            port="q0:res", clock="q0.ro", duration=5e-6, acq_channel=0, coords={"index_0": 2}
         )
     )
     schedule.add(
         SSBIntegrationComplex(
-            port="q0:res", clock="q0.ro", duration=5e-6, acq_channel=0, acq_index=3
+            port="q0:res", clock="q0.ro", duration=5e-6, acq_channel=0, coords={"index_0": 3}
         )
     )
     schedule.add(
         SSBIntegrationComplex(
-            port="q0:res", clock="q0.ro", duration=5e-6, acq_channel=2, acq_index=0
+            port="q0:res", clock="q0.ro", duration=5e-6, acq_channel=2, coords={"index_2": 0}
         )
     )
     schedule.add(
         SSBIntegrationComplex(
-            port="q0:res", clock="q0.ro", duration=5e-6, acq_channel=2, acq_index=1
+            port="q0:res", clock="q0.ro", duration=5e-6, acq_channel=2, coords={"index_2": 1}
         )
     )
     schedule.add(
-        Measure("q1", acq_channel="ch_1", acq_index=0, acq_protocol="SSBIntegrationComplex")
-    )
-    schedule.add(
-        Measure("q1", acq_channel="ch_1", acq_index=1, acq_protocol="SSBIntegrationComplex")
-    )
-    schedule.add(
-        SSBIntegrationComplex(
-            port="q1:res", clock="q1.ro", duration=5e-6, acq_channel="ch_1", acq_index=2
+        Measure(
+            "q1", acq_channel="ch_1", coords={"index_ch_1": 0}, acq_protocol="SSBIntegrationComplex"
         )
     )
     schedule.add(
-        SSBIntegrationComplex(
-            port="q1:res", clock="q1.ro", duration=5e-6, acq_channel="ch_1", acq_index=3
+        Measure(
+            "q1", acq_channel="ch_1", coords={"index_ch_1": 1}, acq_protocol="SSBIntegrationComplex"
         )
     )
     schedule.add(
         SSBIntegrationComplex(
-            port="q1:res", clock="q1.ro", duration=5e-6, acq_channel=3, acq_index=0
+            port="q1:res",
+            clock="q1.ro",
+            duration=5e-6,
+            acq_channel="ch_1",
+            coords={"index_ch_1": 2},
         )
     )
     schedule.add(
         SSBIntegrationComplex(
-            port="q1:res", clock="q1.ro", duration=5e-6, acq_channel=3, acq_index=1
+            port="q1:res",
+            clock="q1.ro",
+            duration=5e-6,
+            acq_channel="ch_1",
+            coords={"index_ch_1": 3},
+        )
+    )
+    schedule.add(
+        SSBIntegrationComplex(
+            port="q1:res", clock="q1.ro", duration=5e-6, acq_channel=3, coords={"index_3": 0}
+        )
+    )
+    schedule.add(
+        SSBIntegrationComplex(
+            port="q1:res", clock="q1.ro", duration=5e-6, acq_channel=3, coords={"index_3": 1}
         )
     )
 
@@ -2611,25 +2627,37 @@ def test_multiple_binned_measurements(mock_setup_basic_transmon, make_cluster_co
         {
             0: DataArray(
                 [2 + 3j, 4 + 5j, 6 + 7j, 8 + 9j],
-                coords=[[0, 1, 2, 3]],
+                coords={
+                    "acq_index_0": [0, 1, 2, 3],
+                    "index_0": ("acq_index_0", [0, 1, 2, 3]),
+                },
                 dims=["acq_index_0"],
                 attrs={"acq_protocol": "SSBIntegrationComplex"},
             ),
             2: DataArray(
                 [10 + 11j, 12 + 13j],
-                coords=[[0, 1]],
+                coords={
+                    "acq_index_2": [0, 1],
+                    "index_2": ("acq_index_2", [0, 1]),
+                },
                 dims=["acq_index_2"],
                 attrs={"acq_protocol": "SSBIntegrationComplex"},
             ),
             "ch_1": DataArray(
                 [20 + 30j, 40 + 50j, 60 + 70j, 80 + 90j],
-                coords=[[0, 1, 2, 3]],
+                coords={
+                    "acq_index_ch_1": [0, 1, 2, 3],
+                    "index_ch_1": ("acq_index_ch_1", [0, 1, 2, 3]),
+                },
                 dims=["acq_index_ch_1"],
                 attrs={"acq_protocol": "SSBIntegrationComplex"},
             ),
             3: DataArray(
                 [100 + 110j, 120 + 130j],
-                coords=[[0, 1]],
+                coords={
+                    "acq_index_3": [0, 1],
+                    "index_3": ("acq_index_3", [0, 1]),
+                },
                 dims=["acq_index_3"],
                 attrs={"acq_protocol": "SSBIntegrationComplex"},
             ),
@@ -2675,7 +2703,7 @@ def test_append_measurements(mock_setup_basic_transmon, make_cluster_component):
     schedule.add(
         Measure(
             "q0",
-            acq_index=0,
+            coords={"index": 0},
             acq_protocol="SSBIntegrationComplex",
             bin_mode=BinMode.APPEND,
         )
@@ -2683,7 +2711,7 @@ def test_append_measurements(mock_setup_basic_transmon, make_cluster_component):
     schedule.add(
         Measure(
             "q0",
-            acq_index=1,
+            coords={"index": 1},
             acq_protocol="SSBIntegrationComplex",
             bin_mode=BinMode.APPEND,
         )
@@ -2728,9 +2756,9 @@ def test_append_measurements(mock_setup_basic_transmon, make_cluster_component):
             1: DataArray(
                 [[2 + 3j, 4 + 5j], [6 + 7j, 8 + 9j], [10 + 11j, 12 + 13j]],
                 coords={
-                    "acq_index_legacy_1": ("acq_index_1", [0, 1]),
                     "repetition": [0, 1, 2],
                     "acq_index_1": [0, 1],
+                    "index": ("acq_index_1", [0, 1]),
                 },
                 dims=["repetition", "acq_index_1"],
                 attrs={"acq_protocol": "SSBIntegrationComplex"},
@@ -2787,7 +2815,7 @@ def test_looped_measurements(mock_setup_basic_transmon, make_cluster_component):
         LoopOperation(
             body=Measure(
                 "q0",
-                acq_index=0,
+                coords={"index": 0},
                 acq_protocol="SSBIntegrationComplex",
                 bin_mode=BinMode.APPEND,
             ),
@@ -2836,10 +2864,10 @@ def test_looped_measurements(mock_setup_basic_transmon, make_cluster_component):
             0: DataArray(
                 [[2 + 3j, 4 + 5j, 6 + 7j], [8 + 9j, 10 + 11j, 12 + 13j]],
                 coords={
-                    "acq_index_legacy_0": ("acq_index_0", [0, 0, 0]),
                     "loop_repetition_0": ("acq_index_0", [0, 1, 2]),
                     "repetition": [0, 1],
                     "acq_index_0": [0, 1, 2],
+                    "index": ("acq_index_0", [0, 0, 0]),
                 },
                 dims=["repetition", "acq_index_0"],
                 attrs={"acq_protocol": "SSBIntegrationComplex"},
@@ -2898,12 +2926,12 @@ def test_multiple_modules_same_channel(mock_setup_basic_transmon, make_cluster_c
     schedule = Schedule("test multiple measurements")
     schedule.add(
         SSBIntegrationComplex(
-            port="q0:res", clock="q0.ro", duration=5e-6, acq_channel=0, acq_index=0
+            port="q0:res", clock="q0.ro", duration=5e-6, acq_channel=0, coords={"index": 0}
         )
     )
     schedule.add(
         SSBIntegrationComplex(
-            port="q1:res", clock="q1.ro", duration=5e-6, acq_channel=0, acq_index=1
+            port="q1:res", clock="q1.ro", duration=5e-6, acq_channel=0, coords={"index": 1}
         )
     )
 
@@ -2946,7 +2974,10 @@ def test_multiple_modules_same_channel(mock_setup_basic_transmon, make_cluster_c
         {
             0: DataArray(
                 [2 + 3j, 4 + 5j],
-                coords=[[0, 1]],
+                coords={
+                    "acq_index_0": [0, 1],
+                    "index": ("acq_index_0", [0, 1]),
+                },
                 dims=["acq_index_0"],
                 attrs={"acq_protocol": "SSBIntegrationComplex"},
             ),
@@ -3006,12 +3037,12 @@ def test_conflicting_retrieve_multiple_acquisitions(
     schedule = Schedule("test multiple measurements")
     schedule.add(
         SSBIntegrationComplex(
-            port="q0:res", clock="q0.ro", duration=5e-6, acq_channel=0, acq_index=0
+            port="q0:res", clock="q0.ro", duration=5e-6, acq_channel=0, coords={"index": 0}
         )
     )
     schedule.add(
         SSBIntegrationComplex(
-            port="q1:res", clock="q1.ro", duration=5e-6, acq_channel=0, acq_index=1
+            port="q1:res", clock="q1.ro", duration=5e-6, acq_channel=0, coords={"index": 1}
         )
     )
 

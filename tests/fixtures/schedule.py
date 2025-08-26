@@ -166,13 +166,13 @@ def compiled_two_qubit_t1_schedule(mock_setup_basic_transmon_with_standard_param
         schedule.add(X(q1), label=f"pi {i} {q1}", ref_pt="start")
 
         schedule.add(
-            Measure(q0, acq_index=i),
+            Measure(q0, coords={"index": i}),
             ref_pt="start",
             rel_time=tau,
             label=f"Measurement {q0}{i}",
         )
         schedule.add(
-            Measure(q1, acq_index=i),
+            Measure(q1, oords={"index": i}),
             ref_pt="start",
             rel_time=tau,
             label=f"Measurement {q1}{i}",

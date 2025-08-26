@@ -105,7 +105,7 @@ def rabi_sched(
             label=f"Rabi_pulse {i}",
         )
         # N.B. acq_channel is not specified
-        schedule.add(Measure(device_element, acq_index=i), label=f"Measurement {i}")
+        schedule.add(Measure(device_element), label=f"Measurement {i}")
 
     return schedule
 
@@ -150,7 +150,7 @@ def t1_sched(
         schedule.add(Reset(device_element), label=f"Reset {i}")
         schedule.add(X(device_element), label=f"pi {i}")
         schedule.add(
-            Measure(device_element, acq_index=i),
+            Measure(device_element),
             ref_pt="start",
             rel_time=tau,
             label=f"Measurement {i}",
@@ -215,7 +215,7 @@ def ramsey_sched(
         schedule.add(
             Rxy(theta=90, phi=recovery_phase, qubit=device_element), ref_pt="start", rel_time=tau
         )
-        schedule.add(Measure(device_element, acq_index=i), label=f"Measurement {i}")
+        schedule.add(Measure(device_element), label=f"Measurement {i}")
     return schedule
 
 
@@ -262,7 +262,7 @@ def echo_sched(
         schedule.add(X90(device_element))
         schedule.add(X(device_element), ref_pt="start", rel_time=tau / 2)
         schedule.add(X90(device_element), ref_pt="start", rel_time=tau / 2)
-        schedule.add(Measure(device_element, acq_index=i), label=f"Measurement {i}")
+        schedule.add(Measure(device_element), label=f"Measurement {i}")
     return schedule
 
 
@@ -367,7 +367,7 @@ def cpmg_sched(
         )
         recovery_phase = np.rad2deg(2 * np.pi * artificial_detuning * tau)
         schedule.add(Rxy(theta=90, phi=recovery_phase, qubit=device_element))
-        schedule.add(Measure(device_element, acq_index=i), label=f"Measurement {i}")
+        schedule.add(Measure(device_element), label=f"Measurement {i}")
 
     return schedule
 
@@ -447,7 +447,7 @@ def allxy_sched(
         schedule.add(Reset(device_element), label=f"Reset {i}")
         schedule.add(Rxy(qubit=device_element, theta=th0, phi=phi0))
         schedule.add(Rxy(qubit=device_element, theta=th1, phi=phi1))
-        schedule.add(Measure(device_element, acq_index=i), label=f"Measurement {i}")
+        schedule.add(Measure(device_element), label=f"Measurement {i}")
     return schedule
 
 
@@ -509,9 +509,7 @@ def readout_calibration_sched(
         else:
             raise ValueError(f"Prepared state ({prep_state}) must be either 0, 1 or 2.")
         schedule.add(
-            Measure(
-                device_element, acq_index=i, bin_mode=BinMode.APPEND, acq_protocol=acq_protocol
-            ),
+            Measure(device_element, bin_mode=BinMode.APPEND, acq_protocol=acq_protocol),
             label=f"Measurement {i}",
         )
     return schedule
@@ -617,7 +615,6 @@ def rabi_pulse_sched(
             duration=ro_integration_time,
             port=ro_pulse_port,
             clock=ro_pulse_clock,
-            acq_index=0,
             acq_channel=0,
         ),
         ref_op=ro_pulse,

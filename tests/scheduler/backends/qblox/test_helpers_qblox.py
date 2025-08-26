@@ -305,7 +305,7 @@ def test__assign_acq_info_to_devices_raises_portclock_err():
         clock=clock,
         duration=constants.MAX_SAMPLE_SIZE_SCOPE_ACQUISITIONS,
         acq_channel=0,
-        acq_index=0,
+        coords={"index": 0},
         bin_mode=BinMode.APPEND,
     )
     with pytest.raises(

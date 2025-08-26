@@ -199,7 +199,7 @@ def t1_sched(times, repetitions=1):
         schedule.add(Reset("q0"), label=f"Reset {i}")
         schedule.add(X("q0"), label=f"pi {i}")
         schedule.add(
-            Measure("q0", acq_index=i),
+            Measure("q0"),
             ref_pt="start",
             rel_time=tau,
             label=f"Measurement {i}",

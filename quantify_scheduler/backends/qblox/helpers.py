@@ -857,9 +857,9 @@ def _assign_acq_info_to_devices(
         # can have different acq_index, so we need to copy it,
         # and override the acq_index. No need to deepcopy, only changing top level value.
         new_acq_data = copy(acq_data)
-        acq_index = schedulable_label_to_acq_index.get((optional_full_schedulable_label, i))
-        new_acq_data["acq_index_legacy"] = acq_data["acq_index"]
-        new_acq_data["acq_index"] = acq_index
+        new_acq_data["acq_index"] = schedulable_label_to_acq_index.get(
+            (optional_full_schedulable_label, i)
+        )
         combined_data = OpInfo(
             name=operation.data["name"],
             data=new_acq_data,

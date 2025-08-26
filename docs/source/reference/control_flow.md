@@ -70,7 +70,7 @@ def t1_sched_sequential(
         inner.add(Reset(qubit), label=f"Reset {i}")
         inner.add(X(qubit), label=f"pi {i}")
         inner.add(
-            Measure(qubit, acq_index=i),
+            Measure(qubit),
             ref_pt="start",
             rel_time=tau,
             label=f"Measurement {i}",

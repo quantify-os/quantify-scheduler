@@ -87,7 +87,7 @@ def add_increasing_pulse_level_acquisitions(
         if num_acquisitions == 1
         else np.linspace(0, max_pulse_level, num_acquisitions)
     )
-    for acq_index, pulse_level in enumerate(pulse_levels):
+    for pulse_level in pulse_levels:
         schedule.add(
             SquarePulse(
                 duration=pulse_duration,
@@ -104,7 +104,6 @@ def add_increasing_pulse_level_acquisitions(
                 port=port,
                 clock=clock,
                 acq_channel=acq_channel,
-                acq_index=acq_index,
                 bin_mode=bin_mode,
             )
         )

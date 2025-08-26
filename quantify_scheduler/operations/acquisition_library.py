@@ -85,7 +85,8 @@ class Trace(Acquisition):
         By default ``None``, no coords are added.
         Not implemented for zhinst backend.
     acq_index
-        The data register in which the acquisition is stored, by default 0.
+        Deprecated.
+        The data register in which the acquisition is stored, by default ``None``.
         Describes the "when" information of the measurement, used to label or
         tag individual measurements in a large circuit. Typically corresponds
         to the setpoints of a schedule (e.g., tau in a T1 experiment).
@@ -109,10 +110,11 @@ class Trace(Acquisition):
         clock: str,
         acq_channel: Hashable = 0,
         coords: dict | None = None,
-        acq_index: int | None = 0,
+        acq_index: int | None = None,
         bin_mode: BinMode | str = BinMode.AVERAGE,
         t0: float = 0,
     ) -> None:
+        _warn_deprecated_acq_index(acq_index)
         if not isinstance(duration, float):
             duration = float(duration)
         if isinstance(bin_mode, str):
@@ -182,7 +184,8 @@ class WeightedIntegratedSeparated(Acquisition):
         By default ``None``, no coords are added.
         Not implemented for zhinst backend.
     acq_index
-        The data register in which the acquisition is stored, by default 0.
+        Deprecated.
+        The data register in which the acquisition is stored, by default ``None``.
         Describes the "when" information of the measurement, used to label or
         tag individual measurements in a large circuit. Typically corresponds
         to the setpoints of a schedule (e.g., tau in a T1 experiment).
@@ -211,11 +214,12 @@ class WeightedIntegratedSeparated(Acquisition):
         duration: float,
         acq_channel: Hashable = 0,
         coords: dict | None = None,
-        acq_index: int | None = 0,
+        acq_index: int | None = None,
         bin_mode: BinMode | str = BinMode.APPEND,
         phase: float = 0,
         t0: float = 0,
     ) -> None:
+        _warn_deprecated_acq_index(acq_index)
         if phase != 0:
             raise NotImplementedError("Non-zero phase not yet implemented")
 
@@ -278,7 +282,8 @@ class SSBIntegrationComplex(Acquisition):
         By default ``None``, no coords are added.
         Not implemented for zhinst backend.
     acq_index
-        The data register in which the acquisition is stored, by default 0.
+        Deprecated.
+        The data register in which the acquisition is stored, by default ``None``.
         Describes the "when" information of the measurement, used to label or
         tag individual measurements in a large circuit. Typically corresponds
         to the setpoints of a schedule (e.g., tau in a T1 experiment).
@@ -301,11 +306,12 @@ class SSBIntegrationComplex(Acquisition):
         duration: float,
         acq_channel: Hashable = 0,
         coords: dict | None = None,
-        acq_index: int | None = 0,
+        acq_index: int | None = None,
         bin_mode: BinMode | str = BinMode.AVERAGE,
         phase: float = 0,
         t0: float = 0,
     ) -> None:
+        _warn_deprecated_acq_index(acq_index)
         waveform_i = {
             "port": port,
             "clock": clock,
@@ -416,8 +422,9 @@ class ThresholdedAcquisition(Acquisition):
         value for this acquisition will be associated with ``amp==0.1``.
         By default ``None``, no coords are added.
         Not implemented for zhinst backend.
-    acq_index : int
-        The data register in which the acquisition is stored, by default 0.
+    acq_index
+        Deprecated.
+        The data register in which the acquisition is stored, by default ``None``.
         Describes the "when" information of the measurement, used to label
         or tag individual measurements in a large circuit. Typically
         corresponds to the setpoints of a schedule (e.g., tau in a T1
@@ -446,7 +453,7 @@ class ThresholdedAcquisition(Acquisition):
         duration: float,
         acq_channel: Hashable = 0,
         coords: dict | None = None,
-        acq_index: int | None = 0,
+        acq_index: int | None = None,
         bin_mode: BinMode | str = BinMode.AVERAGE,
         feedback_trigger_label: str | None = None,
         phase: float = 0,
@@ -454,6 +461,7 @@ class ThresholdedAcquisition(Acquisition):
         acq_rotation: float = 0,
         acq_threshold: float = 0,
     ) -> None:
+        _warn_deprecated_acq_index(acq_index)
         waveform_i = {
             "port": port,
             "clock": clock,
@@ -551,7 +559,8 @@ class NumericalSeparatedWeightedIntegration(WeightedIntegratedSeparated):
         By default ``None``, no coords are added.
         Not implemented for zhinst backend.
     acq_index
-        The data register in which the acquisition is stored, by default 0.
+        Deprecated.
+        The data register in which the acquisition is stored, by default ``None``.
         Describes the "when" information of the measurement, used to label or
         tag individual measurements in a large circuit. Typically corresponds
         to the setpoints of a schedule (e.g., tau in a T1 experiment).
@@ -577,7 +586,7 @@ class NumericalSeparatedWeightedIntegration(WeightedIntegratedSeparated):
         interpolation: str = "linear",
         acq_channel: Hashable = 0,
         coords: dict | None = None,
-        acq_index: int | None = 0,
+        acq_index: int | None = None,
         bin_mode: BinMode | str = BinMode.APPEND,
         phase: float = 0,
         t0: float = 0,
@@ -688,7 +697,8 @@ class NumericalWeightedIntegration(NumericalSeparatedWeightedIntegration):
         By default ``None``, no coords are added.
         Not implemented for zhinst backend.
     acq_index
-        The data register in which the acquisition is stored, by default 0.
+        Deprecated.
+        The data register in which the acquisition is stored, by default ``None``.
         Describes the "when" information of the measurement, used to label or
         tag individual measurements in a large circuit. Typically corresponds
         to the setpoints of a schedule (e.g., tau in a T1 experiment).
@@ -714,7 +724,7 @@ class NumericalWeightedIntegration(NumericalSeparatedWeightedIntegration):
         interpolation: str = "linear",
         acq_channel: Hashable = 0,
         coords: dict | None = None,
-        acq_index: int | None = 0,
+        acq_index: int | None = None,
         bin_mode: BinMode | str = BinMode.APPEND,
         phase: float = 0,
         t0: float = 0,
@@ -794,7 +804,8 @@ class WeightedThresholdedAcquisition(NumericalWeightedIntegration):
         By default ``None``, no coords are added.
         Not implemented for zhinst backend.
     acq_index
-        The data register in which the acquisition is stored, by default 0.
+        Deprecated.
+        The data register in which the acquisition is stored, by default ``None``.
         Describes the "when" information of the measurement, used to label or
         tag individual measurements in a large circuit. Typically corresponds
         to the setpoints of a schedule (e.g., tau in a T1 experiment).
@@ -823,7 +834,7 @@ class WeightedThresholdedAcquisition(NumericalWeightedIntegration):
         interpolation: str = "linear",
         acq_channel: Hashable = 0,
         coords: dict | None = None,
-        acq_index: int | None = 0,
+        acq_index: int | None = None,
         bin_mode: BinMode | str = BinMode.APPEND,
         phase: float = 0,
         t0: float = 0,
@@ -901,7 +912,8 @@ class TriggerCount(Acquisition):
         By default ``None``, no coords are added.
         Not implemented for zhinst backend.
     acq_index
-        The data register in which the acquisition is stored, by default 0.
+        Deprecated.
+        The data register in which the acquisition is stored, by default ``None``.
         Describes the "when" information of the measurement, used to label or
         tag individual measurements in a large circuit. Typically corresponds
         to the setpoints of a schedule (e.g., tau in a T1 experiment).
@@ -937,12 +949,13 @@ class TriggerCount(Acquisition):
         duration: float,
         acq_channel: Hashable = 0,
         coords: dict | None = None,
-        acq_index: int | None = 0,
+        acq_index: int | None = None,
         bin_mode: BinMode | str = BinMode.APPEND,
         t0: float = 0,
         fine_start_delay: float = 0,
         fine_end_delay: float = 0,
     ) -> None:
+        _warn_deprecated_acq_index(acq_index)
         if bin_mode == BinMode.AVERAGE:
             warnings.warn(
                 (
@@ -1021,7 +1034,8 @@ class TimetagTrace(Acquisition):
         By default ``None``, no coords are added.
         Not implemented for zhinst backend.
     acq_index
-        The data register in which the acquisition is stored, by default 0.
+        Deprecated.
+        The data register in which the acquisition is stored, by default ``None``.
         Describes the "when" information of the measurement, used to label or
         tag individual measurements in a large circuit. Typically corresponds
         to the setpoints of a schedule (e.g., tau in a T1 experiment).
@@ -1072,7 +1086,7 @@ class TimetagTrace(Acquisition):
         clock: str = DigitalClockResource.IDENTITY,
         acq_channel: Hashable = 0,
         coords: dict | None = None,
-        acq_index: int | None = 0,
+        acq_index: int | None = None,
         bin_mode: BinMode | str = BinMode.APPEND,
         time_ref: TimeRef | str = TimeRef.START,
         time_ref_port: str | None = None,
@@ -1080,6 +1094,7 @@ class TimetagTrace(Acquisition):
         fine_start_delay: float = 0,
         fine_end_delay: float = 0,
     ) -> None:
+        _warn_deprecated_acq_index(acq_index)
         if not isinstance(duration, float):
             duration = float(duration)
         if isinstance(bin_mode, str):
@@ -1152,7 +1167,8 @@ class Timetag(Acquisition):
         By default ``None``, no coords are added.
         Not implemented for zhinst backend.
     acq_index
-        The data register in which the acquisition is stored, by default 0.
+        Deprecated.
+        The data register in which the acquisition is stored, by default ``None``.
         Describes the "when" information of the measurement, used to label or
         tag individual measurements in a large circuit. Typically corresponds
         to the setpoints of a schedule (e.g., tau in a T1 experiment).
@@ -1213,7 +1229,7 @@ class Timetag(Acquisition):
         clock: str = DigitalClockResource.IDENTITY,
         acq_channel: Hashable = 0,
         coords: dict | None = None,
-        acq_index: int | None = 0,
+        acq_index: int | None = None,
         bin_mode: BinMode | str = BinMode.APPEND,
         time_source: TimeSource | str = TimeSource.FIRST,
         time_ref: TimeRef | str = TimeRef.START,
@@ -1222,6 +1238,7 @@ class Timetag(Acquisition):
         fine_start_delay: float = 0,
         fine_end_delay: float = 0,
     ) -> None:
+        _warn_deprecated_acq_index(acq_index)
         super().__init__(name=self.__class__.__name__)
 
         if isinstance(time_source, str):
@@ -1304,7 +1321,9 @@ class ThresholdedTriggerCount(Acquisition):
         By default ``None``, no coords are added.
         Not implemented for zhinst backend.
     acq_index
-        The data register in which the acquisition is stored, by default 0.  Describes the "when"
+        Deprecated.
+        The data register in which the acquisition is stored, by default ``None``.
+        Describes the "when"
         information of the measurement, used to label or tag individual measurements in a large
         circuit. Typically corresponds to the setpoints of a schedule (e.g., tau in a T1
         experiment).
@@ -1330,10 +1349,11 @@ class ThresholdedTriggerCount(Acquisition):
         ) = TriggerCondition.GREATER_THAN_EQUAL_TO,
         acq_channel: Hashable = 0,
         coords: dict | None = None,
-        acq_index: int | None = 0,
+        acq_index: int | None = None,
         bin_mode: BinMode | str = BinMode.APPEND,
         t0: float = 0,
     ) -> None:
+        _warn_deprecated_acq_index(acq_index)
         if bin_mode == BinMode.AVERAGE and acq_index != 0:
             # In average mode the count distribution is measured,
             # and currently we do not support multiple indices for this,
@@ -1433,7 +1453,9 @@ class DualThresholdedTriggerCount(Acquisition):
         By default ``None``, no coords are added.
         Not implemented for zhinst backend.
     acq_index
-        The data register in which the acquisition is stored, by default 0.  Describes the "when"
+        Deprecated.
+        The data register in which the acquisition is stored, by default ``None``.
+        Describes the "when"
         information of the measurement, used to label or tag individual measurements in a large
         circuit. Typically corresponds to the setpoints of a schedule (e.g., tau in a T1
         experiment).
@@ -1460,10 +1482,11 @@ class DualThresholdedTriggerCount(Acquisition):
         label_invalid: str | None = None,
         acq_channel: Hashable = 0,
         coords: dict | None = None,
-        acq_index: int | None = 0,
+        acq_index: int | None = None,
         bin_mode: BinMode | str = BinMode.APPEND,
         t0: float = 0,
     ) -> None:
+        _warn_deprecated_acq_index(acq_index)
         if bin_mode == BinMode.AVERAGE and acq_index != 0:
             # In average mode the count distribution is measured,
             # and currently we do not support multiple indices for this,
@@ -1509,3 +1532,12 @@ class DualThresholdedTriggerCount(Acquisition):
         for suffix in DualThresholdedTriggerCountLabels:  # type: ignore
             acq_info[f"label_{suffix}"] = acq_info[f"feedback_trigger_label_{suffix}"]
         return self._get_signature(acq_info)
+
+
+def _warn_deprecated_acq_index(acq_index: int | None) -> None:
+    if acq_index is not None:
+        warnings.warn(
+            "Using the `acq_index` argument is deprecated. "
+            "Use the `coords` argument to define arbitrary user data for the acquisition. ",
+            FutureWarning,
+        )

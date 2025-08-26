@@ -461,7 +461,7 @@ data_array = xr.DataArray(
 xr.Dataset({0: data_array})
 ```
 
-If `BinMode.AVERAGE` is used, the acquisition data will contain the average of the timetags recorded in each bin. If only bin index 0 was used for the three acquisitions in the above example, the data set may look like this:
+If `BinMode.AVERAGE` is used, the acquisition data will contain the average of the timetags recorded in each bin. If only acquisition index 0 was used for the three acquisitions in the above example, the data set may look like this:
 
 ```{code-cell} ipython3
 ---

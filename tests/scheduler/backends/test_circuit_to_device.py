@@ -208,11 +208,11 @@ def test_compile_symmetric_gate_distinguished_qubits(mock_setup_basic_transmon):
 
 def test_measurement_compile(device_cfg_transmon_example, get_subschedule_operation):
     sched = Schedule("Test schedule")
-    sched.add(Measure("q0", "q1", acq_index=0))  # acq_index should be 0 for both.
-    sched.add(Measure("q0", acq_index=1))
-    sched.add(Measure("q1", acq_index=2))  # acq_channel should be 1
-    sched.add(Measure("q1", acq_channel=2, acq_index=0))
-    sched.add(Measure("q0", "q1", acq_index=2))
+    sched.add(Measure("q0", "q1", coords={"index": 0}))  # acq_index should be 0 for both.
+    sched.add(Measure("q0", coords={"index": 1}))
+    sched.add(Measure("q1", coords={"index": 2}))  # acq_channel should be 1
+    sched.add(Measure("q1", acq_channel=2, coords={"index": 0}))
+    sched.add(Measure("q0", "q1", coords={"index": 2}))
     new_dev_sched = compile_circuit_to_device_with_config_validation(
         sched,
         config=SerialCompilationConfig(
@@ -228,37 +228,37 @@ def test_measurement_compile(device_cfg_transmon_example, get_subschedule_operat
     m0_q0_acq = get_subschedule_operation(new_dev_sched, [0, 0, 2])["acquisition_info"]
     assert len(m0_q0_acq) == 1
     assert m0_q0_acq[0]["acq_channel"] == 0
-    assert m0_q0_acq[0]["acq_index"] == 0
+    assert m0_q0_acq[0]["acq_index"] is None
 
     m0_q1_acq = get_subschedule_operation(new_dev_sched, [0, 1, 2])["acquisition_info"]
     assert len(m0_q1_acq) == 1
     assert m0_q1_acq[0]["acq_channel"] == 1
-    assert m0_q1_acq[0]["acq_index"] == 0
+    assert m0_q1_acq[0]["acq_index"] is None
 
     m1_acq = get_subschedule_operation(new_dev_sched, [1, 2])["acquisition_info"]
     assert len(m1_acq) == 1
     assert m1_acq[0]["acq_channel"] == 0
-    assert m1_acq[0]["acq_index"] == 1
+    assert m1_acq[0]["acq_index"] is None
 
     m2_acq = get_subschedule_operation(new_dev_sched, [2, 2])["acquisition_info"]
     assert len(m2_acq) == 1
     assert m2_acq[0]["acq_channel"] == 1
-    assert m2_acq[0]["acq_index"] == 2
+    assert m2_acq[0]["acq_index"] is None
 
     m3_acq = get_subschedule_operation(new_dev_sched, [3, 2])["acquisition_info"]
     assert len(m3_acq) == 1
     assert m3_acq[0]["acq_channel"] == 2
-    assert m3_acq[0]["acq_index"] == 0
+    assert m3_acq[0]["acq_index"] is None
 
     m4_q0_acq = get_subschedule_operation(new_dev_sched, [4, 0, 2])["acquisition_info"]
     assert len(m4_q0_acq) == 1
     assert m4_q0_acq[0]["acq_channel"] == 0
-    assert m4_q0_acq[0]["acq_index"] == 2
+    assert m4_q0_acq[0]["acq_index"] is None
 
     m4_q1_acq = get_subschedule_operation(new_dev_sched, [4, 1, 2])["acquisition_info"]
     assert len(m4_q1_acq) == 1
     assert m4_q1_acq[0]["acq_channel"] == 1
-    assert m4_q1_acq[0]["acq_index"] == 2
+    assert m4_q1_acq[0]["acq_index"] is None
 
 
 @pytest.mark.parametrize(

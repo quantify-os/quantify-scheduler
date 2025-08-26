@@ -51,7 +51,7 @@ def create_subschedule(acquisition_index: int):
 
     subschedule.add(Reset("q0"))
     subschedule.add(X("q0"))
-    subschedule.add(Measure("q0", acq_index=acquisition_index))
+    subschedule.add(Measure("q0"))
 
     return subschedule
 
