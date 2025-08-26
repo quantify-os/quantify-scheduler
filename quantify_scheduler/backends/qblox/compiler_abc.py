@@ -636,7 +636,7 @@ class SequencerCompiler(ABC):
                         start_time + operation.operation_info.duration
                     )
 
-            self._parse_operations(iter(ordered_op_strategies), qasm, 1)
+            self._parse_operations(iter(ordered_op_strategies), qasm)
 
             end_time = helpers.to_grid_time(total_sequence_time)
             wait_time = end_time - qasm.elapsed_time
@@ -694,7 +694,6 @@ class SequencerCompiler(ABC):
         self,
         operations_iter: Iterator[IOperationStrategy],
         qasm: QASMProgram,
-        acquisition_multiplier: int,
     ) -> ParseOperationStatus:
         """Handle control flow and insert Q1ASM."""
         while (operation := next(operations_iter, None)) is not None:
@@ -706,7 +705,6 @@ class SequencerCompiler(ABC):
                     returned_from_return_stack = self._parse_operations(
                         operations_iter=operations_iter,
                         qasm=qasm,
-                        acquisition_multiplier=acquisition_multiplier * repetitions,
                     )
                     assert returned_from_return_stack in self.ParseOperationStatus
 
@@ -715,7 +713,6 @@ class SequencerCompiler(ABC):
                     returned_from_return_stack = self._parse_operations(
                         operations_iter=operations_iter,
                         qasm=qasm,
-                        acquisition_multiplier=acquisition_multiplier,
                     )
                     assert returned_from_return_stack in self.ParseOperationStatus
 
