@@ -102,12 +102,6 @@ schedule.add(
     )
 )
 ```
-2. Repetition loops act on all port-clock combinations present in the circuit. This means that both `X("q0")` and `Y90("q1")` in the following circuit are repeated three times:
-```{code-cell} ipython3
-schedule = Schedule("T1")
-x = schedule.add(LoopOperation(body=X("q0"), repetitions=3))
-schedule.add(Y90("q1"), ref_op=x, ref_pt="start", rel_time=0)
-```
 ### Safe use with the limitations
 To avoid the limitations mentioned above, it is strongly recommended to use loops only with subschedules, with no operations overlapping with the subschedule. Adding wait times before and after loops ensures that everything works as expected:
 ```{code-cell} ipython3
