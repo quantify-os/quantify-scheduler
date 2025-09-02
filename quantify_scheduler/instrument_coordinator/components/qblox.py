@@ -1976,24 +1976,21 @@ class _AcquisitionManagerBase(ABC):
                 return result
 
             result = _convert_from_cumulative(bin_data["avg_cnt"])
-            # TODO: QTFY-913, when interface can change,
-            # return data with proper coordinates;
-            # no repetitions, and proper dimension name.
-            # acq_index_dim_name = self._acq_channels_data[acq_channel].acq_index_dim_name
-            # data_array = DataArray(
-            #    list(result.values())[::-1],
-            #    dims=[acq_index_dim_name],
-            #    coords={acq_index_dim_name: list(result.keys())[::-1]},
-            #    attrs=self._acq_channel_attrs(self._acq_channels_data[acq_channel].protocol),
-            # )
-            # add_acquisition_coords_nonbinned(data_array, coords, acq_index_dim_name)
-            # return data_array
-            return DataArray(
-                [list(result.values())[::-1]],
-                dims=["repetition", "counts"],
-                coords={"repetition": [0], "counts": list(result.keys())[::-1]},
+            acq_index_dim_name = self._acq_channels_data[acq_channel].acq_index_dim_name
+            counts = list(result.keys())[::-1]
+            coords = self._acq_channels_data[acq_channel].coords
+            assert isinstance(coords, dict)
+            data_array = DataArray(
+                list(result.values())[::-1],
+                dims=[acq_index_dim_name],
+                coords={
+                    acq_index_dim_name: range(len(counts)),
+                    f"counts_{acq_channel}": (acq_index_dim_name, counts),
+                },
                 attrs=self._acq_channel_attrs(self._acq_channels_data[acq_channel].protocol),
             )
+            add_acquisition_coords_nonbinned(data_array, coords, acq_index_dim_name)
+            return data_array
         elif self._acq_channels_data[acq_channel].bin_mode in (BinMode.SUM, BinMode.APPEND):
 
             def _get_bin(

@@ -1581,9 +1581,9 @@ def test_trigger_count_distribution(
     # Assert intended behaviour
     assert isinstance(data, Dataset)
     expected_dataarray = DataArray(
-        [[25, 25, 25, 20, 5]],
-        coords=[[0], [2, 3, 4, 6, 7]],
-        dims=["repetition", "counts"],
+        [25, 25, 25, 20, 5],
+        coords={"acq_index_0": [0, 1, 2, 3, 4], "counts_0": ("acq_index_0", [2, 3, 4, 6, 7])},
+        dims=["acq_index_0"],
         attrs={"acq_protocol": "TriggerCount"},
     )
     expected_dataset = Dataset({0: expected_dataarray})
