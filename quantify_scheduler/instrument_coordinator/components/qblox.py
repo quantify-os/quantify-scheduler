@@ -2609,7 +2609,6 @@ class _QTMAcquisitionManager(_AcquisitionManagerBase):
         acq_duration: int,  # noqa: ARG002, unused argument
         sequencer_name: str,
     ) -> DataArray:
-        # TODO: do the same logic as for binned acquisitions
         seq_idx = self._seq_name_to_idx_map[sequencer_name]
 
         # For TimetagTrace distribution acquisition protocol,
