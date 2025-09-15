@@ -145,6 +145,7 @@ In the resulting `RawDataset`, the acquisition index corresponds to a data array
 In a `RawDataset` coordinates correspond to `xarray` coordinates along the `AcquisitionIndex` dimension of the acquisition channel data arrays.
 Coordinates provided by a user are formatted as a data array using `numpy` conventions, thus, for performance reasons they should have uniform data type that can be handled with `numpy`.
 `AcquisitionCoordinates` can optionally have `units` and `long_name` attributes associated with it.
+These coordinates are given by the user in the `coords` argument of the operation.
 
 
 ### Bin mode
