@@ -154,7 +154,7 @@ rom.gain = 2.0
 The mock readout module takes a list of strings as instructions input:
 
 ```{code-cell} ipython3
-rom.upload_instructions(["TRACE"])
+rom.upload_instructions(["TRACE_input0_0"])
 ```
 
 We can now execute the instructions on the readout module:
@@ -169,8 +169,8 @@ The data that is returned by our mock readout module is a dictionary containing 
 import matplotlib.pyplot as plt
 
 data = rom.get_results()
-plt.plot(data[0])
-plt.plot(data[1])
+plt.plot(data[0][0])
+plt.plot(data[0][1])
 plt.show()
 ```
 
@@ -191,33 +191,137 @@ We check that this works as expected:
 ```{code-cell} ipython3
 from quantify_scheduler.backends.mock.mock_rom import MockROMGettable
 
-mock_rom_gettable = MockROMGettable(mock_rom=rom, waveforms=wfs, instructions=["TRACE"], sampling_rate=1.5e9, gain=2.0)
+mock_rom_gettable = MockROMGettable(mock_rom=rom, waveforms=wfs, instructions=["TRACE_input0_0"], sampling_rate=1.5e9, gain=2.0)
 data = mock_rom_gettable.get()
-plt.plot(data[0])
-plt.plot(data[1])
+plt.plot(data[0][0])
+plt.plot(data[0][1])
 plt.show()
 ```
 
 From the plot, we observe that the waveforms are the same as what was sent into the `MockReadoutModule`.
 
-### 2. Implement `InstrumentCoordinatorComponent`(s)
+### 2. Acquisition mappings
+
+With regards to acquisition data, the ultimate role of the backend is to map the acquisition data on the hardware to the returned structured data (`xarray.Dataset`). This mapping must be generated at compilation time, and then after the experiment is run on the hardware, this mapping is needed to generate the returned structured `xarray.Dataset` to the user.
+
+The structured acquisition data consists of an `xarray.Dataset`, which is practically a dictionary where the keys are user given acquisition channel names and the values are the corresponding data to that acquisition channel. The acquisition channel data `xarray.DataArray` is one dimensional data (assuming no append mode repetitions): each acquired data point has an index (acquisition index), and other user-given coordinates.
+
+As an example, in case of several binned acquisition (multiple acquisition indices), but on the same acquisition channel, a typical data looks like the following for a schedule.
+
+```{code-block} ipython3
+schedule = Schedule("example")
+schedule.add(Measure(qubit="q0", acq_channel="ch_0", coords={"freq": 100}))
+schedule.add(Measure(qubit="q0", acq_channel="ch_0", coords={"freq": 200}))
+schedule.add(Measure(qubit="q0", acq_channel="ch_0", coords={"freq": 300}))
+```
+
+```{code-cell} ipython3
+---
+tags: [hide-input]
+---
+import xarray
+
+xarray.Dataset(
+    data_vars=dict(
+        ch_0=(["acq_index_ch_0"], [0.0, 0.2, 0.4]),
+    ),
+    coords=dict(
+        freq=(["acq_index_ch_0"], [100, 200, 300]),
+        acq_index_ch_0=[0, 1, 2],
+    ),
+)
+```
+
+In case of trace acquisition, there is one acquisition index, and the other dimension is the time
+for our mock backend.
+
+```{code-block} ipython3
+schedule = Schedule("example")
+schedule.add(Measure(qubit="q0", acq_channel="ch_0", acq_protocol="Trace"))
+```
+
+```{code-cell} ipython3
+---
+tags: [hide-input]
+---
+import xarray
+
+xarray.Dataset(
+    data_vars=dict(
+        ch_0=(["acq_index_ch_0", "time_ch0"], [[2.5, 2.6, 2.7, 2.8, 2.9, 3.0]]),
+    ),
+    coords=dict(
+        time_ch0=[0.0, 0.001, 0.002, 0.003, 0.004, 0.005],
+        acq_index_ch_0=[0],
+    ),
+)
+```
+
+The compiler needs to generate a mapping of each acquisition channel, acquisition index to data on the hardware and other user-given additional coords. This mapping is divided into two parts: hardware independent mapping and hardware dependent mapping. The functions defined in the hardware independent layer (frontend) can generate the hardware independent mapping and the functions defined in the backend can generate the hardware dependent mapping. This helps standardizing how acquisitions work. Development of a quantify backend would then only require implementing hardware dependent mapping.
+
+The hardware independent mapping ({class}`~.schedules.schedule.AcquisitionChannelData`) stores the following information for each acquisition channel:
+
+```{eval-rst}
+.. autoapiclass:: quantify_scheduler.schedules.schedule.AcquisitionChannelData
+    :noindex:
+    :members:
+```
+
+The hardware dependent mapping stores how each acquisition channel and acquisition index is related to hardware. To help backend developers, a function defined in the frontend generates a mapping which could be converted by backend developers to the required acquisition hardware mapping. This is the {data}`~.helpers.generate_acq_channels_data.SchedulableLabelToAcquisitionIndex`. This maps every schedulable in the schedule to an acquisition index. (Note: {data}`~.helpers.generate_acq_channels_data.SchedulableLabelToAcquisitionIndex` is only generated for binned acquisitions!)
+
+```{code-block} ipython3
+SchedulableLabel = str
+FullSchedulableLabel = Tuple[SchedulableLabel]
+SchedulableLabelToAcquisitionIndex = Dict[
+    Tuple[FullSchedulableLabel, int], Union[int, List[int]]
+]
+```
+
+The high-level overview of acquisition mapping creation is the following. The function defined in hardware independent frontend ({func}`~.helpers.generate_acq_channels_data.generate_acq_channels_data`) generates the {data}`~.schedules.schedule.AcquisitionChannelsData` and {data}`~.helpers.generate_acq_channels_data.SchedulableLabelToAcquisitionIndex`, and hardware specific backend converts the {data}`~.helpers.generate_acq_channels_data.SchedulableLabelToAcquisitionIndex` to its own backend dependent hardware mapping.
+
+```{mermaid}
+:caption: Diagram of the acquisition compilation logic. (For clarity, some details are omitted.)
+sequenceDiagram
+    participant User
+    participant C as Compiler UI
+    participant CF as Compiler functions frontend
+    participant CB as Compiler functions backend
+
+    User->>+C: compile(Schedule)
+    C->>+CF: generate_acq_channels_data(schedule)
+    CF-->>-C: AcquisitionChannelsData, SchedulableLabelToAcquisitionIndex
+    C->>+CB: Compile backend using SchedulableLabelToAcquisitionIndex
+    CB-->>-C: Hardware mapping
+    C-->>-User: CompiledSchedule
+```
+
+```{mermaid}
+:caption: Diagram of retrieving data using the acquisition mappings. (For clarity, some details are omitted.)
+sequenceDiagram
+    participant User
+    participant IC as InstrumentCoordinatorComponent
+    participant Hardware
+
+    User->>+IC: retrieve_acquisition using AcquisitionChannelsData and hardware mapping
+    IC->>+Hardware: retrieve hardware acquisition data
+    Hardware-->>-IC: hardware acquisition data
+    IC-->>-User: Acquisition dataset
+```
+
+(Note: currently the backend calls {func}`~.helpers.generate_acq_channels_data.generate_acq_channels_data`, but this function is defined still in the frontend, because it's convenient for all backends, and standardizes acquisitions, but currently it's not feasible to call this directly from the frontend.)
+
+The generated {data}`~.schedules.schedule.AcquisitionChannelsData` and the backend generated hardware mapping need to be in `CompiledSchedule`. After running the experiment, these mappings will be used to create the `xarray.Dataset`, which will be returned to the user.
+
+### 3. Implement `InstrumentCoordinatorComponent`(s)
 
 Within Quantify, the `InstrumentCoordinatorComponent`s are responsible for sending compiled instructions to the instruments, retrieving data, and converting the acquired data into a quantify-compatible Dataset (see {ref}`sec-acquisition-protocols`). The `InstrumentCoordinatorComponent`s are instrument-specific and should be based on the {class}`~.quantify_scheduler.instrument_coordinator.components.base.InstrumentCoordinatorComponentBase` class.
 
-It is convenient to wrap all settings that are required to prepare the instrument in a single `DataStructure`, in our example we take care of this in the {class}`~.quantify_scheduler.backends.mock.mock_rom.MockROMAcquisitionConfig` and the settings for the mock readout module can be set via the {class}`~.quantify_scheduler.backends.mock.mock_rom.MockROMSettings` class using the `prepare` method of the {class}`~.quantify_scheduler.backends.mock.mock_rom.MockROMInstrumentCoordinatorComponent`. The `start` method is used to start the acquisition and the `retrieve_acquisition` method is used to retrieve the acquired data:
-
-```{eval-rst}
-.. autoapiclass:: quantify_scheduler.backends.mock.mock_rom.MockROMAcquisitionConfig
-    :noindex:
-    :members:
-
-```
+There are two mappings which are needed in order to convert the hardware acquired data to the structured `xarray.Dataset`: {data}`~.schedules.schedule.AcquisitionChannelsData` (for backend independent mappings) and `MockROMSettings.hardware_acq_mapping` (for backend dependent mappings). The settings for the mock readout module can be set via the {class}`~.quantify_scheduler.backends.mock.mock_rom.MockROMSettings` class using the `prepare` method of the {class}`~.quantify_scheduler.backends.mock.mock_rom.MockROMInstrumentCoordinatorComponent`. The `start` method is used to start the acquisition and the `retrieve_acquisition` method is used to retrieve the acquired data:
 
 ```{eval-rst}
 .. autoapiclass:: quantify_scheduler.backends.mock.mock_rom.MockROMSettings
     :noindex:
     :members:
-
 ```
 
 We can now implement the `InstrumentCoordinatorComponent` for the mock readout module:
@@ -226,26 +330,34 @@ We can now implement the `InstrumentCoordinatorComponent` for the mock readout m
 .. autoapiclass:: quantify_scheduler.backends.mock.mock_rom.MockROMInstrumentCoordinatorComponent
     :noindex:
     :members:
-
 ```
 
 Now we can control the mock readout module through the `InstrumentCoordinatorComponent`:
 
 ```{code-cell} ipython3
-from quantify_scheduler.backends.mock.mock_rom import MockROMInstrumentCoordinatorComponent, MockROMSettings, MockROMAcquisitionConfig
+from quantify_scheduler.backends.mock.mock_rom import MockROMInstrumentCoordinatorComponent, MockROMSettings
+from quantify_scheduler.helpers.generate_acq_channels_data import AcquisitionChannelData
+from quantify_scheduler.enums import BinMode
 
 rom_icc = MockROMInstrumentCoordinatorComponent(mock_rom=rom)
+acq_channels_data = {
+    0: AcquisitionChannelData(
+        acq_index_dim_name="acq_index_0",
+        protocol="Trace",
+        bin_mode=BinMode.AVERAGE,
+        coords={}
+    )
+}
 settings = MockROMSettings(
     waveforms=wfs,
-    instructions=["TRACE"],
+    instructions=["TRACE_input0_0"],
     sampling_rate=1.5e9,
     gain=2.0,
-    acq_config = MockROMAcquisitionConfig(
-        n_acquisitions=1,
-        acq_protocols= {0: "Trace"},
-        bin_mode="average",
-    )
+    hardware_acq_mapping_trace={0: 0},
+    hardware_acq_mapping_binned={},
+    acq_channels_data=acq_channels_data,
 )
+
 
 rom_icc.prepare(settings)
 rom_icc.start()
@@ -258,7 +370,9 @@ The acquired data is:
 dataset
 ```
 
-### 3. Implement `CompilationNode`s
+This is the expected returned dataset, with 2 dimensions: time and acquisition index.
+
+### 4. Implement `CompilationNode`s
 
 The next step is to implement a `QuantifyCompiler` that generates the hardware instructions from a `Schedule` and a `CompilationConfig`. The `QuantumDevice` class already includes the `generate_compilation_config()` method that generates a `CompilationConfig` that can be used to perform the compilation from the quantum-circuit layer to the quantum-device layer. For the backend-specific compiler, we need to add a `CompilationNode` and an associated `HardwareCompilationConfig` that contains the information that is used to compile from the quantum-device layer to the control-hardware layer (see {ref}`sec-compilation`).
 
@@ -335,7 +449,7 @@ We can now check that the compiled settings are correct:
 print(compiled_schedule.compiled_instructions)
 ```
 
-### 4. Integration with the `ScheduleGettable`
+### 5. Integration with the `ScheduleGettable`
 
 The `ScheduleGettable` integrates the `InstrumentCoordinatorComponent`s with the `QuantifyCompiler` to provide a straightforward interface for the user to execute a `Schedule` on the hardware and retrieve the acquired data. The `ScheduleGettable` takes a `QuantumDevice` and a `Schedule` as input and returns the data from the acquisitions in the `Schedule`.
 
@@ -384,7 +498,7 @@ plt.plot(Q)
 plt.show()
 ```
 
-### 5. Integration with the `MeasurementControl`
+### 6. Integration with the `MeasurementControl`
 
 ```{note}
 This is mainly a validation step. If we did everything correctly, no new development should be needed in this step.
@@ -453,3 +567,137 @@ magnitude_data.plot()
 phase_data.plot()
 ```
 
+### 7. Binned acquisition
+
+Above, we implemented the trace acquisition protocol in our mock backend.
+In this section we implement a binned acquisition.
+Binned acquisitions are more complicated, because
+1. multiple operations can use the same acquisition channel, for example
+```{code-block} ipython3
+schedule = Schedule("example")
+schedule.add(SSBIntegrationComplex(acq_channel="ch_0", coords={"freq": 100}))
+schedule.add(SSBIntegrationComplex(acq_channel="ch_0", coords={"freq": 200}))
+```
+2. the same operation can be used for multiple acquisitions, for example when the exact same operation is added to the schedule as different schedulables,
+```{code-block} ipython3
+schedule = Schedule("example")
+
+acquisition = SSBIntegrationComplex(acq_channel="ch_0")
+
+schedule.add(acquisition)
+schedule.add(acquisition)
+```
+
+The data the user receives is a 1 dimensional `xarray.DataArray` for each acquisition channel (assuming no append mode repetitions), indexed by **acquisition index**. If unspecified by the user, the acquisition index is autogenerated by {func}`~.helpers.generate_acq_channels_data.generate_acq_channels_data`. The ultimate goal of the backend is to map each acquisition index to an acquired data from the hardware.
+
+First let's understand what {func}`~.helpers.generate_acq_channels_data.generate_acq_channels_data` returns.
+
+```{code-cell} ipython3
+from quantify_scheduler.schedules.schedule import Schedule
+from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex
+from quantify_scheduler.helpers.generate_acq_channels_data import generate_acq_channels_data
+from quantify_scheduler.compilation import _determine_absolute_timing
+
+schedule = Schedule("example")
+
+subschedule = Schedule("subschedule")
+subschedule.add(
+    SSBIntegrationComplex(
+        acq_channel="ch_0",
+        coords={"amp": 0.1},
+        acq_index=None,
+        bin_mode=BinMode.AVERAGE,
+        port="q0:res",
+        clock="q0.01",
+        duration=100e-9
+    )
+)
+
+schedule.add(subschedule)
+schedule.add(subschedule)
+
+schedule = _determine_absolute_timing(schedule)
+
+acq_channels_data, schedulable_to_acq_index = generate_acq_channels_data(schedule)
+acq_channels_data, schedulable_to_acq_index
+```
+
+In the example schedule, there are two acquisitions, so for acquisition channel `"ch_0"` two acquisition indices are generated: the `coords` has 2 elements. The generated acquisition indices are not explicitly written out in `acq_channels_data`, they're just the indices of the `coords`.
+
+The backends job is to map each acquisition to a hardware acquisition data, but unfortunately, if the compiler added the acquisition index to the operation, that would be incorrect, because there is only one operation, but two acquisition indices. Therefore, {func}`~.helpers.generate_acq_channels_data.generate_acq_channels_data` maps each schedulable label to an acquisition index. To be more precise, it maps the tuple of the schedulable of the subschedule and schedulable of the acquisition operation to the acquisition index. (Also, there's an acquisition info at the end (`0`), because multiple acquisition info might be present, with possibly different acquisition indices.) Note: using schedulables instead of operations to reference acquisitions can also be important for loops, and other control flow structures.
+
+Our mock hardware does binned acquisition with the `"ACQ_input0_0"` instruction where `input0` is the hardware port and the `0` at the end is the "bin" for that acquisition. The backend compiler maps each schedulable to a bin. {func}`~.backends.mock.mock_rom.hardware_compile` generates this mapping, using {data}`~.helpers.generate_acq_channels_data.SchedulableLabelToAcquisitionIndex`.
+
+```{code-cell} ipython3
+---
+tags: [hide-output]
+---
+from quantify_scheduler.schedules.schedule import Schedule
+from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex, Trace
+from quantify_scheduler.compilation import _determine_absolute_timing
+from quantify_scheduler.backends.mock.mock_rom import hardware_compile
+from quantify_scheduler.resources import ClockResource
+from quantify_scheduler.operations.pulse_library import SquarePulse
+
+schedule = Schedule("example")
+
+schedule.add_resource(ClockResource("q0.ro", 3e9))
+
+schedule.add(SquarePulse(duration=100e-9, amp=0.1, port="q0:res", clock="q0.ro"))
+schedule.add(Trace(acq_channel="ch_trace", duration=100e-9, port="q0:res", clock="q0.ro"))
+
+schedule.add(
+    SSBIntegrationComplex(
+        acq_channel="ch_0",
+        coords={"freq": 100},
+        acq_index=None,
+        bin_mode=BinMode.AVERAGE,
+        port="q0:res",
+        clock="q0.01",
+        duration=100e-9
+    )
+)
+schedule.add(
+    SSBIntegrationComplex(
+        acq_channel="ch_0",
+        coords={"freq": 200},
+        acq_index=None,
+        bin_mode=BinMode.AVERAGE,
+        port="q0:res",
+        clock="q0.01",
+        duration=100e-9
+    )
+)
+```
+
+This example schedule has two binned acquisitions, both on the same acquisition channel, so we expect that the {func}`~.helpers.generate_acq_channels_data.generate_acq_channels_data` function generates two acquisition index and related coordinates.
+
+```{code-cell} ipython3
+schedule = _determine_absolute_timing(schedule)
+
+acq_channels_data, schedulable_to_acq_index = generate_acq_channels_data(schedule)
+acq_channels_data, schedulable_to_acq_index
+```
+
+Based on this, the hardware backend creates a hardware acquisition mapping.
+
+```{code-cell} ipython3
+schedule = _determine_absolute_timing(schedule)
+
+compiled_schedule = hardware_compile(schedule, quantum_device.generate_compilation_config())
+
+compiled_schedule["compiled_instructions"]["mock_rom"].hardware_acq_mapping_binned
+```
+
+This hardware mapping is in the compiled schedule, and later is used to map the hardware data to the `xarray.Dataset`. In practice, each acquisition channel and acquisition index is mapped to a hardware bin.
+
+There are a set of utility functions that help backend developers to format the retrieved data: {func}`~.instrument_coordinator.utility.add_acquisition_coords_binned` and {func}`~.instrument_coordinator.utility.add_acquisition_coords_nonbinned`. The mock backend calls these functions to add the “coords” to the retrieved data before returning it to users.
+
+The retrieved data includes both acquisition indices and coords on the relevant acquisition channel, and does not contain the hardware bins.
+
+```{code-cell} ipython3
+settings = compiled_schedule["compiled_instructions"]["mock_rom"]
+rom_icc.prepare(settings)
+rom_icc.start()
+rom_icc.retrieve_acquisition()
+```

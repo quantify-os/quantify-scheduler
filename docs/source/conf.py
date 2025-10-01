@@ -540,6 +540,18 @@ nitpick_ignore = [
     ("py:class", "QbloxAcquisitionHardwareMapping"),
     ("py:class", "QbloxAcquisitionIndex"),
     ("py:class", "QbloxAcquisitionBinMapping"),
+    ("py:class", "quantify_scheduler.helpers.generate_acq_channels_data.AcquisitionChannelsData"),
+    ("py:class reference target not found: MockHardwareAcqMapping"),
+    ("py:class", "quantify_scheduler.helpers.generate_acq_channels_data.AcquisitionChannelsData"),
+    ("py:class", "MockHardwareAcqMapping"),
+    ("py:class", "helpers.generate_acq_channels_data.SchedulableLabelToAcquisitionIndex"),
+    ("py:class", "helpers.generate_acq_channels_data.SchedulableLabelToAcquisitionIndex"),
+    ("py:class", "schedules.schedule.AcquisitionChannelsData"),
+    ("py:class", "helpers.generate_acq_channels_data.SchedulableLabelToAcquisitionIndex"),
+    ("py:class", "schedules.schedule.SchedulableLabelToAcquisitionIndex"),
+    ("py:class", "schedules.schedule.AcquisitionChannelsData"),
+    ("py:class", "MockHardwareAcqMappingTrace"),
+    ("py:class", "MockHardwareAcqMappingBinned"),
 ]  # Tuple[str, str], ignore certain warnings
 
 

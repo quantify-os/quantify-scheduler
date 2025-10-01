@@ -7,7 +7,9 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Literal
+from collections.abc import Hashable
+from random import random
+from typing import Literal
 
 import numpy as np
 import xarray as xr
@@ -25,6 +27,10 @@ from quantify_scheduler.backends.types.common import (
     HardwareOptions,
 )
 from quantify_scheduler.enums import BinMode
+from quantify_scheduler.helpers.generate_acq_channels_data import (
+    AcquisitionChannelsData,
+    generate_acq_channels_data,
+)
 from quantify_scheduler.helpers.waveforms import (
     exec_waveform_function,
     modulate_waveform,
@@ -32,13 +38,14 @@ from quantify_scheduler.helpers.waveforms import (
 from quantify_scheduler.instrument_coordinator.components.base import (
     InstrumentCoordinatorComponentBase,
 )
-from quantify_scheduler.operations.acquisition_library import Trace
+from quantify_scheduler.instrument_coordinator.utility import (
+    add_acquisition_coords_binned,
+    add_acquisition_coords_nonbinned,
+)
+from quantify_scheduler.operations.acquisition_library import SSBIntegrationComplex, Trace
 from quantify_scheduler.schedules.schedule import CompiledSchedule, Schedule
 from quantify_scheduler.structure.model import DataStructure
 from quantify_scheduler.structure.types import NDArray
-
-if TYPE_CHECKING:
-    from collections.abc import Hashable
 
 
 class MockReadoutModule:
@@ -51,7 +58,7 @@ class MockReadoutModule:
         gain: float = 1.0,
     ) -> None:
         self.name = name
-        self.data = []
+        self.data = {}
         self.waveforms = {}
         self.instructions = []
         self.gain = gain
@@ -69,19 +76,23 @@ class MockReadoutModule:
         """Execute the instruction sequence (only "TRACE" is supported)."""
         if self.instructions == []:
             raise RuntimeError("No instructions available. Did you upload instructions?")
+        self.data = {}  # Clear data
         for instruction in self.instructions:
             if "TRACE" in instruction:
-                self.data = []  # Clear data
+                hardware_acq_location = int(instruction.split("_")[2])
+                self.data[hardware_acq_location] = []
                 for wf in self.waveforms.values():
                     sampling_idx = np.arange(0, len(wf), int(self.sampling_rate / 1e9))
-                    self.data.append(wf[sampling_idx] * self.gain)
+                    self.data[hardware_acq_location].append(wf[sampling_idx] * self.gain)
+            elif "ACQ" in instruction:
+                hardware_acq_location = int(instruction.split("_")[2])
+                self.data[hardware_acq_location] = []
+                self.data[hardware_acq_location] = random()
             else:
                 raise NotImplementedError(f"Instruction {instruction} not supported")
 
-    def get_results(self) -> list[np.ndarray]:
+    def get_results(self) -> dict:
         """Return the results of the execution."""
-        if self.data == []:
-            raise RuntimeError("No data available. Did you execute the sequence?")
         return self.data
 
 
@@ -103,7 +114,7 @@ class MockROMGettable:
         self.sampling_rate = sampling_rate
         self.gain = gain
 
-    def get(self) -> list[np.ndarray]:
+    def get(self) -> dict:
         """Execute the sequence and return the results."""
         # Set the sampling rate and gain
         self.mock_rom.sampling_rate = self.sampling_rate
@@ -113,20 +124,19 @@ class MockROMGettable:
         self.mock_rom.upload_instructions(self.instructions)
         # Execute and return results
         self.mock_rom.execute()
-        return self.mock_rom.get_results()
+        data = self.mock_rom.get_results()
+        return data
 
 
-class MockROMAcquisitionConfig(DataStructure):
-    """
-    Acquisition configuration for the mock readout module.
-
-    This information is used in the instrument coordinator component to convert the
-    acquired data to an xarray dataset.
-    """
-
-    n_acquisitions: int
-    acq_protocols: dict[int, str]
-    bin_mode: BinMode
+MockHardwareAcqMappingTrace = dict[Hashable, int]
+"""
+Maps each trace acquisition channel to a hardware acquisition location.
+"""
+MockHardwareAcqMappingBinned = dict[tuple, int]
+"""
+Maps each binned acquisition channel to a hardware acquisition location.
+The key is a tuple of acquisition channel and acquisition index.
+"""
 
 
 class MockROMSettings(DataStructure):
@@ -136,7 +146,9 @@ class MockROMSettings(DataStructure):
     instructions: list[str]
     sampling_rate: float = 1e9
     gain: float = 1.0
-    acq_config: MockROMAcquisitionConfig
+    acq_channels_data: AcquisitionChannelsData
+    hardware_acq_mapping_trace: MockHardwareAcqMappingTrace
+    hardware_acq_mapping_binned: MockHardwareAcqMappingBinned
 
 
 class MockROMInstrumentCoordinatorComponent(InstrumentCoordinatorComponentBase):
@@ -155,8 +167,10 @@ class MockROMInstrumentCoordinatorComponent(InstrumentCoordinatorComponentBase):
         # InstrumentCoordinatorComponentBase.__init__
         instrument = InstrumentBase(name=mock_rom.name)
         super().__init__(instrument)
-        self.rom = mock_rom
-        self.acq_config = None
+        self._rom = mock_rom
+        self._hardware_acq_mapping_trace = {}
+        self._hardware_acq_mapping_binned = {}
+        self._acq_channels_data = None
 
     @property
     def is_running(self) -> bool:  # noqa: D102
@@ -164,53 +178,81 @@ class MockROMInstrumentCoordinatorComponent(InstrumentCoordinatorComponentBase):
 
     def prepare(self, program: MockROMSettings) -> None:
         """Upload the settings to the ROM."""
-        self.rom.upload_waveforms(program.waveforms)
-        self.rom.upload_instructions(program.instructions)
-        self.rom.sampling_rate = program.sampling_rate
-        self.rom.gain = program.gain
+        self._rom.upload_waveforms(program.waveforms)
+        self._rom.upload_instructions(program.instructions)
+        self._rom.sampling_rate = program.sampling_rate
+        self._rom.gain = program.gain
 
-        self.acq_config = program.acq_config
+        self._hardware_acq_mapping_trace = program.hardware_acq_mapping_trace
+        self._hardware_acq_mapping_binned = program.hardware_acq_mapping_binned
+        self._acq_channels_data = program.acq_channels_data
 
     def start(self) -> None:
         """Execute the sequence."""
-        self.rom.execute()
+        self._rom.execute()
 
     def stop(self) -> None:
         """Stop the execution."""
 
     def retrieve_acquisition(self) -> xr.Dataset:
         """Get the acquired data and return it as an xarray dataset."""
-        data = self.rom.get_results()
+        dataset = xr.Dataset()
 
-        # TODO: convert to xarray dataset
-        acq_config = self.acq_config
-        if acq_config is None:
+        data = self._rom.get_results()
+
+        if self._hardware_acq_mapping_trace is None or self._acq_channels_data is None:
             raise RuntimeError(
                 "Attempting to retrieve acquisition from an instrument coordinator"
                 " component that was not prepared. Execute"
                 " MockROMInstrumentCoordinatorComponent.prepare(mock_rom_settings) first."
             )
-        acq_channel_results: list[dict[Hashable, xr.DataArray]] = []
-        for acq_channel, acq_protocol in acq_config.acq_protocols.items():
+        for acq_channel, hardware_acq_location in self._hardware_acq_mapping_trace.items():
+            acq_protocol = self._acq_channels_data[acq_channel].protocol
+            acq_index_dim_name = self._acq_channels_data[acq_channel].acq_index_dim_name
             if acq_protocol == "Trace":
-                complex_data = data[2 * acq_channel] + 1j * data[2 * acq_channel + 1]
-                acq_channel_results.append(
-                    {
-                        acq_channel: xr.DataArray(
-                            # Should be one averaged array
-                            complex_data.reshape((1, -1)),
-                            dims=(
-                                f"acq_index_{acq_channel}",
-                                f"trace_index_{acq_channel}",
-                            ),
-                            attrs={"acq_protocol": acq_protocol},
-                        )
-                    }
+                complex_data = data[hardware_acq_location][0] + 1j * data[hardware_acq_location][1]
+                data_len = len(complex_data)
+                complex_data_averaged = complex_data.reshape((1, -1))
+                time_dim_name = f"time_{acq_channel}"
+                data_array = xr.DataArray(
+                    complex_data_averaged,
+                    dims=(acq_index_dim_name, time_dim_name),
+                    coords={
+                        acq_index_dim_name: [0],
+                        time_dim_name: np.arange(0, data_len * 1e-9, 1e-9),
+                    },
+                    attrs={"acq_protocol": acq_protocol},
                 )
+                new_dataset = xr.Dataset({acq_channel: data_array})
+                coords = self._acq_channels_data[acq_channel].coords
+                assert isinstance(coords, dict)  # Guaranteed by the acquisition protocol.
+                add_acquisition_coords_nonbinned(data_array, coords, acq_index_dim_name)
+                dataset = dataset.merge(new_dataset)
             else:
                 raise NotImplementedError(f"Acquisition protocol {acq_protocol} not supported.")
 
-        return xr.merge(acq_channel_results, compat="no_conflicts")
+        for (
+            acq_channel,
+            acq_index,
+        ), hardware_acq_location in self._hardware_acq_mapping_binned.items():
+            acq_protocol = self._acq_channels_data[acq_channel].protocol
+            acq_index_dim_name = self._acq_channels_data[acq_channel].acq_index_dim_name
+            if acq_protocol == "SSBIntegrationComplex":
+                data_array = xr.DataArray(
+                    [data[hardware_acq_location]],
+                    dims=[acq_index_dim_name],
+                    coords={acq_index_dim_name: [acq_index]},
+                    attrs={"acq_protocol": acq_protocol},
+                )
+                coords = self._acq_channels_data[acq_channel].coords
+                assert isinstance(coords, list)  # Guaranteed by the acquisition protocol.
+                add_acquisition_coords_binned(data_array, coords, acq_index_dim_name)
+                new_dataset = xr.Dataset({acq_channel: data_array})
+                dataset = dataset.merge(new_dataset)
+            else:
+                raise NotImplementedError(f"Acquisition protocol {acq_protocol} not supported.")
+
+        return dataset
 
     def wait_done(self, timeout_sec: int = 10) -> None:
         """Wait until the execution is done."""
@@ -234,14 +276,16 @@ def hardware_compile(  # noqa: PLR0915
     hardware_options = config.hardware_compilation_config.hardware_options
     instructions = []
     waveforms = {}
-    acq_protocols = {}
-    n_acquisitions = 0
+    next_hardware_acq_location = 0
+    hardware_acq_mapping_trace: MockHardwareAcqMappingTrace = {}
+    hardware_acq_mapping_binned: MockHardwareAcqMappingBinned = {}
+
+    acq_channels_data, schedulable_to_acq_index = generate_acq_channels_data(schedule)
 
     # Compile the schedule to the mock ROM
     gain_setting = None
-    bin_mode = BinMode.AVERAGE
     sampling_rate = hardware_description["mock_rom"].sampling_rate
-    for schedulable in schedule.schedulables.values():
+    for schedulable_label, schedulable in schedule.schedulables.items():
         op = schedule.operations[schedulable["operation_id"]]
         if isinstance(op, Schedule):
             raise NotImplementedError("Nested schedules are not supported by the Mock ROM backend.")
@@ -275,7 +319,7 @@ def hardware_compile(  # noqa: PLR0915
             clock = acq_info["clock"]
             for node in connectivity.graph["q0:res"]:
                 hw_port = node.split(".")[1]
-                instructions.append(f"TRACE_{hw_port}")
+                instructions.append(f"TRACE_{hw_port}_{next_hardware_acq_location}")
             if hardware_options.gain is not None:
                 if (
                     gain_setting is not None
@@ -283,9 +327,21 @@ def hardware_compile(  # noqa: PLR0915
                 ):
                     raise ValueError("The gain must be the same for all traces in the schedule.")
                 gain_setting = hardware_options.gain[f"{port}-{clock}"]
-            n_acquisitions += 1
-            acq_protocols[acq_info["acq_channel"]] = acq_info["protocol"]
-            bin_mode = acq_info["bin_mode"]
+            hardware_acq_mapping_trace[acq_info["acq_channel"]] = next_hardware_acq_location
+            next_hardware_acq_location += 1
+        elif (
+            isinstance(op, SSBIntegrationComplex)
+            and op.data["acquisition_info"][0]["bin_mode"] == BinMode.AVERAGE
+        ):
+            acq_info = op.data["acquisition_info"][0]
+            for node in connectivity.graph["q0:res"]:
+                hw_port = node.split(".")[1]
+                instructions.append(f"ACQ_{hw_port}_{next_hardware_acq_location}")
+            acq_index = schedulable_to_acq_index[((schedulable_label,), 0)]
+            hardware_acq_mapping_binned[(acq_info["acq_channel"], acq_index)] = (
+                next_hardware_acq_location
+            )
+            next_hardware_acq_location += 1
         else:
             raise NotImplementedError(f"Operation {op} is not supported by the Mock ROM backend.")
 
@@ -297,11 +353,9 @@ def hardware_compile(  # noqa: PLR0915
         waveforms=waveforms,
         instructions=instructions,
         sampling_rate=sampling_rate,
-        acq_config=MockROMAcquisitionConfig(
-            n_acquisitions=n_acquisitions,
-            acq_protocols=acq_protocols,
-            bin_mode=bin_mode,
-        ),
+        acq_channels_data=acq_channels_data,
+        hardware_acq_mapping_trace=hardware_acq_mapping_trace,
+        hardware_acq_mapping_binned=hardware_acq_mapping_binned,
     )
     if gain_setting is not None:
         settings.gain = gain_setting
