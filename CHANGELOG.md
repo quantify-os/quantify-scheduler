@@ -384,7 +384,7 @@ Enabling the marker debug mode would sometime prevent Q1ASM to be created during
 - Numpy
   - pin numpy to <2.0 when using python 3.9. (!1010)
 - Operations
-  - Intruduce `LongTimeTrace` acquisition protocol. (!958, !1053)
+  - Introduce `LongTimeTrace` acquisition protocol. (!958, !1053)
   - Small adjustments to `LongTimeTrace` and tests. (!1014)
   - Make it possible to override gate operations with device level parameters. (!1018)
   - New schedule `cnot_as_h_cz_h` in composite_factory. (!1020)

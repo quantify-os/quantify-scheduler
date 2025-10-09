@@ -14,7 +14,7 @@ class MockLocalOscillator(Instrument):
     Parameters
     ----------
     name
-        QCoDeS name of the intstrument.
+        QCoDeS name of the instrument.
 
     """
 
