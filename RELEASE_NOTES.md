@@ -1,5 +1,34 @@
 # Release Notes
 
+## Release v0.26.0 (2025-11-04)
+
+A new release that includes a major overhaul of the acquisition framework! 
+
+### New acquisition framework
+
+#### coords parameter
+
+We introduced a `coords` parameter to `Measure` and `Acquisition` operations. This allows the user to add meta information to the acquisition data that will be added to the returned dataset.
+
+for example:
+
+```
+for freq in freqs:
+    schedule.add(Measure("q0", coords={"freq": freq}, freq=freq))
+```
+
+which will result in a dataset containing "freq" as an additional coordinate.
+
+#### unified return data
+
+The return data from ScheduleGettable, InstrumentCoordinator, MeasurementControl is now the same: an `xarray.DataSet` object.
+
+#### More flexibility for acquisitions
+
+1. It is now possible to use the same acquisition channel for multiple acquisitions
+2. It is not possible to use different acquisition protocols and binning modes on the same acquisition channel.
+
+
 ## Release v0.25.0 (2025-07-23)
 
 Support for ALAP scheduling, improved pulse compensation and a few bug fixes.

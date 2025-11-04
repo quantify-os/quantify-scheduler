@@ -1,5 +1,37 @@
 # Changelog
 
+## Release None (2025-11-04)
+
+### 🐛 Bug Fixes and Closed Issues
+
+- Fix: conditional reset tutorial threshold calculation ([!1286](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1286) by [@Gábor Oszkár Dénes](https://gitlab.com/gdenes))
+- Fix: fix timing calculation when you have offsets ([!1285](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1285) by [@Robert Sokolewicz](https://gitlab.com/rsokolewicz))
+- Fix: multiple sequencers to use the same acquisition channel ([!1293](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1293) by [@Gábor Oszkár Dénes](https://gitlab.com/gdenes))
+- Fix: correct pulse shape in single subplot pulse diagram ([!1273](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1273) by [@Nicolas Piot](https://gitlab.com/npiot))
+
+### 🚀 Enhancements
+
+- Feat: add coords to acquisition return data ([!1291](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1291) by [@Gábor Oszkár Dénes](https://gitlab.com/gdenes))
+- Feat: add coords to operations ([!1290](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1290) by [@Gábor Oszkár Dénes](https://gitlab.com/gdenes))
+- Feat: adjust DISTRIBUTION bin mode ([!1296](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1296) by [@Gábor Oszkár Dénes](https://gitlab.com/gdenes))
+- Feat: linting adjustments for acq_channel ([!1297](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1297) by [@Gábor Oszkár Dénes](https://gitlab.com/gdenes))
+- Feat: Qblox backend to use new acquisition mappings ([!1265](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1265) by [@Gábor Oszkár Dénes](https://gitlab.com/gdenes))
+- Feat: Various performance improvements StitchedPulse ([!1288](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1288) by [@Thomas Middelburg](https://gitlab.com/ThomasMiddelburg))
+- Chore: deprecate acq_index from operations ([!1298](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1298) by [@Gábor Oszkár Dénes](https://gitlab.com/gdenes))
+- Docs: acquisition framework documentation for backend developers ([!1146](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1146) by [@Gábor Oszkár Dénes](https://gitlab.com/gdenes))
+- Docs: mention coords in documentation ([!1300](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1300) by [@Gábor Oszkár Dénes](https://gitlab.com/gdenes))
+
+
+### 🔧 Other
+- Chore: Add documentation on Sweepable gate parameters with the warning note ([!1295](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1295) by [@Adithyan Radhakrishnan](https://gitlab.com/adithyan2))
+- Chore: Change default behaviour of trace acquisition when using a dummy cluster [QTFY-193], #457 ([!1005](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1005) by [@Axel E. Andersson](https://gitlab.com/axean))
+- Chore: cleanup unused argument ([!1299](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1299) by [@Gábor Oszkár Dénes](https://gitlab.com/gdenes))
+- Chore: Make WeightedThresholdedAcquisition inherit from NumericalWeightedIntegration ([!1258](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1258) by [@Fabio Grigolo](https://gitlab.com/fgrigolo))
+- Docs: correct the consequence of repetition in loop operations ([!1294](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1294) by [@Qingzhen Wang](https://gitlab.com/qwang7))
+- Refactor: cleanup related to acquisition redesign ([!1287](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1287) by [@Gábor Oszkár Dénes](https://gitlab.com/gdenes))
+- Fix: small typos in docs ([!1301](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1301) by [@Gábor Oszkár Dénes](https://gitlab.com/gdenes))
+
+
 ## Release v0.25.0 (2025-07-23)
 
 ### 🐛 Bug Fixes and Closed Issues
