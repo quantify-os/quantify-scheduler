@@ -516,12 +516,6 @@ class RFModuleSettings(AnalogModuleSettings):
     lo5_freq: Optional[float] = None
     """The frequency of Output 5 (O6) LO. If left `None`, the parameter will not be set.
     """
-    in0_freq: Optional[float] = None
-    """The frequency of Input 0 (I1) LO. If left `None`, the parameter will not be set.
-    """
-    in1_freq: Optional[float] = None
-    """The frequency of Input 1 (I2) LO. If left `None`, the parameter will not be set.
-    """
     out0_att: Optional[int] = None
     """The attenuation of Output 0 (O1)."""
     out1_att: Optional[int] = None
@@ -565,8 +559,6 @@ class RFModuleSettings(AnalogModuleSettings):
             "complex_output_3": "lo3_freq",
             "complex_output_4": "lo4_freq",
             "complex_output_5": "lo5_freq",
-            "complex_input_0": "in0_freq",
-            "complex_input_1": "in1_freq",
         }
 
         rf_settings = {}
@@ -580,18 +572,6 @@ class RFModuleSettings(AnalogModuleSettings):
                     lo_freq_setting := channel_name_to_lo_freq_setting.get(path.channel_name)
                 ) is not None:
                     rf_settings[lo_freq_setting] = lo_freq
-                if path.channel_name_measure is not None:
-                    for channel_name in path.channel_name_measure:
-                        if (
-                            freq_setting := channel_name_to_lo_freq_setting.get(channel_name)
-                        ) is not None:
-                            in_freq = pc_freqs.lo_freq if pc_freqs is not None else None
-                            if freq_setting not in rf_settings:
-                                rf_settings[freq_setting] = in_freq
-                            elif rf_settings[freq_setting] != in_freq:
-                                raise ValueError(
-                                    f"Trying to set multiple input frequencies for {freq_setting}"
-                                )
 
         combined_settings = {**rf_settings, **kwargs}
         return cls(**combined_settings)

@@ -2220,11 +2220,16 @@ def test_channel_map(
         },
     }
 
-    if "RF" in module_type or module_type == "QRC":
+    if "RF" in module_type:
         hardware_config["hardware_options"] = {
             "modulation_frequencies": {"q5:mw-q5.01": {"interm_freq": 3e5}}
         }
-        freq_01 = 6e8 if module_type == "QRC" else 5e9
+        freq_01 = 5e9
+    elif module_type == "QRC":
+        hardware_config["hardware_options"] = {
+            "modulation_frequencies": {"q5:mw-q5.01": {"interm_freq": 3e6}}
+        }
+        freq_01 = 5e9
     else:
         freq_01 = 4.33e8
 
@@ -2373,11 +2378,11 @@ def test_channel_map(
         ),
         (
             "QRC",
-            "complex_output_1",
+            "complex_output_3",
             ["complex_input_1"],
             1,
             {
-                "connect_out1": "IQ",
+                "connect_out3": "IQ",
                 "connect_acq": "in1",
             },
         ),
@@ -2421,12 +2426,18 @@ def test_channel_map_measure(
             ],
         )
 
-    if "RF" in module_type or module_type == "QRC":
+    if "RF" in module_type:
         hardware_config["hardware_options"] = {
             "modulation_frequencies": {"q5:res-q5.ro": {"interm_freq": 3e5}}
         }
         freq_01 = 5e9
         readout = 8.5e9
+    elif module_type == "QRC":
+        hardware_config["hardware_options"] = {
+            "modulation_frequencies": {"q5:res-q5.ro": {"interm_freq": 3e6}}
+        }
+        freq_01 = 5e9
+        readout = 1.5e9
     else:
         freq_01 = 4.33e8
         readout = 4.5e8
@@ -2599,56 +2610,56 @@ def test_run_dummy_scope(
                 "out0_in0_lo_freq": 5e9 - 3e5,
             },
         ),
-        (
+        pytest.param(
             "QRC",
-            6e8,
+            6e8 + 3e5,
             "complex_output_2",
             {
-                "in0_freq": 1e9,
-                "in1_freq": 1e9,
-                "out2_freq": 6e8 - 3e5,
-                "out3_freq": 1e9,
-                "out4_freq": 1e9,
-                "out5_freq": 1e9,
+                "out0_in0_freq": 0,
+                "out1_in1_freq": 0,
+                "out2_freq": 6e8,
+                "out3_freq": 0,
+                "out4_freq": 0,
+                "out5_freq": 0,
             },
         ),
-        (
+        pytest.param(
             "QRC",
-            6e8,
+            6e8 + 3e5,
             "complex_output_3",
             {
-                "in0_freq": 1e9,
-                "in1_freq": 1e9,
-                "out2_freq": 1e9,
-                "out3_freq": 6e8 - 3e5,
-                "out4_freq": 1e9,
-                "out5_freq": 1e9,
+                "out0_in0_freq": 0,
+                "out1_in1_freq": 0,
+                "out2_freq": 0,
+                "out3_freq": 6e8,
+                "out4_freq": 0,
+                "out5_freq": 0,
             },
         ),
-        (
+        pytest.param(
             "QRC",
-            6e8,
+            6e8 + 3e5,
             "complex_output_4",
             {
-                "in0_freq": 1e9,
-                "in1_freq": 1e9,
-                "out2_freq": 1e9,
-                "out3_freq": 1e9,
-                "out4_freq": 6e8 - 3e5,
-                "out5_freq": 1e9,
+                "out0_in0_freq": 0,
+                "out1_in1_freq": 0,
+                "out2_freq": 0,
+                "out3_freq": 0,
+                "out4_freq": 6e8,
+                "out5_freq": 0,
             },
         ),
-        (
+        pytest.param(
             "QRC",
-            6e8,
+            6e8 + 3e5,
             "complex_output_5",
             {
-                "in0_freq": 1e9,
-                "in1_freq": 1e9,
-                "out2_freq": 1e9,
-                "out3_freq": 1e9,
-                "out4_freq": 1e9,
-                "out5_freq": 6e8 - 3e5,
+                "out0_in0_freq": 0,
+                "out1_in1_freq": 0,
+                "out2_freq": 0,
+                "out3_freq": 0,
+                "out4_freq": 0,
+                "out5_freq": 6e8,
             },
         ),
     ],

@@ -129,3 +129,6 @@ metrics.txt
 docs/source/dev/profiling/*.prof
 docs/source/dev/profiling/profiling_reference_values.pickle
 docs/source/dev/profiling/example_data
+
+# poetry, uv files
+*.lock

@@ -1596,42 +1596,42 @@ class _QRCCompilationConfig(_ClusterModuleCompilationConfig):
 
     sequencer_allowed_channels: dict[SequencerIndex, AllowedChannels] = {
         0: AllowedChannels(
-            output={"complex_output_2", "complex_output_3", "complex_output_0", "digital_output_0"},
+            output={"complex_output_0", "complex_output_1", "complex_output_2", "digital_output_0"},
             input={"complex_input_0", "complex_input_1"},
         ),
         1: AllowedChannels(
-            output={"complex_output_2", "complex_output_3", "complex_output_1", "digital_output_0"},
+            output={"complex_output_0", "complex_output_1", "complex_output_3", "digital_output_0"},
             input={"complex_input_0", "complex_input_1"},
         ),
         2: AllowedChannels(
-            output={"complex_output_2", "complex_output_3", "complex_output_4", "digital_output_0"},
+            output={"complex_output_0", "complex_output_1", "complex_output_4", "digital_output_0"},
             input={"complex_input_0", "complex_input_1"},
         ),
         3: AllowedChannels(
-            output={"complex_output_2", "complex_output_3", "complex_output_5", "digital_output_0"},
+            output={"complex_output_0", "complex_output_1", "complex_output_5", "digital_output_0"},
             input={"complex_input_0", "complex_input_1"},
         ),
         4: AllowedChannels(
-            output={"complex_output_2", "complex_output_3", "complex_output_0", "digital_output_0"},
+            output={"complex_output_0", "complex_output_1", "complex_output_2", "digital_output_0"},
             input={"complex_input_0", "complex_input_1"},
         ),
         5: AllowedChannels(
-            output={"complex_output_2", "complex_output_3", "complex_output_1", "digital_output_0"},
+            output={"complex_output_0", "complex_output_1", "complex_output_3", "digital_output_0"},
             input={"complex_input_0", "complex_input_1"},
         ),
         6: AllowedChannels(
-            output={"complex_output_2", "complex_output_3", "complex_output_4", "digital_output_0"},
+            output={"complex_output_0", "complex_output_1", "complex_output_4", "digital_output_0"},
             input={"complex_input_0", "complex_input_1"},
         ),
         7: AllowedChannels(
-            output={"complex_output_2", "complex_output_3", "complex_output_5", "digital_output_0"},
+            output={"complex_output_0", "complex_output_1", "complex_output_5", "digital_output_0"},
             input={"complex_input_0", "complex_input_1"},
         ),
     } | {
         sequencer: AllowedChannels(
             output={
-                "complex_output_0",
-                "complex_output_1",
+                "complex_output_2",
+                "complex_output_3",
                 "complex_output_4",
                 "complex_output_5",
                 "digital_output_0",
@@ -1640,6 +1640,26 @@ class _QRCCompilationConfig(_ClusterModuleCompilationConfig):
         )
         for sequencer in (8, 9, 10, 11)
     }
+
+    def _validate_channel_name_measure(self) -> None:
+        for pc, path in self.portclock_to_path.items():
+            if path.channel_name_measure is not None:  # noqa: SIM102
+                # TODO: check for whenever there is a complex_input_0 in channel_name_measure,
+                # then the output is complex_output_0,
+                # and similarly for complex_input_1 and complex_output_1.
+                if not (
+                    "complex" in path.channel_name
+                    and all("complex_input" in ch_name for ch_name in path.channel_name_measure)
+                ):
+                    raise ValueError(
+                        f"Found channel names {path.channel_name} and "
+                        f"{path.channel_name_measure} that are not of the same mode for "
+                        f"portclock {pc}. Only channel names of the same mode (e.g. "
+                        f"`complex_output_0` and `complex_input_0`) are allowed when they share a "
+                        f"portclock in QRC modules."
+                    )
+
+        return super()._validate_channel_name_measure()
 
 
 class _QTMCompilationConfig(_ClusterModuleCompilationConfig):
