@@ -1,6 +1,6 @@
 # Release Notes
 
-## Release v0.26.0 (2025-11-04)
+## Release v0.26.0 (2025-11-06)
 
 A new release that includes a major overhaul of the acquisition framework! 
 
@@ -26,7 +26,7 @@ The return data from ScheduleGettable, InstrumentCoordinator, MeasurementControl
 #### More flexibility for acquisitions
 
 1. It is now possible to use the same acquisition channel for multiple acquisitions
-2. It is not possible to use different acquisition protocols and binning modes on the same acquisition channel.
+2. It is now possible to use different acquisition protocols and binning modes on the same acquisition channel.
 
 
 ## Release v0.25.0 (2025-07-23)
