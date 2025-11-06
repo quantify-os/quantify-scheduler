@@ -13,7 +13,10 @@ try:
 except ImportError:
     driver_version = None  # Prior to v0.3.2 __version__ was not there
 
-SUPPORTED_DRIVER_VERSIONS: tuple[str, ...] = ("0.17",)
+SUPPORTED_DRIVER_VERSIONS: tuple[str, ...] = (
+    "0.17",
+    "1",
+)
 """Tuple containing all the version supported by this version of the backend."""
 raise_on_version_mismatch: bool = True
 """Can be set to false to override version check."""
@@ -57,6 +60,8 @@ def verify_qblox_instruments_version(
             "<0.3.2 was found."
         )
     major, minor, patch = version.split(".", maxsplit=2)
+    if major in match_versions:
+        return
     if f"{major}.{minor}" not in match_versions:
         raise DriverVersionError(
             f"The installed Qblox driver (qblox-instruments) version {version} is not "

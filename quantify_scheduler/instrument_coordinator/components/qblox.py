@@ -1385,10 +1385,9 @@ class _QRCComponent(_RFComponent, _AnalogReadoutComponent):
         # For QRC, there are no LO frequencies, only output frequencies.
 
         for i in range(2):
-            if (freq := getattr(settings, f"in{i}_freq")) is not None:
-                self._set_parameter(self.instrument, f"in{i}_freq", freq)
+            if (freq := getattr(settings, f"lo{i}_freq")) is not None:
+                self._set_parameter(self.instrument, f"out{i}_in{i}_freq", freq)
 
-        # For the beta QRC product, we do not have a 0, 1 output channel frequencies.
         for i in range(2, 6):
             if (freq := getattr(settings, f"lo{i}_freq")) is not None:
                 self._set_parameter(self.instrument, f"out{i}_freq", freq)
