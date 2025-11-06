@@ -1,6 +1,6 @@
 # Changelog
 
-## Release None (2025-11-04)
+## Release None (2025-11-06)
 
 ### 🐛 Bug Fixes and Closed Issues
 
