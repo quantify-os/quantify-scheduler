@@ -32,7 +32,7 @@ that are distributed to control hardware, after compiling these schedules into c
 - bugfix support until 30 June 2026
 - end-of-life starting 1 July 2026
 
-Users are encouraged to migrate to [quantify](https://pypi.org/project/quantify/) or [qblox-scheduler](https://pypi.org/project/qblox-scheduler/) instead.
+Users are encouraged to migrate to [quantify](https://pypi.org/project/quantify/) and [qblox-scheduler](https://pypi.org/project/qblox-scheduler/) instead.
 
 ## Hardware/driver compatibility
 
