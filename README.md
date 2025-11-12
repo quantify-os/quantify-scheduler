@@ -24,12 +24,25 @@ This control model allows quantum gate and pulse-level descriptions to be combin
 `quantify-scheduler` is designed to allow experimentalists to easily define complex experiments. It produces synchronized pulse schedules
 that are distributed to control hardware, after compiling these schedules into control-hardware specific executable programs.
 
+## deprecation timeline
+
+`quantify-scheduler` will be deprecated soon. The current timeline is:
+
+- feature and bugfix support until 31 December 2025
+- bugfix support until 30 June 2026
+- end-of-life starting 1 July 2026
+
+Users are encouraged to migrate to [quantify](https://pypi.org/project/quantify/) and [qblox-scheduler](https://pypi.org/project/qblox-scheduler/) instead.
+
 ## Hardware/driver compatibility
 
 **Qblox**
 
 | quantify-scheduler |                      qblox-instruments                       |                               Cluster firmware                                |
 |--------------------|:------------------------------------------------------------:|:-----------------------------------------------------------------------------:|
+| v0.26.0            | [1.0.0](https://pypi.org/project/qblox-instruments/1.0.0/)   | [0.13.0](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.13.0) |
+|                    | [0.17.0](https://pypi.org/project/qblox-instruments/0.17.0/) | [0.12.0](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.12.0) |
+| v0.25.0            | [0.17.0](https://pypi.org/project/qblox-instruments/0.17.0/) | [0.12.0](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.12.0) |
 | v0.24.0            | [0.17.0](https://pypi.org/project/qblox-instruments/0.17.0/) | [0.12.0](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.12.0) |
 | v0.23.0            | [0.16.0](https://pypi.org/project/qblox-instruments/0.16.0/) | [0.11.0](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.11.0) |
 | v0.22.2            | [0.15.0](https://pypi.org/project/qblox-instruments/0.15.0/) | [0.10.0](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.10.0) |
