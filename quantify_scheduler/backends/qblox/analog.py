@@ -322,7 +322,12 @@ class AnalogSequencerCompiler(SequencerCompiler):
             )
             for protocol, _bin_mode in unique_protocols_bin_modes
         ):
-            self._prepare_thresholded_acquisition_settings(acquisition_infos)
+            relevant_acquisitions = [
+                acq_info
+                for acq_info in acquisition_infos
+                if "acq_rotation" in acq_info.data or "acq_threshold" in acq_info.data
+            ]
+            self._prepare_thresholded_acquisition_settings(relevant_acquisitions)
         elif any(
             protocol == "ThresholdedTriggerCount"
             for protocol, _bin_mode in unique_protocols_bin_modes

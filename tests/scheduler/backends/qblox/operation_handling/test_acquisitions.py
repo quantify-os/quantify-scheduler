@@ -1758,6 +1758,55 @@ def test_mixed_binned_trace_measurements(mock_setup_basic_transmon, make_cluster
     instr_coordinator.remove_component("ic_cluster0")
 
 
+def test_mixed_ssb_thresholded_compiles(mock_setup_basic_transmon, make_cluster_component):
+    hardware_cfg = {
+        "config_type": "quantify_scheduler.backends.qblox_backend.QbloxHardwareCompilationConfig",
+        "hardware_description": {
+            "cluster0": {
+                "instrument_type": "Cluster",
+                "modules": {"3": {"instrument_type": "QRM"}},
+                "ref": "internal",
+            }
+        },
+        "hardware_options": {
+            "modulation_frequencies": {"q0:res-q0.ro": {"interm_freq": 50000000.0}}
+        },
+        "connectivity": {
+            "graph": [
+                ["cluster0.module3.complex_output_0", "q0:res"],
+            ]
+        },
+    }
+
+    # Setup objects needed for experiment
+    mock_setup = mock_setup_basic_transmon
+    ic_cluster0 = make_cluster_component("cluster0")
+
+    instr_coordinator = mock_setup["instrument_coordinator"]
+    instr_coordinator.add_component(ic_cluster0)
+
+    quantum_device = mock_setup["quantum_device"]
+    quantum_device.hardware_config(hardware_cfg)
+
+    q0 = mock_setup["q0"]
+    q0.clock_freqs.readout(50e6)
+    q0.measure.acq_delay(1e-6)
+    q0.measure.integration_time(5e-6)
+    q0.measure.acq_threshold(-0.0005479034086863598)
+    q0.measure.acq_rotation(80.27560982032605)
+
+    # Define experiment schedule
+    schedule = Schedule("test multiple measurements")
+    meas0 = Measure("q0", acq_channel=0, acq_protocol="SSBIntegrationComplex")
+    meas1 = Measure("q0", acq_channel=1, acq_protocol="ThresholdedAcquisition")
+    schedule.add(meas0)
+    schedule.add(meas1)
+
+    # Generate compiled schedule
+    compiler = SerialCompiler(name="compiler")
+    compiler.compile(schedule=schedule, config=quantum_device.generate_compilation_config())
+
+
 def test_multiple_trace_raises(
     mock_setup_basic_transmon_with_standard_params, make_cluster_component
 ):
