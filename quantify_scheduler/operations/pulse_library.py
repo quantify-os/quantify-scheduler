@@ -266,12 +266,12 @@ class RampPulse(Operation):
     r"""
     RampPulse Operation is a pulse that ramps from zero to a set amplitude over its duration.
 
-    The pulse is given as a function of time :math:`t` and the parameters offset and
-    amplitude by
+    The pulse is given as a function of time :math:`t` and the parameters offset,
+    amplitude and duration by
 
     .. math::
 
-        P(t) = \mathrm{offset} + t \times \mathrm{amp}.
+        P(t) = \mathrm{offset} + t \times \frac{\mathrm{amp}}{\mathrm{duration}}
 
     Parameters
     ----------
