@@ -190,6 +190,10 @@ class DeviceCompilationConfig(DataStructure):
     compilation_passes: list[SimpleNodeConfig] = Field(  # type: ignore
         default=[
             {
+                "name": "merge_rz_gates",
+                "compilation_func": "quantify_scheduler.compilation._merge_rz_gates",
+            },
+            {
                 "name": "circuit_to_device",
                 "compilation_func": "quantify_scheduler.backends.circuit_to_device."
                 + "compile_circuit_to_device_with_config_validation",

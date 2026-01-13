@@ -83,10 +83,10 @@ class ConditionalReset(Schedule):
     ) -> None:
         device_element_name = qubit_name
         super().__init__(name)
+        kwargs.setdefault("acq_protocol", "ThresholdedAcquisition")
         self.add(
             Measure(
                 device_element_name,
-                acq_protocol="ThresholdedAcquisition",
                 feedback_trigger_label=device_element_name,
                 **kwargs,
             )

@@ -323,6 +323,24 @@ class Rz(Operation):
         }
         self._update()
 
+    @property
+    def qubit(self) -> str:
+        """Target device element."""
+        return self.data["gate_info"]["device_elements"][0]
+
+    @qubit.setter
+    def qubit(self, value: str) -> None:
+        self.data["gate_info"]["device_elements"][0] = value
+
+    @property
+    def theta(self) -> float:
+        """Rotation angle in degrees, will be cast to the [-180, 180) domain."""
+        return self.data["gate_info"]["theta"]
+
+    @theta.setter
+    def theta(self, value: float) -> None:
+        self.data["gate_info"]["theta"] = value
+
     def __str__(self) -> str:
         gate_info = self.data["gate_info"]
         theta = gate_info["theta"]

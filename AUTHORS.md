@@ -32,6 +32,7 @@
 - Leon Wubben ([GitLab](https://gitlab.com/LeonQblox))
 - Luis Miguens Fernandez ([GitLab](https://gitlab.com/luis.miguens))
 - Mafalda Jotta Garcia ([GitLab](https://gitlab.com/mafaldajg))
+- Mark ([GitLab](https://gitlab.com/mqxc])
 - Michiel Dubbelman ([GitLab](https://gitlab.com/MichielDubbelman))
 - Nicolas Piot ([GitLab](https://gitlab.com/npiot))
 - Pieter Eendebak ([GitLab](https://gitlab.com/peendebak))
