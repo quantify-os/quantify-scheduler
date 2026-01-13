@@ -30,6 +30,7 @@ from quantify_scheduler.operations.gate_library import (
     Measure,
     Reset,
     Rxy,
+    Rz,
     X,
 )
 from quantify_scheduler.operations.operation import Operation
@@ -766,3 +767,40 @@ def test_multiple_timing_constraints_asap(
     assert cz_abs_time[0] - x90_abs_time[0] == pytest.approx(40e-9), (
         "CZ operation should start 40ns after the X90 operation"
     )
+
+
+def test_gate_merging(
+    compile_config_basic_transmon_qblox_hardware,
+):
+    # Create a schedule with multiple Rz gates
+    sched = Schedule("Test schedule with multiple Rz gates")
+    sched.add(Rz(100, "q0"))
+    sched.add(Rz(42, "q0"))
+    sched.add(Rz(69, "q0"))
+    sched.add(Rz(12, "q1"))
+
+    # Compile the schedule
+    compiler = SerialCompiler(name="compiler")
+    compiled_sched = compiler.compile(
+        schedule=sched,
+        config=compile_config_basic_transmon_qblox_hardware,
+    )
+
+    # Check if the q0 operations merged
+    rz_schedulables = [
+        s
+        for s in compiled_sched.schedulables.values()
+        if isinstance(compiled_sched.operations[s["operation_id"]], Rz)
+    ]
+    assert len(rz_schedulables) == 2
+
+    # Check the merged parameters
+    q0_rz = next(
+        op for op in compiled_sched.operations.values() if isinstance(op, Rz) and op.qubit == "q0"
+    )
+    assert q0_rz.theta == 100 + 42 + 69
+
+    q1_rz = next(
+        op for op in compiled_sched.operations.values() if isinstance(op, Rz) and op.qubit == "q1"
+    )
+    assert q1_rz.theta == 12

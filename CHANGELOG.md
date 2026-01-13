@@ -1,5 +1,12 @@
 # Changelog
 
+## [Unreleased]
+
+### 🚀 Enhancements
+
+- Feat: Implement merging of subsequent Rz gates ([!1312](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1312) by [@Mark](https://gitlab.com/mqxc))
+
+
 ## Release v0.26.0 (2025-11-06)
 
 ### 🐛 Bug Fixes and Closed Issues

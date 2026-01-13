@@ -15,6 +15,8 @@ from quantify_scheduler.json_utils import load_json_schema, validate_json
 from quantify_scheduler.operations.control_flow_library import (
     ControlFlowOperation,
 )
+from quantify_scheduler.operations.gate_library import Rz
+from quantify_scheduler.operations.pulse_library import IdlePulse
 from quantify_scheduler.schedules.schedule import (
     Schedulable,
     Schedule,
@@ -381,6 +383,65 @@ def _normalize_absolute_timing(
         for schedulable in schedule.schedulables.values():
             schedulable["abs_time"] -= min_time
     return schedule
+
+
+@overload
+def _merge_rz_gates(
+    schedule: Schedule,
+    config: CompilationConfig | None = None,
+) -> Schedule: ...
+@overload
+def _merge_rz_gates(
+    schedule: Operation,
+    config: CompilationConfig | None = None,
+) -> Operation | Schedule: ...
+def _merge_rz_gates(
+    schedule: Schedule | Operation,
+    config: CompilationConfig | None = None,
+):
+    # This is a recursive function, the argument `schedule` is not always a `Schedule` type,
+    # so we rename it at the beginning to not cause confusion.
+    op = schedule
+
+    if isinstance(op, Schedule):
+        # First, process operations
+        for inner_op_key, inner_op in op.operations.items():
+            op.operations[inner_op_key] = _merge_rz_gates(
+                schedule=inner_op,
+                config=config,
+            )
+
+        last_op = None
+        # Copy list so we can modify it while iterating
+        for inner_sched_key in list(op.schedulables):
+            inner_sched = op.schedulables[inner_sched_key]
+            inner_op = op.operations[inner_sched["operation_id"]]
+
+            # Merge Rz gates if possible
+            if (
+                isinstance(inner_op, Rz)
+                and isinstance(last_op, Rz)
+                and inner_op.qubit == last_op.qubit
+            ):
+                last_op.theta += inner_op.theta
+                noop = IdlePulse(0)
+                noop_id = noop.hash
+                op.operations[noop_id] = noop
+                inner_sched["operation_id"] = noop_id
+                continue
+
+            # Record last
+            last_op = inner_op
+
+        return op
+    elif isinstance(op, ControlFlowOperation):
+        op.body = _merge_rz_gates(
+            schedule=op.body,
+            config=config,
+        )
+        return op
+    else:
+        return op
 
 
 def validate_config(config: dict, scheme_fn: str) -> bool:
