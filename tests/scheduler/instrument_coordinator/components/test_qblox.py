@@ -2233,7 +2233,7 @@ def test_channel_map(
         freq_01 = 5e9
     elif module_type == "QRC":
         hardware_config["hardware_options"] = {
-            "modulation_frequencies": {"q5:mw-q5.01": {"interm_freq": 3e6}}
+            "modulation_frequencies": {"q5:mw-q5.01": {"interm_freq": 0}}
         }
         freq_01 = 5e9
     else:
@@ -2440,7 +2440,7 @@ def test_channel_map_measure(
         readout = 8.5e9
     elif module_type == "QRC":
         hardware_config["hardware_options"] = {
-            "modulation_frequencies": {"q5:res-q5.ro": {"interm_freq": 3e6}}
+            "modulation_frequencies": {"q5:res-q5.ro": {"interm_freq": 0}}
         }
         freq_01 = 5e9
         readout = 1.5e9
@@ -2621,12 +2621,12 @@ def test_run_dummy_scope(
             6e8 + 3e5,
             "complex_output_2",
             {
-                "out0_in0_freq": 0,
-                "out1_in1_freq": 0,
-                "out2_freq": 6e8,
-                "out3_freq": 0,
-                "out4_freq": 0,
-                "out5_freq": 0,
+                "out0_in0_lo_freq": 0,
+                "out1_in1_lo_freq": 0,
+                "out2_lo_freq": 6e8,
+                "out3_lo_freq": 0,
+                "out4_lo_freq": 0,
+                "out5_lo_freq": 0,
             },
         ),
         pytest.param(
@@ -2634,12 +2634,12 @@ def test_run_dummy_scope(
             6e8 + 3e5,
             "complex_output_3",
             {
-                "out0_in0_freq": 0,
-                "out1_in1_freq": 0,
-                "out2_freq": 0,
-                "out3_freq": 6e8,
-                "out4_freq": 0,
-                "out5_freq": 0,
+                "out0_in0_lo_freq": 0,
+                "out1_in1_lo_freq": 0,
+                "out2_lo_freq": 0,
+                "out3_lo_freq": 6e8,
+                "out4_lo_freq": 0,
+                "out5_lo_freq": 0,
             },
         ),
         pytest.param(
@@ -2647,12 +2647,12 @@ def test_run_dummy_scope(
             6e8 + 3e5,
             "complex_output_4",
             {
-                "out0_in0_freq": 0,
-                "out1_in1_freq": 0,
-                "out2_freq": 0,
-                "out3_freq": 0,
-                "out4_freq": 6e8,
-                "out5_freq": 0,
+                "out0_in0_lo_freq": 0,
+                "out1_in1_lo_freq": 0,
+                "out2_lo_freq": 0,
+                "out3_lo_freq": 0,
+                "out4_lo_freq": 6e8,
+                "out5_lo_freq": 0,
             },
         ),
         pytest.param(
@@ -2660,12 +2660,12 @@ def test_run_dummy_scope(
             6e8 + 3e5,
             "complex_output_5",
             {
-                "out0_in0_freq": 0,
-                "out1_in1_freq": 0,
-                "out2_freq": 0,
-                "out3_freq": 0,
-                "out4_freq": 0,
-                "out5_freq": 6e8,
+                "out0_in0_lo_freq": 0,
+                "out1_in1_lo_freq": 0,
+                "out2_lo_freq": 0,
+                "out3_lo_freq": 0,
+                "out4_lo_freq": 0,
+                "out5_lo_freq": 6e8,
             },
         ),
     ],
