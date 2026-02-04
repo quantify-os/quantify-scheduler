@@ -357,7 +357,7 @@ def _get_module_type(
 ) -> InstrumentType:
     config = deepcopy(compilation_config)  # _extract_... call modifies the config
     assert isinstance(config.hardware_compilation_config, QbloxHardwareCompilationConfig)
-    device_cfgs = config.hardware_compilation_config._extract_instrument_compilation_configs(
+    device_cfgs = config.hardware_compilation_config._extract_instrument_compilation_configs(  # type: ignore[reportAttributeAccessIssue,reportOptionalMemberAccess]
         {(port, clock)}
     )
     port_clock_str = f"{port}-{clock}"
@@ -714,18 +714,19 @@ def hardware_compile(
 
     assert isinstance(hardware_cfg, QbloxHardwareCompilationConfig)
 
-    if hardware_cfg.hardware_options.latency_corrections is not None:
+    if hardware_cfg.hardware_options.latency_corrections is not None:  # type: ignore[reportOptionalMemberAccess]
         # Subtract minimum latency to allow for negative latency corrections
-        hardware_cfg.hardware_options.latency_corrections = determine_relative_latency_corrections(
+        hardware_cfg.hardware_options.latency_corrections = determine_relative_latency_corrections(  # type: ignore[reportOptionalMemberAccess]
             schedule=schedule,
-            hardware_cfg=hardware_cfg,
+            hardware_cfg=hardware_cfg,  # type: ignore[reportArgumentType]
         )
 
     # Apply software distortion corrections. Hardware distortion corrections are
     # compiled into the compiler container that follows.
-    if hardware_cfg.hardware_options.distortion_corrections is not None:
+    if hardware_cfg.hardware_options.distortion_corrections is not None:  # type: ignore[reportOptionalMemberAccess]
         replacing_schedule = apply_software_distortion_corrections(
-            schedule, hardware_cfg.hardware_options.distortion_corrections
+            schedule,
+            hardware_cfg.hardware_options.distortion_corrections,  # type: ignore[reportOptionalMemberAccess]
         )
         if replacing_schedule is not None:
             schedule = replacing_schedule

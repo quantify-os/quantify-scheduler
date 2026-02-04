@@ -1,10 +1,25 @@
 # Changelog
 
-## [Unreleased]
+## Release v0.27.0 (2026-02-04)
 
 ### 🚀 Enhancements
 
-- Feat: Implement merging of subsequent Rz gates ([!1312](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1312) by [@Mark](https://gitlab.com/mqxc))
+- Feat: add gate merging pass for Rz gates ([!1312](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1312) by [@Mark](https://gitlab.com/mqxc))
+-Feat[qblox]: add support for the new qblox read and control module (the QRC).
+
+### 🐛 Bug Fixes and Closed Issues
+
+- Fix: fix failing tests in preparation before 0.27 release ([!1315](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1315) by [@Robert Sokolewicz](https://gitlab.com/rsokolewicz))
+- Fix the dependency issue of pydantic when testing unified quantify with python 3.14 ([!1306](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1306) by [@Mahmut Çetin](https://gitlab.com/cetin-oqs))
+- Fix: unset properties for operations do not raise an error in hardware compilation ([!1305](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1305) by [@Gábor Oszkár Dénes](https://gitlab.com/gdenes))
+
+
+### 🔧 Other
+
+- Chore: replace deprecated QRC freq parameters ([!1314](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1314) by [@Gábor Oszkár Dénes](https://gitlab.com/gdenes))
+- [DOC-935] Correct the RampPulse formula in description ([!1308](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1308) by [@Qingzhen Wang](https://gitlab.com/qwang7))
+- Chore: update release version in changelog ([!1307](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1307) by [@Robert Sokolewicz](https://gitlab.com/rsokolewicz))
+
 
 
 ## Release v0.26.0 (2025-11-06)

@@ -31,7 +31,7 @@ if TYPE_CHECKING:
 #  The last version that supported Python 3.9 is 3.2.1, which however has a different function
 #  signature for `node_data_link()`. For this reason, we must pass different parameters to the
 #  serialization function depending on the package version.
-if pkg_version("networkx") < "3.3":  # noqa: SIM108
+if pkg_version("networkx") < "3.3":
     NODE_LINK_DATA_KWARGS = {"link": "links"}
     NODE_LINK_GRAPH_KWARGS: dict[str, Any] = {"link": "links"}
 else:

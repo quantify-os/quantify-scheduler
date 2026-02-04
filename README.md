@@ -40,6 +40,8 @@ Users are encouraged to migrate to [quantify](https://pypi.org/project/quantify/
 
 | quantify-scheduler |                      qblox-instruments                       |                               Cluster firmware                                |
 |--------------------|:------------------------------------------------------------:|:-----------------------------------------------------------------------------:|
+| v0.27.0            | [1.0.x](https://pypi.org/project/qblox-instruments/1.0.0/)   | [0.13.0](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.13.0) |
+|                    | [1.1.x](https://pypi.org/project/qblox-instruments/1.1.1/)   | [0.13.0](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.13.0), [>=1.0.0, <2.0.0](https://gitlab.com/qblox/releases/cluster_releases/-/releases/) |
 | v0.26.0            | [1.0.0](https://pypi.org/project/qblox-instruments/1.0.0/)   | [0.13.0](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.13.0) |
 |                    | [0.17.0](https://pypi.org/project/qblox-instruments/0.17.0/) | [0.12.0](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.12.0) |
 | v0.25.0            | [0.17.0](https://pypi.org/project/qblox-instruments/0.17.0/) | [0.12.0](https://gitlab.com/qblox/releases/cluster_releases/-/releases/v0.12.0) |
