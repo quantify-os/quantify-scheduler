@@ -1923,6 +1923,8 @@ def test_same_index_in_module_and_cluster_measurement_error(
 
     for comp in ic_cluster0._cluster_modules.values():
         instrument = comp.instrument
+        if not hasattr(instrument, "get_acquisitions"):
+            continue
         mock_acquisition_data = {
             "0": {
                 "index": 0,

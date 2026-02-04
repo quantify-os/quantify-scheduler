@@ -3015,7 +3015,10 @@ class ClusterComponent(base.InstrumentCoordinatorComponentBase):
 
 
 def _get_instrument_ip(component: base.InstrumentCoordinatorComponentBase) -> str:
-    ip_config = component.instrument.get_ip_config()
+    if hasattr(component.instrument, "get_ip_config"):
+        ip_config = component.instrument.get_ip_config()
+    else:
+        ip_config = component.instrument.scpi.get_ip_config()
 
     if ip_config == "0":
         raise ValueError(

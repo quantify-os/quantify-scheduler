@@ -15,7 +15,7 @@ def test_header() -> None:
         "_version.py",
         "_static_version.py",
     }
-    skipdirs = {"docs", ".", "tests", "__pycache__", "venv"}
+    skipdirs = {"docs", ".", "tests", "__pycache__", "venv", "site-packages"}
     failures = []
     quantify_scheduler_path = Path(__file__).resolve().parent.parent.resolve()
     header_lines = [
@@ -23,13 +23,15 @@ def test_header() -> None:
         "# Licensed according to the LICENCE file on the main branch",
     ]
     for root, _, files in os.walk(quantify_scheduler_path):
-        # skip hidden folders, etc
-        if any(part.startswith(name) for part in Path(root).parts for name in skipdirs):
+        root_path = Path(root)
+        if any(part.startswith(name) for part in root_path.parts for name in skipdirs):
+            continue
+        if any(part.startswith("python=") for part in root_path.parts):
             continue
         for file_name in files:
             if file_name[-3:] == ".py" and file_name not in skipfiles:
                 file_path = Path(root) / file_name
-                with open(file_path) as file:
+                with open(file_path, encoding="utf-8", errors="replace") as file:
                     lines_iter = (line.strip() for line in file)
                     line_matches = [
                         expected_line == line
@@ -47,7 +49,7 @@ def test_docs_copyright() -> None:
     copyright_found = False
     current_year = str(datetime.datetime.now().year)
     cr_match = 'copyright = "2020-20.*Qblox & Orange Quantum Systems'
-    with open(conf_file) as file:
+    with open(conf_file, encoding="utf-8", errors="replace") as file:
         for line in file:
             if re.match(cr_match, line):
                 if current_year in line:

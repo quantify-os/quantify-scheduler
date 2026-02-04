@@ -156,6 +156,12 @@ def make_cluster_component(mocker):
         )
 
         mocker.patch.object(cluster, "stop_sequencer", wraps=cluster.stop_sequencer)
+        if hasattr(cluster, "store_scope_acquisition"):
+            mocker.patch.object(
+                cluster,
+                "store_scope_acquisition",
+                wraps=cluster.store_scope_acquisition,
+            )
 
         for comp in cluster_component._cluster_modules.values():
             instrument = comp.instrument
@@ -177,14 +183,14 @@ def make_cluster_component(mocker):
                     sequencer_logs if sequencer_logs else [],
                 ),
             )
-            if not instrument.is_qtm_type:
+            if instrument.is_qtm_type:
+                patch_qtm_parameters(mocker, instrument)
+            if hasattr(instrument, "store_scope_acquisition"):
                 mocker.patch.object(
                     instrument,
                     "store_scope_acquisition",
                     wraps=instrument.store_scope_acquisition,
                 )
-            else:
-                patch_qtm_parameters(mocker, instrument)
 
         return cluster_component
 

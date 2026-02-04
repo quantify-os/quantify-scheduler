@@ -9,7 +9,7 @@ from unittest.mock import MagicMock
 import numpy as np
 import pytest
 from packaging.requirements import Requirement
-from qblox_instruments import ClusterType
+from qblox_instruments import Cluster, ClusterType
 from qcodes.instrument.parameter import ManualParameter
 from xarray import Dataset
 
@@ -311,13 +311,13 @@ def test_initialize_and_get_with_report_failed_exp(
     quantum_device.hardware_config(hardware_cfg_rf)
     quantum_device.get_element("q2").clock_freqs.readout(7.5e9)
 
-    mocker.patch(
-        "qblox_instruments.Cluster.get_ip_config",
-        return_value=example_ip,
+    mocker.patch.object(
+        Cluster,
+        "get_ip_config",
+        MagicMock(return_value=example_ip),
+        create=True,
     )
 
-    # ConfigurationManager belongs to qblox-instruments, but was already imported
-    # in quantify_scheduler
     mocker.patch(
         "quantify_scheduler.instrument_coordinator.components.qblox.ConfigurationManager",
         return_value=mock_qblox_instruments_config_manager,
@@ -332,6 +332,13 @@ def test_initialize_and_get_with_report_failed_exp(
 
     failing_exp_trace = "Test failing exp error trace"
     gettable.get = MagicMock(side_effect=RuntimeError(failing_exp_trace))
+    mocker.patch.object(
+        ic,
+        "retrieve_hardware_logs",
+        return_value={
+            cluster_name: {f"{cluster_name}_cmm_app_log": "dummy log content"},
+        },
+    )
 
     report_zipfile = gettable.initialize_and_get_with_report()
 
@@ -400,13 +407,13 @@ def test_initialize_and_get_with_report_completed_exp(
     quantum_device.hardware_config(hardware_cfg_rf)
     quantum_device.get_element("q2").clock_freqs.readout(7.5e9)
 
-    mocker.patch(
-        "qblox_instruments.Cluster.get_ip_config",
-        return_value=example_ip,
+    mocker.patch.object(
+        Cluster,
+        "get_ip_config",
+        MagicMock(return_value=example_ip),
+        create=True,
     )
 
-    # ConfigurationManager belongs to qblox-instruments, but was already imported
-    # in quantify_scheduler
     mocker.patch(
         "quantify_scheduler.instrument_coordinator.components.qblox.ConfigurationManager",
         return_value=mock_qblox_instruments_config_manager,
@@ -436,6 +443,17 @@ def test_initialize_and_get_with_report_completed_exp(
         ic,
         "retrieve_acquisition",
         return_value=expected_data,
+    )
+    mocker.patch.object(
+        ic,
+        "retrieve_hardware_logs",
+        return_value={
+            cluster_name: {
+                f"{cluster_name}_cmm_app_log": "Mock hardware log for app",
+                f"{cluster_name}_idn": "serial_number: 12345",
+                f"{cluster_name}_mods_info": "IDN Qblox Cluster",
+            },
+        },
     )
 
     report_zipfile = gettable.initialize_and_get_with_report()
@@ -659,13 +677,13 @@ def test_initialize_and_get_with_report__two_clusters(
     quantum_device.hardware_config(hardware_cfg_rf_two_clusters)
     quantum_device.instr_instrument_coordinator(ic.name)
 
-    mocker.patch(
-        "qblox_instruments.Cluster.get_ip_config",
-        return_value=example_ip,
+    mocker.patch.object(
+        Cluster,
+        "get_ip_config",
+        MagicMock(return_value=example_ip),
+        create=True,
     )
 
-    # ConfigurationManager belongs to qblox-instruments, but was already imported
-    # in quantify_scheduler
     mocker.patch(
         "quantify_scheduler.instrument_coordinator.components.qblox.ConfigurationManager",
         return_value=mock_qblox_instruments_config_manager,
@@ -684,17 +702,25 @@ def test_initialize_and_get_with_report__two_clusters(
         batched=True,
     )
 
-    report_zipfile = gettable.initialize_and_get_with_report()
-
     logfiles = [
-        "cmm_app_log.txt",
-        "cmm_system_log.txt",
-        "cmm_cfg_man_log.txt",
-        "module2_app_log.txt",
-        "module2_system_log.txt",
+        "cmm_app_log",
+        "cmm_system_log",
+        "cmm_cfg_man_log",
+        "module2_app_log",
+        "module2_system_log",
     ]
+    mocker.patch.object(
+        ic,
+        "retrieve_hardware_logs",
+        return_value={
+            name: {f"{name}_{logfile}": "dummy" for logfile in logfiles}
+            for name in (cluster1_name, cluster2_name)
+        },
+    )
+
+    report_zipfile = gettable.initialize_and_get_with_report()
 
     with zipfile.ZipFile(report_zipfile, mode="r") as zf:
         for cluster_name in (cluster1_name, cluster2_name):
             for logfile in logfiles:
-                zf.read(f"{cluster_name}/{cluster_name}_{logfile}").decode()
+                zf.read(f"{cluster_name}/{cluster_name}_{logfile}.txt").decode()

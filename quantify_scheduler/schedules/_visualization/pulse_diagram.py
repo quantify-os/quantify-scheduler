@@ -378,30 +378,30 @@ def _extract_schedule_infos(
         for acq_info in operation["acquisition_info"]:
             if port_list is not None and acq_info["port"] not in port_list:
                 continue
-            acq_info_cpy = ScheduledInfo(
+            acq_info_copy = ScheduledInfo(
                 op_info=acq_info,
                 time=time_offset + acq_info["t0"],
                 op_name=operation["name"],
             )
-            acq_infos[acq_info["port"]].append(acq_info_cpy)
+            acq_infos[acq_info["port"]].append(acq_info_copy)
 
         for pulse_info in operation["pulse_info"]:
             if port_list is not None and pulse_info["port"] not in port_list:
                 continue
             if pulse_info.get("wf_func") is not None:
-                pulse_info_cpy = ScheduledInfo(
+                pulse_info_copy = ScheduledInfo(
                     op_info=pulse_info,
                     time=time_offset + pulse_info["t0"],
                     op_name=operation["name"],
                 )
-                pulse_infos[pulse_info["port"]].append(pulse_info_cpy)
+                pulse_infos[pulse_info["port"]].append(pulse_info_copy)
             elif "offset_path_I" in pulse_info:
-                pulse_info_cpy = ScheduledInfo(
+                pulse_info_copy = ScheduledInfo(
                     op_info=pulse_info,
                     time=time_offset + pulse_info["t0"],
                     op_name=operation["name"],
                 )
-                offset_infos[pulse_info["port"]][pulse_info["clock"]].append(pulse_info_cpy)
+                offset_infos[pulse_info["port"]][pulse_info["clock"]].append(pulse_info_copy)
 
 
 def sample_schedule(

@@ -33,8 +33,10 @@ if TYPE_CHECKING:
 #  serialization function depending on the package version.
 if pkg_version("networkx") < "3.3":  # noqa: SIM108
     NODE_LINK_DATA_KWARGS = {"link": "links"}
+    NODE_LINK_GRAPH_KWARGS: dict[str, Any] = {"link": "links"}
 else:
     NODE_LINK_DATA_KWARGS = {"edges": "links"}
+    NODE_LINK_GRAPH_KWARGS = {"edges": "links"}
 
 
 class NDArray(np.ndarray):
@@ -129,5 +131,9 @@ class Graph(nx.Graph):
     def validate(cls: type[Graph], v: Any) -> Graph:  # noqa: ANN401
         """Validate the data and cast from all known representations."""
         if isinstance(v, dict):
-            return cls(nx.node_link_graph(v))
+            data = dict(v)
+            if "edges" not in data and "links" in data:
+                data["edges"] = data["links"]
+            kwargs = dict(NODE_LINK_GRAPH_KWARGS) if "links" in data else {}
+            return cls(nx.node_link_graph(data, **kwargs))
         return cls(v)
