@@ -716,9 +716,9 @@ def hardware_compile(
 
     if hardware_cfg.hardware_options.latency_corrections is not None:  # type: ignore[reportOptionalMemberAccess]
         # Subtract minimum latency to allow for negative latency corrections
-        hardware_cfg.hardware_options.latency_corrections = determine_relative_latency_corrections(  # type: ignore[reportOptionalMemberAccess,reportArgumentType]
+        hardware_cfg.hardware_options.latency_corrections = determine_relative_latency_corrections(  # type: ignore[reportOptionalMemberAccess]
             schedule=schedule,
-            hardware_cfg=hardware_cfg,
+            hardware_cfg=hardware_cfg,  # type: ignore[reportArgumentType]
         )
 
     # Apply software distortion corrections. Hardware distortion corrections are

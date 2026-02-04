@@ -9,7 +9,7 @@
 
 ### 🐛 Bug Fixes and Closed Issues
 
-- Fix: fix failing tests in preperation before 0.27 release ([!1315](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1315) by [@Robert Sokolewicz](https://gitlab.com/rsokolewicz))
+- Fix: fix failing tests in preparation before 0.27 release ([!1315](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1315) by [@Robert Sokolewicz](https://gitlab.com/rsokolewicz))
 - Fix the dependency issue of pydantic when testing unified quantify with python 3.14 ([!1306](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1306) by [@Mahmut Çetin](https://gitlab.com/cetin-oqs))
 - Fix: unset properties for operations do not raise an error in hardware compilation ([!1305](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1305) by [@Gábor Oszkár Dénes](https://gitlab.com/gdenes))
 
