@@ -725,7 +725,8 @@ def hardware_compile(
     # compiled into the compiler container that follows.
     if hardware_cfg.hardware_options.distortion_corrections is not None:  # type: ignore[reportOptionalMemberAccess]
         replacing_schedule = apply_software_distortion_corrections(
-            schedule, hardware_cfg.hardware_options.distortion_corrections  # type: ignore[reportOptionalMemberAccess]
+            schedule,
+            hardware_cfg.hardware_options.distortion_corrections,  # type: ignore[reportOptionalMemberAccess]
         )
         if replacing_schedule is not None:
             schedule = replacing_schedule
