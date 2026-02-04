@@ -1386,11 +1386,11 @@ class _QRCComponent(_RFComponent, _AnalogReadoutComponent):
 
         for i in range(2):
             if (freq := getattr(settings, f"lo{i}_freq")) is not None:
-                self._set_parameter(self.instrument, f"out{i}_in{i}_freq", freq)
+                self._set_parameter(self.instrument, f"out{i}_in{i}_lo_freq", freq)
 
         for i in range(2, 6):
             if (freq := getattr(settings, f"lo{i}_freq")) is not None:
-                self._set_parameter(self.instrument, f"out{i}_freq", freq)
+                self._set_parameter(self.instrument, f"out{i}_lo_freq", freq)
 
     def _determine_input_channel_map_parameters(
         self, settings: AnalogSequencerSettings, channel_map_parameters: dict[str, str]
