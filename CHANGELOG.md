@@ -1,11 +1,17 @@
 # Changelog
 
+## Release v0.27.1 (2026-02-09)
+
+### 🐛 Bug Fixes and Closed Issues
+
+- Fix: add compatibility with qblox-instruments v1.1.0 ([!1314](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1314) by [@Gábor Oszkár Dénes](https://gitlab.com/gdenes))
+
 ## Release v0.27.0 (2026-02-04)
 
 ### 🚀 Enhancements
 
 - Feat: add gate merging pass for Rz gates ([!1312](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1312) by [@Mark](https://gitlab.com/mqxc))
--Feat[qblox]: add support for the new qblox read and control module (the QRC).
+- Feat[qblox]: add support for the new qblox read and control module (the QRC).
 
 ### 🐛 Bug Fixes and Closed Issues
 
