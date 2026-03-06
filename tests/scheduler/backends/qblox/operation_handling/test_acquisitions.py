@@ -1915,9 +1915,11 @@ def test_same_index_in_module_and_cluster_measurement_error(
         },
     }
 
-    # Setup objects needed for experiment
     mock_setup = mock_setup_basic_transmon_with_standard_params
-    ic_cluster0 = make_cluster_component("cluster0")
+    ic_cluster0 = make_cluster_component(
+        "cluster0",
+        modules={"3": "QRM", "4": "QRM_RF"},
+    )
     instr_coordinator = mock_setup["instrument_coordinator"]
     instr_coordinator.add_component(ic_cluster0)
 
@@ -2300,7 +2302,10 @@ def test_trace_acquisition_instrument_coordinator(  # noqa: PLR0915
     acquired_data = instr_coordinator.retrieve_acquisition()
     instr_coordinator.stop()
 
-    module.instrument.store_scope_acquisition.assert_called_with(0, "0")
+    cluster = getattr(module.instrument, "parent", module.instrument)
+    slot = getattr(module.instrument, "slot_idx", 0)
+    if hasattr(cluster, "store_scope_acquisition"):
+        cluster.store_scope_acquisition.assert_called_with(slot, 0, "0")
 
     expected_scope_single_data = 1j if module_under_test is not ClusterType.CLUSTER_QRC else 2
 

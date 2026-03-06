@@ -26,6 +26,7 @@ from quantify_scheduler.backends.graph_compilation import (
     SimpleNodeConfig,
 )
 from quantify_scheduler.backends.qblox import compiler_container, constants
+from quantify_scheduler.backends.qblox.auto_rf_switch import auto_rf_switch_dressing
 from quantify_scheduler.backends.qblox.crosstalk_compensation import (
     crosstalk_compensation,
 )
@@ -56,6 +57,7 @@ from quantify_scheduler.backends.types.qblox import (
     ComplexInputGain,
     DigitalChannelDescription,
     DigitizationThresholds,
+    QbloxCompilerOptions,
     QbloxHardwareDescription,
     QbloxHardwareDistortionCorrection,
     QbloxHardwareOptions,
@@ -805,6 +807,13 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
     :class:`~quantify_scheduler.backends.types.common.LatencyCorrection` or
     :class:`~quantify_scheduler.backends.types.qblox.SequencerOptions`.
     """
+    compiler_options: QbloxCompilerOptions | None = None
+    """
+    Compiler options for the Qblox backend.
+
+    These options control compiler passes that modify the schedule before hardware
+    compilation, such as automatic RF switch dressing.
+    """
     allow_off_grid_nco_ops: bool | None = Field(
         default=None,
         deprecated="`allow_off_grid_nco_ops` is deprecated as NCO operations can be executed on a "
@@ -815,6 +824,10 @@ class QbloxHardwareCompilationConfig(HardwareCompilationConfig):
     grid.
     """
     compilation_passes: list[SimpleNodeConfig] = [
+        SimpleNodeConfig(
+            name="auto_rf_switch_dressing",
+            compilation_func=auto_rf_switch_dressing,
+        ),
         SimpleNodeConfig(
             name="crosstalk_compensation",
             compilation_func=crosstalk_compensation,

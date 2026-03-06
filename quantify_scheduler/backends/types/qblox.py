@@ -1673,3 +1673,32 @@ class QbloxHardwareOptions(HardwareOptions):
     the settings that determine the voltage thresholds above which input signals are
     registered as high.
     """
+
+
+class QbloxCompilerOptions(DataStructure):
+    """
+    Compiler options for the Qblox backend.
+
+    These options control compiler passes that modify the schedule before hardware
+    compilation.
+    """
+
+    auto_rf_switch: bool = False
+    """
+    Enable automatic RF switch dressing for microwave operations.
+
+    When enabled, the compiler will automatically insert
+    :class:`~quantify_scheduler.backends.qblox.operations.rf_switch_toggle.RFSwitchToggle`
+    operations around microwave pulses (operations on ports ending with ``:mw``).
+    This allows the RF output to be turned on only when needed, reducing noise
+    and power consumption.
+    """
+    auto_rf_switch_ramp_buffer: float = 20e-9
+    """
+    Buffer time (in seconds) before and after microwave pulses for RF switch operations.
+
+    The RF switch will be turned on ``auto_rf_switch_ramp_buffer`` seconds before
+    the first pulse and remain on until ``auto_rf_switch_ramp_buffer`` seconds after
+    the last pulse. Adjacent pulses within ``2 * auto_rf_switch_ramp_buffer`` will be
+    merged into a single RF switch window.
+    """

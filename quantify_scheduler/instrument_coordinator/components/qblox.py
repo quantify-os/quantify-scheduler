@@ -2212,7 +2212,19 @@ class _QRMAcquisitionManager(_AcquisitionManagerBase):
             )
         qblox_acq_index = self._scope_mode_sequencer_and_qblox_acq_index[1]
         qblox_acq_name = self._qblox_acq_index_to_qblox_acq_name(qblox_acq_index)
-        self.instrument.store_scope_acquisition(sequencer_index, qblox_acq_name)
+        cluster = getattr(self.instrument, "parent", None)
+        if cluster is not None and hasattr(cluster, "store_scope_acquisition"):
+            slot = getattr(self.instrument, "slot_idx", None)
+            if slot is not None:
+                cluster.store_scope_acquisition(slot, sequencer_index, qblox_acq_name)
+                return
+        if hasattr(self.instrument, "store_scope_acquisition"):
+            self.instrument.store_scope_acquisition(sequencer_index, qblox_acq_name)
+            return
+        raise AttributeError(
+            "store_scope_acquisition not found on module or cluster "
+            "(check qblox-instruments version)"
+        )
 
     def _get_scope_data(
         self,

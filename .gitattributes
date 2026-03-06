@@ -1,4 +1,9 @@
-# Ensure all text files are committed with unix-style line endings
+# Ensure all text files are committed with unix-style line endings (LF)
 * text=auto eol=lf
+*.py text eol=lf
+*.md text eol=lf
+*.json text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
 AUTHORS.md merge=union
 quantify_scheduler/_static_version.py export-subst

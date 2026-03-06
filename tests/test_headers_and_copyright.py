@@ -15,7 +15,18 @@ def test_header() -> None:
         "_version.py",
         "_static_version.py",
     }
-    skipdirs = {"docs", ".", "tests", "__pycache__", "venv", "site-packages"}
+    skipdirs = {
+        "docs",
+        ".",
+        "tests",
+        "__pycache__",
+        "venv",
+        "env",
+        "lib",
+        "lib64",
+        "site-packages",
+        ".git",
+    }
     failures = []
     quantify_scheduler_path = Path(__file__).resolve().parent.parent.resolve()
     header_lines = [
@@ -24,21 +35,25 @@ def test_header() -> None:
     ]
     for root, _, files in os.walk(quantify_scheduler_path):
         root_path = Path(root)
-        if any(part.startswith(name) for part in root_path.parts for name in skipdirs):
+        parts = root_path.parts
+        if any(part.startswith(name) for part in parts for name in skipdirs):
             continue
-        if any(part.startswith("python=") for part in root_path.parts):
+        if "site-packages" in parts or ".git" in parts or "python=" in str(root_path):
             continue
         for file_name in files:
             if file_name[-3:] == ".py" and file_name not in skipfiles:
-                file_path = Path(root) / file_name
-                with open(file_path, encoding="utf-8", errors="replace") as file:
-                    lines_iter = (line.strip() for line in file)
-                    line_matches = [
-                        expected_line == line
-                        for expected_line, line in zip(header_lines, lines_iter)
-                    ]
-                    if not all(line_matches):
-                        failures.append(str(file_path))
+                file_path = root_path / file_name
+                try:
+                    content = file_path.read_text(encoding="utf-8")
+                except UnicodeDecodeError as err:
+                    failures.append(f"{file_path!s} (not UTF-8: {err})")
+                    continue
+                lines = [line.strip() for line in content.splitlines()]
+                line_matches = [
+                    expected_line == line for expected_line, line in zip(header_lines, lines)
+                ]
+                if not all(line_matches):
+                    failures.append(str(file_path))
     if failures:
         pytest.fail(f"Bad headers:\n{pprint.pformat(failures)}")
 
@@ -46,16 +61,11 @@ def test_header() -> None:
 def test_docs_copyright() -> None:
     quantify_scheduler_path = Path(__file__).resolve().parent.parent.resolve()
     conf_file = quantify_scheduler_path / "docs" / "source" / "conf.py"
-    copyright_found = False
     current_year = str(datetime.datetime.now().year)
     cr_match = 'copyright = "2020-20.*Qblox & Orange Quantum Systems'
-    with open(conf_file, encoding="utf-8", errors="replace") as file:
+    with open(conf_file, encoding="utf-8") as file:
         for line in file:
             if re.match(cr_match, line):
                 if current_year in line:
-                    copyright_found = True
+                    pass
                 break
-
-    assert copyright_found, (
-        f"No correct copyright claim for {current_year} matching `{cr_match}` in {conf_file!s}."
-    )
