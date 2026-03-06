@@ -25,6 +25,8 @@ from quantify_scheduler.schedules.schedule import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Generator, Iterator
+
     from quantify_scheduler.backends.graph_compilation import (
         CompilationConfig,
     )
@@ -158,6 +160,9 @@ def _determine_absolute_timing_schedule(
     _validate_schedulable_references(schedule, references_graph)
 
     schedulables_sorted_by_reference = nx.topological_sort(references_graph)
+    schedulables_sorted_by_reference = _apply_operation_delays(
+        schedule, schedulables_sorted_by_reference
+    )
     for i, schedulable_name in enumerate(schedulables_sorted_by_reference):
         i: int
         schedulable_name: str
@@ -202,6 +207,21 @@ def _validate_schedulable_references(schedule: Schedule, references_graph: nx.Di
             "`schedulable_references` is not a Directed Acyclic Graph. This is most likely "
             "caused by a circular reference in the Timing Constraints."
         )
+
+
+def _apply_operation_delays(
+    schedule: Schedule, schedulables_sorted_by_reference: Iterator[str]
+) -> Generator[str, None, None]:
+    delays = {}
+    for schedulable_name in schedulables_sorted_by_reference:
+        schedulable: Schedulable = schedule.schedulables[schedulable_name]
+        operation = schedule.operations[schedulable.data["operation_id"]]
+        if "next_operation_delay" in operation.data:
+            delays[schedulable_name] = operation.data["next_operation_delay"]
+        for timing_constraint in schedulable.data["timing_constraints"]:
+            if timing_constraint.ref_schedulable in delays:
+                timing_constraint.rel_time += delays[timing_constraint.ref_schedulable]
+        yield schedulable_name
 
 
 def _populate_references_graph(schedule: Schedule) -> nx.DiGraph:

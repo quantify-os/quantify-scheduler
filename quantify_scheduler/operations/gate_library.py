@@ -834,6 +834,12 @@ class Measure(Operation):
     feedback_trigger_label : str
         The label corresponding to the feedback trigger, which is mapped by the
         compiler to a feedback trigger address on hardware, by default None.
+    apply_acquisition_delay : bool
+        Automatically delay the next operation by the acquisition delay
+        of the to be measured device elements.
+        Set to False to skip this delay
+        so that the next operation starts immediately after the Measure.
+        By default, `True`.
     device_overrides
         Device level parameters that override device configuration values
         when compiling from circuit to device level.
@@ -863,6 +869,7 @@ class Measure(Operation):
         ) = None,
         bin_mode: BinMode | str | None = None,
         feedback_trigger_label: str | None = None,
+        apply_acquisition_delay: bool = True,
         **device_overrides,
     ) -> None:
         device_elements = qubits
@@ -887,6 +894,7 @@ class Measure(Operation):
                     "bin_mode": bin_mode,
                     "operation_type": "measure",
                     "feedback_trigger_label": feedback_trigger_label,
+                    "apply_acquisition_delay": apply_acquisition_delay,
                     "device_overrides": device_overrides,
                 },
             }
@@ -902,6 +910,7 @@ class Measure(Operation):
         acq_protocol = gate_info["acq_protocol"]
         bin_mode = gate_info["bin_mode"]
         feedback_trigger_label = gate_info["feedback_trigger_label"]
+        apply_acquisition_delay = gate_info["apply_acquisition_delay"]
         return (
             f"{self.__class__.__name__}({','.join(device_elements)}, "
             f"acq_channel={acq_channel}, "
@@ -909,7 +918,8 @@ class Measure(Operation):
             f"acq_index={acq_index}, "
             f'acq_protocol="{acq_protocol}", '
             f"bin_mode={bin_mode!s}, "
-            f"feedback_trigger_label={feedback_trigger_label})"
+            f"feedback_trigger_label={feedback_trigger_label}, "
+            f"apply_acquisition_delay={apply_acquisition_delay})"
         )
 
 

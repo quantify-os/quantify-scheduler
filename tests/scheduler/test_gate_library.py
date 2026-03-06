@@ -634,3 +634,56 @@ def test_conditional_reset_multi_qubits(
     assert trigger_address_q4 == 2
     assert thresholded_acq_trigger_en_q4 is True
     assert thresholded_acq_trigger_invert_q4 is False
+
+
+@pytest.mark.parametrize(["apply_acq_delay"], [(False,), (True,)])
+def test_measure_skipping_acquisition_delay(
+    mock_setup_basic_transmon_with_standard_params, apply_acq_delay
+):
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
+
+    hardware_config = utils.load_json_example_scheme("qblox_hardware_config_transmon.json")
+    quantum_device.hardware_config(hardware_config)
+    config = quantum_device.generate_compilation_config()
+    schedule = Schedule("Test schedule")
+    schedule.add(Measure("q0", apply_acquisition_delay=apply_acq_delay))
+    schedule.add(X("q0"))
+    compiler = SerialCompiler(name="compiler")
+    compiled_schedule = compiler.compile(
+        schedule,
+        config=config,
+    )
+    qcm_program = (
+        compiled_schedule.compiled_instructions.get("cluster0")
+        .get("cluster0_module2")
+        .get("sequencers")
+        .get("seq0")
+        .sequence.get("program")
+    )
+
+    qrm_program = (
+        compiled_schedule.compiled_instructions.get("cluster0")
+        .get("cluster0_module4")
+        .get("sequencers")
+        .get("seq0")
+        .sequence.get("program")
+    )
+    integration_length = (
+        compiled_schedule.compiled_instructions.get("cluster0")
+        .get("cluster0_module4")
+        .get("sequencers")
+        .get("seq0")
+        .integration_length_acq
+    )
+    # measure duration == 1000, acq_delay == 100, x gate duration == 20
+    # Integration length should remain unchanged; length of the measure
+    assert integration_length == 1000
+    if apply_acq_delay:
+        assert "wait 1100" in qcm_program  # Measure duration + acq delay
+        assert "wait 1016" in qrm_program  # Measure duration + X gate duration - 4
+        assert "wait 16" in qcm_program  # X gate duration - 4
+    else:
+        assert "wait 1000" in qcm_program  # measure duration, waiting for X gate to start
+        assert "wait 996" in qrm_program  # measure duration - 4, wait time after acquire is done
+        assert "wait 96" in qcm_program  # Wait for acq delay (max(gate_duration, acq_delay) - 4
+    assert "wait 96" in qrm_program  # The acquisition delay is still applied in the qrm

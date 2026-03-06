@@ -769,6 +769,24 @@ def test_multiple_timing_constraints_asap(
     )
 
 
+def test_delaying_next_operation(mock_setup_basic_transmon_with_standard_params):
+    quantum_device = mock_setup_basic_transmon_with_standard_params["quantum_device"]
+
+    schedule = Schedule("Test schedule")
+    schedule.add(Measure("q0", apply_acquisition_delay=False))
+    schedule.add(X("q0"))
+    compiled_schedule = SerialCompiler().compile(
+        schedule, config=quantum_device.generate_compilation_config()
+    )
+    schedulables = iter(compiled_schedule.schedulables.values())
+    measurement_schedule = compiled_schedule.operations[next(schedulables)["operation_id"]]
+    assert isinstance(measurement_schedule, Schedule)
+    assert "next_operation_delay" in measurement_schedule.data
+    assert measurement_schedule.data.get("next_operation_delay") == -100e-9
+    x_schedulable = next(schedulables)
+    assert x_schedulable["timing_constraints"][0].rel_time == -100e-9
+
+
 def test_gate_merging(
     compile_config_basic_transmon_qblox_hardware,
 ):

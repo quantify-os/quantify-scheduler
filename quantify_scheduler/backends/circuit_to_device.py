@@ -18,6 +18,7 @@ from quantify_scheduler.backends.graph_compilation import (
 )
 from quantify_scheduler.backends.qblox.operations.inline_q1asm import InlineQ1ASM
 from quantify_scheduler.operations.control_flow_library import ControlFlowOperation
+from quantify_scheduler.operations.gate_library import Measure
 from quantify_scheduler.operations.pulse_compensation_library import (
     Port,
     PulseCompensation,
@@ -541,6 +542,20 @@ def _compile_multiplexed(
                 )
             else:
                 ref_schedulable = inner_schedule.add(operation=inner_subschedule)
+
+        # Aggregate next_operation_delay from inner subschedules.
+        # For MUX RO, we want the next operation to start after the longest
+        # integration window has finished, so we take the minimum (most negative) delay.
+        # We then remove the delays from the individual subschedules to prevent
+        # them from affecting subschedule alignment within the inner_schedule.
+        next_operation_delays = []
+        for subschedule in inner_subschedules:
+            if "next_operation_delay" in subschedule.data:
+                next_operation_delays.append(subschedule.data["next_operation_delay"])
+                del subschedule.data["next_operation_delay"]
+        if next_operation_delays:
+            inner_schedule.data["next_operation_delay"] = min(next_operation_delays)
+
         return inner_schedule
     else:
         return operation
@@ -729,6 +744,11 @@ def _get_device_repr_from_cfg(
     factory_func = operation_cfg.factory_func
 
     factory_kwargs: dict = operation_cfg.factory_kwargs
+    if (
+        isinstance(operation, Measure)
+        and not operation.data["gate_info"]["apply_acquisition_delay"]
+    ):
+        factory_kwargs["next_operation_delay"] = -factory_kwargs["acq_delay"]
 
     # retrieve keyword args for parametrized operations from the gate info
     if operation_cfg.gate_info_factory_kwargs is not None:
@@ -770,6 +790,12 @@ def _get_device_repr_from_cfg_multiplexed(
                 factory_kwargs[key] = gate_info[mux_idx]
             else:
                 factory_kwargs[key] = gate_info
+
+    if (
+        isinstance(operation, Measure)
+        and not operation.data["gate_info"]["apply_acquisition_delay"]
+    ):
+        factory_kwargs["next_operation_delay"] = -factory_kwargs["acq_delay"]
 
     # Add operation defined custom device overrides.
     for key, value in device_overrides.items():

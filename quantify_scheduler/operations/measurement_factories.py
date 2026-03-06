@@ -70,6 +70,7 @@ def _dispersive_measurement(  # noqa: PLR0915
     acq_threshold: float | None,
     num_points: float | None,
     freq: float | None,
+    next_operation_delay: float,
 ) -> Schedule:
     """
     Generator function for a standard dispersive measurement.
@@ -132,6 +133,8 @@ def _dispersive_measurement(  # noqa: PLR0915
         Optional number of points for the acquisition.
     freq
         Optional frequency to override clock for this operation.
+    next_operation_delay
+        Delay in seconds that the next operation is delayed.
 
     Returns
     -------
@@ -142,7 +145,10 @@ def _dispersive_measurement(  # noqa: PLR0915
     if bin_mode is None:
         bin_mode = BinMode.AVERAGE
 
-    subschedule = Schedule("dispersive_measurement")
+    schedule_data = {}
+    if next_operation_delay:
+        schedule_data["next_operation_delay"] = next_operation_delay
+    subschedule = Schedule("dispersive_measurement", data=schedule_data)
 
     if acq_protocol != "LongTimeTrace":
         if reset_clock_phase:
@@ -405,6 +411,7 @@ def dispersive_measurement_transmon(
     acq_threshold: float | None = None,
     num_points: float | None = None,
     freq: float | None = None,
+    next_operation_delay: float = 0,
 ) -> Schedule:
     """
     Creates a dispersive measurement schedule for a transmon qubit.
@@ -459,6 +466,9 @@ def dispersive_measurement_transmon(
         Optional number of points for the acquisition.
     freq
         Optional frequency to override clock for this operation.
+    next_operation_delay
+        Delay in seconds that the next operation is delayed. Default is 0.
+
 
     Returns
     -------
@@ -493,6 +503,7 @@ def dispersive_measurement_transmon(
         acq_threshold=acq_threshold,
         num_points=num_points,
         freq=freq,
+        next_operation_delay=next_operation_delay,
     )
 
 
@@ -523,6 +534,7 @@ def dispersive_measurement_spin(
     acq_threshold: float | None = None,
     num_points: float | None = None,
     freq: float | None = None,
+    next_operation_delay: float = 0,
 ) -> Schedule:
     """
     Creates a dispersive measurement schedule for a spin qubit.
@@ -581,6 +593,8 @@ def dispersive_measurement_spin(
         Optional port for the gate pulse.
     freq
         Optional frequency to override clock for this operation.
+    next_operation_delay
+        Delay in seconds that the next operation is delayed. Default is 0.
 
     Returns
     -------
@@ -615,6 +629,7 @@ def dispersive_measurement_spin(
         acq_threshold=acq_threshold,
         num_points=num_points,
         freq=freq,
+        next_operation_delay=next_operation_delay,
     )
 
 

@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 import pytest
 
+from quantify_scheduler import BasicTransmonElement
 from quantify_scheduler.backends import SerialCompiler
 from quantify_scheduler.backends.circuit_to_device import (
     ConfigKeyError,
@@ -29,6 +30,7 @@ from quantify_scheduler.device_under_test.quantum_device import QuantumDevice
 from quantify_scheduler.device_under_test.spin_edge import SpinEdge
 from quantify_scheduler.device_under_test.spin_element import BasicSpinElement
 from quantify_scheduler.enums import BinMode
+from quantify_scheduler.operations import SSBIntegrationComplex
 from quantify_scheduler.operations.control_flow_library import LoopOperation
 from quantify_scheduler.operations.gate_library import (
     CNOT,
@@ -1161,3 +1163,28 @@ def test_compile_spin_init():
         compile_circuit_to_device_with_config_validation(
             schedule, config=quantum_device.generate_compilation_config()
         )
+
+
+@pytest.mark.parametrize(["apply_acq_delay"], [(False,), (True,)])
+def test_acquisition_delay_after_measurement(apply_acq_delay):
+    quantum_device = QuantumDevice(name="quantum_device")
+    qubit = BasicTransmonElement("q0")
+    qubit.measure.integration_time(2e-6)
+    qubit.measure.acq_delay(100e-9)
+    quantum_device.add_element(qubit)
+
+    schedule = Schedule("Test schedule")
+    schedule.add(Measure("q0", apply_acquisition_delay=apply_acq_delay))
+    compiled_schedule = compile_circuit_to_device_with_config_validation(
+        schedule, config=quantum_device.generate_compilation_config()
+    )
+    for operation in compiled_schedule.operations.values():
+        assert isinstance(operation, Schedule)
+        for measure in operation.operations.values():
+            if isinstance(measure, SSBIntegrationComplex):
+                assert measure.duration == 2e-6 + 100e-9
+                assert measure["acquisition_info"][0]["t0"] == 100e-9
+                assert measure["acquisition_info"][0]["duration"] == 2e-6
+                break
+        else:
+            assert False, "No SSBIntegrationComplex found"
