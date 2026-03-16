@@ -36,12 +36,14 @@ class QbloxAcquisitionIndexBin:
     stride: int
     """
     Stride.
-    Only used for acquisitions within a loop (not schedule repetitions).
+    Used for acquisitions within a loop (not schedule repetitions),
+    or when multiple acquisitions share the same register.
     Defines what's the stride between each repetitions of the schedule for the data.
 
     The assumption is that for an append bin mode operation
-    with loops and schedule repetitions there is only one register;
-    the register's inner iteration first goes through the loop,
+    with loops or when multiple acquisitions share the same register
+    and multiple schedule repetitions there is only one register;
+    the register's inner iteration first goes through the loop or acquisitions,
     and then the schedule repetitions.
     """
     thresholded_trigger_count_metadata: ThresholdedTriggerCountMetadata | None
@@ -128,8 +130,7 @@ class QbloxAcquisitionIndexManager:
         number_of_indices: int,
         qblox_acq_index: int,
         acq_channel: Hashable,
-        acq_indices: list[int] | None,
-        thresholded_trigger_count_metadata: ThresholdedTriggerCountMetadata | None,
+        acq_indices: list[tuple[int, ThresholdedTriggerCountMetadata | None]] | None,
         repetitions: int,
     ) -> int:
         """
@@ -183,7 +184,9 @@ class QbloxAcquisitionIndexManager:
                     stride=number_of_indices,
                     thresholded_trigger_count_metadata=thresholded_trigger_count_metadata,
                 )
-                for (i, qblox_bin) in zip(acq_indices, new_qblox_acq_bins)
+                for ((i, thresholded_trigger_count_metadata), qblox_bin) in zip(
+                    acq_indices, new_qblox_acq_bins
+                )
             }
             if acq_channel not in self._acq_hardware_mapping_binned:
                 self._acq_hardware_mapping_binned[acq_channel] = new_qblox_bin_mappings
@@ -208,9 +211,9 @@ class QbloxAcquisitionIndexManager:
     def allocate_bins(
         self,
         acq_channel: Hashable,
-        acq_indices: list[int] | int,
+        acq_indices: list[tuple[int, ThresholdedTriggerCountMetadata | None]]
+        | tuple[int, ThresholdedTriggerCountMetadata | None],
         sequencer_name: str,
-        thresholded_trigger_count_metadata: ThresholdedTriggerCountMetadata | None,
         repetitions: int | None,
     ) -> tuple[int, int]:
         """
@@ -221,12 +224,10 @@ class QbloxAcquisitionIndexManager:
         acq_channel
             Acquisition channel.
         acq_indices
-            Acquisition index.
+            Acquisition index and thresholded trigger count metadata.
             If `None`, it has no corresponding acquisition index (for example Trace acquisition).
         sequencer_name
             Sequencer name.
-        thresholded_trigger_count_metadata
-            Thresholded trigger count metadata. If not applicable, `None`.
         repetitions
             Repetitions of the schedule when using append bin mode.
 
@@ -240,7 +241,7 @@ class QbloxAcquisitionIndexManager:
             When the QbloxAcquisitionBinManager runs out of bins to allocate.
 
         """
-        if isinstance(acq_indices, int):
+        if not isinstance(acq_indices, list):
             acq_indices = [acq_indices]
         if repetitions is None:
             repetitions = 1
@@ -267,7 +268,6 @@ class QbloxAcquisitionIndexManager:
             qblox_acq_index=qblox_acq_index,
             acq_channel=acq_channel,
             acq_indices=acq_indices,
-            thresholded_trigger_count_metadata=thresholded_trigger_count_metadata,
             repetitions=repetitions,
         )
         self._acq_channel_to_qblox_acq_index[acq_channel] = qblox_acq_index
@@ -314,7 +314,6 @@ class QbloxAcquisitionIndexManager:
             qblox_acq_index=qblox_acq_index,
             acq_channel=acq_channel,
             acq_indices=None,
-            thresholded_trigger_count_metadata=None,
             repetitions=1,
         )
         self._acq_channel_to_qblox_acq_index[acq_channel] = qblox_acq_index
@@ -368,7 +367,6 @@ class QbloxAcquisitionIndexManager:
             qblox_acq_index=qblox_acq_index,
             acq_channel=acq_channel,
             acq_indices=None,
-            thresholded_trigger_count_metadata=None,
             repetitions=1,
         )
         self._acq_channel_to_qblox_acq_index[acq_channel] = qblox_acq_index
@@ -446,8 +444,7 @@ class QbloxAcquisitionIndexManager:
             number_of_indices=requested_number_of_indices,
             qblox_acq_index=qblox_acq_index,
             acq_channel=acq_channel,
-            acq_indices=acq_indices,
-            thresholded_trigger_count_metadata=None,
+            acq_indices=[(i, None) for i in acq_indices],
             repetitions=repetitions,
         )
         self._acq_channel_to_qblox_acq_index[acq_channel] = qblox_acq_index

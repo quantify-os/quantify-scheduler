@@ -21,7 +21,7 @@ REGISTER_SIZE = pow(2, 32) - 1
 """Size of registers in Q1ASM programs."""
 NUMBER_OF_QBLOX_ACQ_INDICES: int = 32
 """Maximum number of Qblox acquisition index."""
-NUMBER_OF_QBLOX_ACQ_BINS: int = 4096
+NUMBER_OF_QBLOX_ACQ_BINS: int = 100_000
 """Maximum number of Qblox acquisition bins for each index."""
 NCO_PHASE_STEPS_PER_DEG = 1e9 / 360
 """The number of steps per degree for NCO phase instructions arguments."""

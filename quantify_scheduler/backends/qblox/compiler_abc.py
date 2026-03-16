@@ -596,7 +596,12 @@ class SequencerCompiler(ABC):
         qasm.emit(q1asm_instructions.WAIT_SYNC, constants.MIN_TIME_BETWEEN_OPERATIONS)
         qasm.emit(q1asm_instructions.UPDATE_PARAMETERS, constants.MIN_TIME_BETWEEN_OPERATIONS)
 
-        self._initialize_acquisition_qblox_values(qasm, ordered_op_strategies, repetitions)
+        self._initialize_acquisition_qblox_values_append_not_in_control_flow(
+            qasm, ordered_op_strategies, repetitions
+        )
+        self._initialize_acquisition_qblox_values_non_append_or_in_control_flow(
+            qasm, ordered_op_strategies, repetitions
+        )
 
         # Program body. The operations must be ordered such that real-time IO operations
         # always come after any other operations. E.g., an offset instruction should
@@ -751,12 +756,86 @@ class SequencerCompiler(ABC):
             key=lambda op: helpers.to_grid_time(op.operation_info.timing),
         )
 
-    def _initialize_acquisition_qblox_values(
+    def _initialize_acquisition_qblox_values_append_not_in_control_flow(
+        self, qasm: QASMProgram, op_strategies: list[IOperationStrategy], repetitions: int
+    ) -> None:
+        # This is to keep track whether the operation is in a control flow,
+        # because if it is a binned acquisition with APPEND mode or
+        # inside of a control flow, we handle it differently for optimization.
+        control_flow_stack = 0
+
+        acq_strategies: dict[Hashable, list[AcquisitionStrategyPartial]] = {}
+
+        for op_strategy in op_strategies:
+            if op_strategy.operation_info.is_acquisition:
+                # Help the type checker.
+                assert isinstance(op_strategy, AcquisitionStrategyPartial)
+
+                acq_data = op_strategy.operation_info.data
+                acq_channel = acq_data["acq_channel"]
+                protocol: str = acq_data["protocol"]
+                bin_mode: BinMode = acq_data["bin_mode"]
+
+                if _is_acquisition_binned_append(protocol, bin_mode) and control_flow_stack == 0:
+                    if acq_channel not in acq_strategies:
+                        acq_strategies[acq_channel] = []
+                    acq_strategies[acq_channel].append(op_strategy)
+            elif isinstance(op_strategy, (LoopStrategy, ConditionalStrategy)):
+                control_flow_stack += 1
+            elif op_strategy.operation_info.is_control_flow_end:
+                control_flow_stack -= 1
+
+        for acq_channel, acq_strategies_for_acq_channel in acq_strategies.items():
+            acq_indices = []
+            for acq_strategy in acq_strategies_for_acq_channel:
+                acq_data = acq_strategy.operation_info.data
+                protocol: str = acq_data["protocol"]
+                bin_mode: BinMode = acq_data["bin_mode"]
+
+                thresholded_trigger_count_metadata = (
+                    ThresholdedTriggerCountMetadata(
+                        acq_data["thresholded_trigger_count"]["threshold"],
+                        acq_data["thresholded_trigger_count"]["condition"],
+                    )
+                    if protocol == "ThresholdedTriggerCount"
+                    else None
+                )
+
+                # This acquisition is outside of any control flow,
+                # it must only be one datapoint.
+                # Otherwise, the logic below fails, so we check
+                # whether previous compilation steps are correct.
+                assert len(acq_data["acq_index"]) == 1
+
+                acq_indices.append((acq_data["acq_index"][0], thresholded_trigger_count_metadata))
+
+            qblox_acq_index, qblox_acq_bin_offset = self.qblox_acq_index_manager.allocate_bins(
+                acq_channel,
+                acq_indices,
+                self.name,
+                repetitions,
+            )
+
+            acq_bin_idx_reg = self.register_manager.allocate_register()
+            qasm.emit(
+                q1asm_instructions.MOVE,
+                qblox_acq_bin_offset,
+                acq_bin_idx_reg,
+                comment=f"Initialize acquisition bin_idx for {acq_channel}",
+            )
+
+            for acq_strategy in acq_strategies[acq_channel]:
+                acq_strategy.qblox_acq_index = qblox_acq_index
+                acq_strategy.bin_idx_register = acq_bin_idx_reg
+
+    def _initialize_acquisition_qblox_values_non_append_or_in_control_flow(
         self, qasm: QASMProgram, op_strategies: list[IOperationStrategy], repetitions: int
     ) -> None:
         """
         Adds the instructions to initialize the registers needed to use the append
         bin mode to the program. This should be added in the header.
+
+        Applies only to operations which are either not APPEND mode or in a loop (LoopOperation).
 
         Parameters
         ----------
@@ -768,80 +847,104 @@ class SequencerCompiler(ABC):
             Schedule repetitions.
 
         """
+        # This is to keep track whether the operation is in a control flow,
+        # because if it is a binned acquisition APPEND mode and
+        # outside of a control flow, we handle it differently for optimization.
+        control_flow_stack = 0
+
         for op_strategy in op_strategies:
-            if not op_strategy.operation_info.is_acquisition:
+            if (
+                not op_strategy.operation_info.is_acquisition
+                and not op_strategy.operation_info.is_control_flow_end
+                and not isinstance(op_strategy, (LoopStrategy, ConditionalStrategy))
+            ):
                 continue
-            # Help the type checker.
-            assert isinstance(op_strategy, AcquisitionStrategyPartial)
 
-            acq_data = op_strategy.operation_info.data
-            acq_channel = acq_data["acq_channel"]
-            protocol: str = acq_data["protocol"]
-            bin_mode: BinMode = acq_data["bin_mode"]
+            if op_strategy.operation_info.is_acquisition:
+                # Help the type checker.
+                assert isinstance(op_strategy, AcquisitionStrategyPartial)
 
-            if _is_acquisition_binned_average(protocol, bin_mode) or _is_acquisition_binned_append(
-                protocol, bin_mode
-            ):
-                thresholded_trigger_count_metadata = (
-                    ThresholdedTriggerCountMetadata(
-                        acq_data["thresholded_trigger_count"]["threshold"],
-                        acq_data["thresholded_trigger_count"]["condition"],
+                acq_data = op_strategy.operation_info.data
+                acq_channel = acq_data["acq_channel"]
+                protocol: str = acq_data["protocol"]
+                bin_mode: BinMode = acq_data["bin_mode"]
+                if _is_acquisition_binned_append(protocol, bin_mode) and control_flow_stack == 0:
+                    # We handle this case in a different function for optimization.
+                    continue
+
+                if _is_acquisition_binned_average(
+                    protocol, bin_mode
+                ) or _is_acquisition_binned_append(protocol, bin_mode):
+                    thresholded_trigger_count_metadata = (
+                        ThresholdedTriggerCountMetadata(
+                            acq_data["thresholded_trigger_count"]["threshold"],
+                            acq_data["thresholded_trigger_count"]["condition"],
+                        )
+                        if protocol == "ThresholdedTriggerCount"
+                        else None
                     )
-                    if protocol == "ThresholdedTriggerCount"
-                    else None
-                )
-                qblox_acq_index, qblox_acq_bin_offset = self.qblox_acq_index_manager.allocate_bins(
-                    acq_channel,
-                    acq_data["acq_index"],
-                    self.name,
-                    thresholded_trigger_count_metadata,
-                    repetitions if bin_mode == BinMode.APPEND else None,
-                )
-            elif bin_mode == BinMode.DISTRIBUTION and protocol in (
-                "TriggerCount",
-                "ThresholdedTriggerCount",
-                "DualThresholdedTriggerCount",
-            ):
-                qblox_acq_index = self.qblox_acq_index_manager.allocate_qblox_index(
-                    acq_channel, self.name
-                )
-                qblox_acq_bin_offset = 0
-            elif protocol in "Trace":
-                qblox_acq_index, qblox_acq_bin_offset = self.qblox_acq_index_manager.allocate_trace(
-                    acq_channel, self.name
-                )
-            elif bin_mode == BinMode.APPEND and protocol == "TimetagTrace":
-                qblox_acq_index, qblox_acq_bin_offset = (
-                    self.qblox_acq_index_manager.allocate_timetagtrace(
-                        acq_channel,
-                        acq_data["acq_index"],
-                        self.name,
-                        repetitions,
+                    acq_indices = (
+                        [(i, thresholded_trigger_count_metadata) for i in acq_data["acq_index"]]
+                        if isinstance(acq_data["acq_index"], list)
+                        else (acq_data["acq_index"], thresholded_trigger_count_metadata)
                     )
-                )
-            else:
-                raise ValueError(
-                    f"Unsupported acquisition protocol '{protocol}' "
-                    f"for acquisition channel '{acq_channel}', "
-                    f"{op_strategy.operation_info!r}."
-                )
+                    qblox_acq_index, qblox_acq_bin_offset = (
+                        self.qblox_acq_index_manager.allocate_bins(
+                            acq_channel,
+                            acq_indices,
+                            self.name,
+                            repetitions if bin_mode == BinMode.APPEND else None,
+                        )
+                    )
+                elif bin_mode == BinMode.DISTRIBUTION and protocol in (
+                    "TriggerCount",
+                    "ThresholdedTriggerCount",
+                    "DualThresholdedTriggerCount",
+                ):
+                    qblox_acq_index = self.qblox_acq_index_manager.allocate_qblox_index(
+                        acq_channel, self.name
+                    )
+                    qblox_acq_bin_offset = 0
+                elif protocol in "Trace":
+                    qblox_acq_index, qblox_acq_bin_offset = (
+                        self.qblox_acq_index_manager.allocate_trace(acq_channel, self.name)
+                    )
+                elif bin_mode == BinMode.APPEND and protocol == "TimetagTrace":
+                    qblox_acq_index, qblox_acq_bin_offset = (
+                        self.qblox_acq_index_manager.allocate_timetagtrace(
+                            acq_channel,
+                            acq_data["acq_index"],
+                            self.name,
+                            repetitions,
+                        )
+                    )
+                else:
+                    raise ValueError(
+                        f"Unsupported acquisition protocol '{protocol}' "
+                        f"for acquisition channel '{acq_channel}', "
+                        f"{op_strategy.operation_info!r}."
+                    )
 
-            op_strategy.qblox_acq_index = qblox_acq_index
+                op_strategy.qblox_acq_index = qblox_acq_index
 
-            if acq_data["bin_mode"] == BinMode.APPEND:
-                acq_bin_idx_reg = self.register_manager.allocate_register()
+                if acq_data["bin_mode"] == BinMode.APPEND:
+                    acq_bin_idx_reg = self.register_manager.allocate_register()
 
-                qasm.emit(
-                    q1asm_instructions.MOVE,
-                    qblox_acq_bin_offset,
-                    acq_bin_idx_reg,
-                    comment=f"Initialize acquisition bin_idx for "
-                    f"channel {op_strategy.operation_info.data['acq_channel']}, "
-                    f"index {op_strategy.operation_info.data['acq_index']}",
-                )
-                op_strategy.bin_idx_register = acq_bin_idx_reg
-            else:
-                op_strategy.qblox_acq_bin = qblox_acq_bin_offset
+                    qasm.emit(
+                        q1asm_instructions.MOVE,
+                        qblox_acq_bin_offset,
+                        acq_bin_idx_reg,
+                        comment=f"Initialize acquisition bin_idx for "
+                        f"channel {op_strategy.operation_info.data['acq_channel']}, "
+                        f"index {op_strategy.operation_info.data['acq_index']}",
+                    )
+                    op_strategy.bin_idx_register = acq_bin_idx_reg
+                else:
+                    op_strategy.qblox_acq_bin = qblox_acq_bin_offset
+            elif isinstance(op_strategy, (LoopStrategy, ConditionalStrategy)):
+                control_flow_stack += 1
+            elif op_strategy.operation_info.is_control_flow_end:
+                control_flow_stack -= 1
 
     def _get_latency_correction_ns(self, latency_correction: float) -> int:
         if latency_correction == 0:

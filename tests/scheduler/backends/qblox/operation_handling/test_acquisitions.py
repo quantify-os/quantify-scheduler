@@ -1502,10 +1502,10 @@ def test_trigger_count_append_gettables(
         acq_index_name="0",
         data=[
             DummyBinnedAcquisitionData(data=(10000, 15000), thres=0, avg_cnt=100),
-            DummyBinnedAcquisitionData(data=(10000, 15000), thres=0, avg_cnt=150),
             DummyBinnedAcquisitionData(data=(20000, 25000), thres=0, avg_cnt=200),
-            DummyBinnedAcquisitionData(data=(20000, 25000), thres=0, avg_cnt=250),
             DummyBinnedAcquisitionData(data=(20000, 25000), thres=0, avg_cnt=300),
+            DummyBinnedAcquisitionData(data=(10000, 15000), thres=0, avg_cnt=150),
+            DummyBinnedAcquisitionData(data=(20000, 25000), thres=0, avg_cnt=250),
             DummyBinnedAcquisitionData(data=(20000, 25000), thres=0, avg_cnt=350),
         ],
     )
@@ -2785,10 +2785,10 @@ def test_append_measurements(mock_setup_basic_transmon, make_cluster_component):
         acq_index_name="0",
         data=[
             DummyBinnedAcquisitionData(data=(10000, 15000), thres=0, avg_cnt=0),
-            DummyBinnedAcquisitionData(data=(30000, 35000), thres=0, avg_cnt=0),
-            DummyBinnedAcquisitionData(data=(50000, 55000), thres=0, avg_cnt=0),
             DummyBinnedAcquisitionData(data=(20000, 25000), thres=0, avg_cnt=0),
+            DummyBinnedAcquisitionData(data=(30000, 35000), thres=0, avg_cnt=0),
             DummyBinnedAcquisitionData(data=(40000, 45000), thres=0, avg_cnt=0),
+            DummyBinnedAcquisitionData(data=(50000, 55000), thres=0, avg_cnt=0),
             DummyBinnedAcquisitionData(data=(60000, 65000), thres=0, avg_cnt=0),
         ],
     )

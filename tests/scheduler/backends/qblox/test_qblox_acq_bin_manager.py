@@ -16,38 +16,38 @@ def test_allocate_mixed_acquisitions():
     qblox_acq_index_manager = QbloxAcquisitionIndexManager()
 
     qblox_acq_index, qblox_acq_bin = qblox_acq_index_manager.allocate_bins(
-        "ch0", 2, "seq0", None, None
+        "ch0", (2, None), "seq0", None
     )
     assert (qblox_acq_index, qblox_acq_bin) == (0, 0)
     qblox_acq_index = qblox_acq_index_manager.allocate_trace("ch_trace", "seq0")
     assert qblox_acq_index == (1, 0)
     qblox_acq_index, qblox_acq_bin = qblox_acq_index_manager.allocate_bins(
-        "ch1", 6, "seq0", None, 2
+        "ch1", (6, None), "seq0", 2
     )
     assert (qblox_acq_index, qblox_acq_bin) == (2, 0)
 
     qblox_acq_index, qblox_acq_bin = qblox_acq_index_manager.allocate_bins(
-        "ch0", [5, 6, 7, 8], "seq0", None, None
+        "ch0", [(5, None), (6, None), (7, None), (8, None)], "seq0", None
     )
     assert (qblox_acq_index, qblox_acq_bin) == (0, 1)
 
     qblox_acq_index, qblox_acq_bin = qblox_acq_index_manager.allocate_bins(
-        "ch1", [7, 8, 9], "seq0", None, 2
+        "ch1", [(7, None), (8, None), (9, None)], "seq0", 2
     )
     assert (qblox_acq_index, qblox_acq_bin) == (2, 2)
 
     qblox_acq_index, qblox_acq_bin = qblox_acq_index_manager.allocate_bins(
-        "ch1", 10, "seq0", None, 2
+        "ch1", (10, None), "seq0", 2
     )
     assert (qblox_acq_index, qblox_acq_bin) == (2, 8)
 
     qblox_acq_index, qblox_acq_bin = qblox_acq_index_manager.allocate_bins(
-        "ch2", list(range(constants.NUMBER_OF_QBLOX_ACQ_BINS - 3)), "seq0", None, None
+        "ch2", [(i, None) for i in range(constants.NUMBER_OF_QBLOX_ACQ_BINS - 3)], "seq0", None
     )
     assert (qblox_acq_index, qblox_acq_bin) == (3, 0)
 
     qblox_acq_index, qblox_acq_bin = qblox_acq_index_manager.allocate_bins(
-        "ch0", 9, "seq0", None, None
+        "ch0", (9, None), "seq0", None
     )
     assert (qblox_acq_index, qblox_acq_bin) == (0, 5)
 
@@ -58,8 +58,8 @@ def test_allocate_mixed_acquisitions():
         "0": {"num_bins": 6, "index": 0},
         "1": {"num_bins": 1, "index": 1},
         "2": {"num_bins": 10, "index": 2},
-        "3": {"num_bins": 4093, "index": 3},
-        "4": {"num_bins": 4096, "index": 4},
+        "3": {"num_bins": constants.NUMBER_OF_QBLOX_ACQ_BINS - 3, "index": 3},
+        "4": {"num_bins": constants.NUMBER_OF_QBLOX_ACQ_BINS, "index": 4},
     }
     assert qblox_acq_index_manager.acq_declaration_dict() == expected_acq_declaration_dict
 
@@ -92,15 +92,16 @@ def test_allocate_mixed_acquisitions():
 def test_out_of_bins():
     qblox_acq_index_manager = QbloxAcquisitionIndexManager()
 
-    # quantify_scheduler.backends.qblox.constants.NUMBER_OF_QBLOX_ACQ_BINS
-    max_bins = 4096
+    max_bins = constants.NUMBER_OF_QBLOX_ACQ_BINS
 
     with pytest.raises(
         IndexError,
         match="Out of Qblox acquisition bins. "
         "The schedule requested too many Qblox acquisition bins for the sequencer seq0.",
     ):
-        qblox_acq_index_manager.allocate_bins("ch1", list(range(max_bins + 1)), "seq0", None, None)
+        qblox_acq_index_manager.allocate_bins(
+            "ch1", [(i, None) for i in range(max_bins + 1)], "seq0", None
+        )
 
 
 def test_out_of_qblox_acq_indices():
@@ -110,14 +111,14 @@ def test_out_of_qblox_acq_indices():
     max_qblox_acq_indices = 32
 
     for i in range(max_qblox_acq_indices):
-        qblox_acq_index_manager.allocate_bins(f"ch{i}", 0, "seq0", None, None)
+        qblox_acq_index_manager.allocate_bins(f"ch{i}", (0, None), "seq0", None)
 
     with pytest.raises(
         IndexError,
         match="Out of Qblox acquisition bins. "
         "The schedule requested too many Qblox acquisition bins for the sequencer seq0.",
     ):
-        qblox_acq_index_manager.allocate_bins("ch_extra", 1, "seq0", None, None)
+        qblox_acq_index_manager.allocate_bins("ch_extra", (1, None), "seq0", None)
 
 
 def test_out_of_qblox_acq_indices_qblox_index_trace():
