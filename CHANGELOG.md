@@ -1,5 +1,15 @@
 # Changelog
 
+## Release v0.28.0 (2026-03-19)
+
+### 🚀 Enhancements
+
+- Feat: allow skipping Measure acquisition delay in subsequent operations ([!1309](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1309) by [@LeonQblox](https://gitlab.com/LeonQblox))
+- Feat[qblox]: add automatic RF switching as a qblox backend compiler pass ([!1313](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1313) by [@Robert Sokolewicz](https://gitlab.com/rsokolewicz))
+- Feat: APPEND acquisitions to use fewer Q1ASM registers ([!1317](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1317) by [@Gábor Oszkár Dénes](https://gitlab.com/gdenes))
+### 🐛 Bug Fixes and Closed Issues
+### 🔧 Other
+
 ## Release v0.27.0 (2026-02-04)
 
 ### 🚀 Enhancements
