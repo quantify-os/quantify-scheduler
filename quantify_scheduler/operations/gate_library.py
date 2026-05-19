@@ -339,7 +339,7 @@ class Rz(Operation):
 
     @theta.setter
     def theta(self, value: float) -> None:
-        self.data["gate_info"]["theta"] = value
+        self.data["gate_info"]["theta"] = _modulo_360_with_mapping(value)
 
     def __str__(self) -> str:
         gate_info = self.data["gate_info"]

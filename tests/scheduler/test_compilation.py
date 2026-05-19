@@ -787,15 +787,25 @@ def test_delaying_next_operation(mock_setup_basic_transmon_with_standard_params)
     assert x_schedulable["timing_constraints"][0].rel_time == -100e-9
 
 
-def test_gate_merging(
+def test_rz_gate_merging(
     compile_config_basic_transmon_qblox_hardware,
+    get_subschedule_operation,
 ):
     # Create a schedule with multiple Rz gates
     sched = Schedule("Test schedule with multiple Rz gates")
     sched.add(Rz(100, "q0"))
+    sched.add(Rz(100, "q0"))
+    sched.add(Rz(100, "q0"))
     sched.add(Rz(42, "q0"))
     sched.add(Rz(69, "q0"))
+
     sched.add(Rz(12, "q1"))
+
+    rz_100 = Rz(100, "q0")
+    sched.add(rz_100)
+    sched.add(rz_100)
+    sched.add(rz_100)
+    sched.add(rz_100)
 
     # Compile the schedule
     compiler = SerialCompiler(name="compiler")
@@ -810,15 +820,17 @@ def test_gate_merging(
         for s in compiled_sched.schedulables.values()
         if isinstance(compiled_sched.operations[s["operation_id"]], Rz)
     ]
-    assert len(rz_schedulables) == 2
+    assert len(rz_schedulables) == 3
 
     # Check the merged parameters
-    q0_rz = next(
-        op for op in compiled_sched.operations.values() if isinstance(op, Rz) and op.qubit == "q0"
-    )
-    assert q0_rz.theta == 100 + 42 + 69
+    q0_0_rz = compiled_sched.operations[rz_schedulables[0]["operation_id"]]
+    assert q0_0_rz.qubit == "q0"
+    assert q0_0_rz.theta == (100 * 3 + 42 + 69) % 360
 
-    q1_rz = next(
-        op for op in compiled_sched.operations.values() if isinstance(op, Rz) and op.qubit == "q1"
-    )
+    q1_rz = compiled_sched.operations[rz_schedulables[1]["operation_id"]]
+    assert q1_rz.qubit == "q1"
     assert q1_rz.theta == 12
+
+    q0_1_rz = compiled_sched.operations[rz_schedulables[2]["operation_id"]]
+    assert q0_1_rz.qubit == "q0"
+    assert q0_1_rz.theta == (4 * 100) % 360

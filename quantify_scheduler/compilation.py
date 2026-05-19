@@ -5,6 +5,8 @@
 from __future__ import annotations
 
 import logging
+import uuid
+from copy import deepcopy
 from typing import TYPE_CHECKING, Literal, overload
 
 import networkx as nx
@@ -431,27 +433,29 @@ def _merge_rz_gates(
                 config=config,
             )
 
-        last_op = None
+        first_rz_op = None
         # Copy list so we can modify it while iterating
         for inner_sched_key in list(op.schedulables):
             inner_sched = op.schedulables[inner_sched_key]
             inner_op = op.operations[inner_sched["operation_id"]]
 
-            # Merge Rz gates if possible
-            if (
-                isinstance(inner_op, Rz)
-                and isinstance(last_op, Rz)
-                and inner_op.qubit == last_op.qubit
-            ):
-                last_op.theta += inner_op.theta
-                noop = IdlePulse(0)
-                noop_id = noop.hash
-                op.operations[noop_id] = noop
-                inner_sched["operation_id"] = noop_id
-                continue
-
-            # Record last
-            last_op = inner_op
+            if isinstance(inner_op, Rz):
+                if first_rz_op is not None and inner_op.qubit == first_rz_op.qubit:
+                    first_rz_op.theta += inner_op.theta
+                    # Delete the operation, it's merged into the first Rz gate.
+                    noop = IdlePulse(0)
+                    noop_id = noop.hash
+                    op.operations[noop_id] = noop
+                    inner_sched["operation_id"] = noop_id
+                else:
+                    # Create a new operation, which we will change incrementally
+                    # while new gates are added, so this needs a new object and operation id.
+                    first_rz_op = deepcopy(inner_op)
+                    new_id = str(uuid.uuid4())
+                    op.operations[new_id] = first_rz_op
+                    inner_sched["operation_id"] = new_id
+            else:
+                first_rz_op = None
 
         return op
     elif isinstance(op, ControlFlowOperation):
