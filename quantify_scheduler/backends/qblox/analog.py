@@ -40,6 +40,7 @@ from quantify_scheduler.backends.qblox.operation_handling.virtual import (
     NcoPhaseShiftStrategy,
     NcoResetClockPhaseStrategy,
     NcoSetClockFrequencyStrategy,
+    UpdateParameterStrategy,
 )
 from quantify_scheduler.backends.types.qblox import (
     AnalogModuleSettings,
@@ -422,6 +423,7 @@ class AnalogSequencerCompiler(SequencerCompiler):
         is called.
         """
         self._update_set_clock_frequency_operations()
+        self._combine_phase_shifts()
         self._assert_enough_time_between_freq_phase_updates(self._get_ordered_operations())
         super().prepare()
 
@@ -433,6 +435,45 @@ class AnalogSequencerCompiler(SequencerCompiler):
                         "interm_freq_old": self.frequency,
                     }
                 )
+
+    def _combine_phase_shifts(self) -> None:
+        """Combine phase shifts that occur after each other at the same time."""
+        first_phase_shift_strategy: NcoPhaseShiftStrategy | None = None
+        first_phase_shift_strategy_index = None
+        i = 0
+        while i < len(self.op_strategies):
+            strategy = self.op_strategies[i]
+            if (
+                isinstance(strategy, NcoPhaseShiftStrategy)
+                and first_phase_shift_strategy is not None
+                and first_phase_shift_strategy_index is not None
+                and math.isclose(
+                    first_phase_shift_strategy.operation_info.timing, strategy.operation_info.timing
+                )
+                and strategy.operation_info.duration == 0.0
+            ):
+                # Copy the operation info because we are modifying it
+                operation_info = deepcopy(first_phase_shift_strategy.operation_info)
+                operation_info.data["phase_shift"] += strategy.operation_info.data["phase_shift"]
+                first_phase_shift_strategy = NcoPhaseShiftStrategy(operation_info)
+                self.op_strategies[first_phase_shift_strategy_index] = first_phase_shift_strategy
+                del self.op_strategies[i]
+                next_strategy = self.op_strategies[i] if i < len(self.op_strategies) else None
+                if isinstance(next_strategy, UpdateParameterStrategy):
+                    del self.op_strategies[i]
+            else:
+                if isinstance(strategy, NcoPhaseShiftStrategy):
+                    first_phase_shift_strategy = strategy
+                    first_phase_shift_strategy_index = i
+                    # Skip the next strategy if it's a UpdateParameterStrategy
+                    if i + 1 < len(self.op_strategies) and isinstance(
+                        self.op_strategies[i + 1], UpdateParameterStrategy
+                    ):
+                        i += 1
+                else:
+                    first_phase_shift_strategy = None
+                    first_phase_shift_strategy_index = None
+                i += 1
 
     @staticmethod
     def _assert_enough_time_between_freq_phase_updates(

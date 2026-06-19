@@ -797,15 +797,18 @@ def test_rz_gate_merging(
     sched.add(Rz(100, "q0"))
     sched.add(Rz(100, "q0"))
     sched.add(Rz(42, "q0"))
-    sched.add(Rz(69, "q0"))
+    sched.add(Rz(65, "q0"))
 
     sched.add(Rz(12, "q1"))
+    sched.add(Rz(33, "q1"))
 
     rz_100 = Rz(100, "q0")
     sched.add(rz_100)
     sched.add(rz_100)
     sched.add(rz_100)
     sched.add(rz_100)
+    sched.add(SquarePulse(amp=0.1, duration=100e-9, port="q0:mw", clock="q0.01"))
+    sched.add(SquarePulse(amp=0.1, duration=100e-9, port="q0:mw", clock="q1.01"))
 
     # Compile the schedule
     compiler = SerialCompiler(name="compiler")
@@ -820,17 +823,15 @@ def test_rz_gate_merging(
         for s in compiled_sched.schedulables.values()
         if isinstance(compiled_sched.operations[s["operation_id"]], Rz)
     ]
-    assert len(rz_schedulables) == 3
+    program_q0 = compiled_sched.compiled_instructions["cluster0"]["cluster0_module2"]["sequencers"][
+        "seq0"
+    ].sequence["program"]
+    program_q1 = compiled_sched.compiled_instructions["cluster0"]["cluster0_module2"]["sequencers"][
+        "seq1"
+    ].sequence["program"]
 
-    # Check the merged parameters
-    q0_0_rz = compiled_sched.operations[rz_schedulables[0]["operation_id"]]
-    assert q0_0_rz.qubit == "q0"
-    assert q0_0_rz.theta == (100 * 3 + 42 + 69) % 360
-
-    q1_rz = compiled_sched.operations[rz_schedulables[1]["operation_id"]]
-    assert q1_rz.qubit == "q1"
-    assert q1_rz.theta == 12
-
-    q0_1_rz = compiled_sched.operations[rz_schedulables[2]["operation_id"]]
-    assert q0_1_rz.qubit == "q0"
-    assert q0_1_rz.theta == (4 * 100) % 360
+    expected_shift_q0 = round((100 * 3 + 42 + 65 + 100 * 4) % 360 / 360 * 1e9)
+    expected_shift_q1 = round((12 + 33) % 360 / 360 * 1e9)
+    assert f"set_ph_delta {expected_shift_q0}" in program_q0
+    assert f"set_ph_delta {expected_shift_q1}" in program_q1
+    assert len(rz_schedulables) == 11

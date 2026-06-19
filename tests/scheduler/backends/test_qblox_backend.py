@@ -90,7 +90,7 @@ from quantify_scheduler.operations.control_flow_library import (
     ConditionalOperation,
     LoopOperation,
 )
-from quantify_scheduler.operations.gate_library import CZ, X90, Measure, Reset, X, Y
+from quantify_scheduler.operations.gate_library import CZ, X90, Measure, Reset, Rz, X, Y
 from quantify_scheduler.operations.pulse_library import (
     DRAGPulse,
     IdlePulse,
@@ -4220,18 +4220,19 @@ def test_1_ns_time_grid_nco_too_close_set_phase(
     pulse = SquarePulse(
         amp=0.5,
         port="q0:mw",
-        duration=4e-9,
+        duration=3e-9,
         clock="q0.01",
     )
     sched.add(pulse)
     sched.add(ShiftClockPhase(phase_shift=20, clock="q0.01"))
+    sched.add(IdlePulse(duration=1e-9))
     sched.add(ShiftClockPhase(phase_shift=20, clock="q0.01"))
     sched.add(pulse)
     compiler = SerialCompiler(name="compiler")
     with pytest.raises(
         NcoOperationTimingError,
         match=re.escape(
-            'Operation Pulse "ShiftClockPhase" (t0=4e-09, duration=0) occurred 0 ns after '
+            'Operation Pulse "ShiftClockPhase" (t0=4e-09, duration=0) occurred 1 ns after '
             "the previous phase update. The minimum time between phase updates must be 4 "
             "ns."
         ),
@@ -5071,3 +5072,89 @@ def test_conditional_reset_with_overlapping_pulses_error(
             schedule,
             config=config,
         )
+
+
+def test_consecutive_shift_clock_phase(
+    compile_config_basic_transmon_qblox_hardware_cluster, assert_equal_q1asm
+):
+    schedule = Schedule()
+    schedule.add(ShiftClockPhase(clock="q0.01", phase_shift=90))
+    schedule.add(IdlePulse(100e-9))
+    schedule.add(ShiftClockPhase(clock="q0.01", phase_shift=90))
+    schedule.add(SquarePulse(amp=0.5, duration=100e-9, port="q0:mw", clock="q0.01"))
+    compiler = SerialCompiler(name="compiler")
+    compiled_schedule = compiler.compile(
+        schedule=schedule,
+        config=compile_config_basic_transmon_qblox_hardware_cluster,
+    )
+    program = compiled_schedule.compiled_instructions["cluster0"]["cluster0_module1"]["sequencers"][
+        "seq0"
+    ].sequence["program"]
+    assert_equal_q1asm(
+        program,
+        """
+ set_mrk 0 # set markers to 0 (init)
+ wait_sync 4
+ upd_param 4
+ wait 4 # latency correction of 4 + 0 ns
+ move 1,R0 # iterator for loop with label start
+start:
+ reset_ph
+ upd_param 4
+ set_ph_delta 250000000 # increment nco phase by 90.00 deg
+ upd_param 4
+ wait 96 # auto generated wait (96 ns)
+ set_ph_delta 250000000 # increment nco phase by 90.00 deg
+ set_awg_offs 16384,0 # setting offset for SquarePulse
+ upd_param 4
+ wait 92 # auto generated wait (92 ns)
+ set_awg_offs 0,0 # setting offset for SquarePulse
+ set_awg_gain 16384,0 # setting gain for SquarePulse
+ play 0,0,4 # play SquarePulse (4 ns)
+ loop R0,@start
+ stop
+    """,
+    )
+
+
+def test_phase_shift_at_same_time_stack(
+    compile_config_basic_transmon_qblox_hardware_cluster, assert_equal_q1asm
+):
+    schedule = Schedule()
+    schedule.add(Rz(theta=22.5, qubit="q0"))
+    schedule.add(Rz(theta=22.5, qubit="q0"))
+    schedule.add(ShiftClockPhase(clock="q0.01", phase_shift=22.5))
+    schedule.add(ShiftClockPhase(clock="q0.01", phase_shift=22.5))
+    schedule.add(Rz(theta=22.5, qubit="q0"))
+    schedule.add(ShiftClockPhase(clock="q0.01", phase_shift=22.5))
+    schedule.add(SquarePulse(amp=0.5, duration=100e-9, port="q0:mw", clock="q0.01"))
+    compiler = SerialCompiler(name="compiler")
+    compiled_schedule = compiler.compile(
+        schedule=schedule,
+        config=compile_config_basic_transmon_qblox_hardware_cluster,
+    )
+    program = compiled_schedule.compiled_instructions["cluster0"]["cluster0_module1"]["sequencers"][
+        "seq0"
+    ].sequence["program"]
+    assert_equal_q1asm(
+        program,
+        """
+set_mrk 0 # set markers to 0 (init)
+ wait_sync 4
+ upd_param 4
+ wait 4 # latency correction of 4 + 0 ns
+ move 1,R0 # iterator for loop with label loop4
+start:
+ reset_ph
+ upd_param 4
+ set_ph_delta 375000000 # increment nco phase
+ set_awg_offs 16384,0 # setting offset for SquarePulse
+ upd_param 4
+ wait 92
+ set_awg_offs 0,0 # setting offset for SquarePulse
+ set_awg_gain 16384,0 # setting gain for SquarePulse
+ play 0,0,4 # play SquarePulse (50 ns)
+ loop R0,@start
+ stop
+    """,
+    )

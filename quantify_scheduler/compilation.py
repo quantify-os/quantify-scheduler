@@ -5,8 +5,6 @@
 from __future__ import annotations
 
 import logging
-import uuid
-from copy import deepcopy
 from typing import TYPE_CHECKING, Literal, overload
 
 import networkx as nx
@@ -17,8 +15,6 @@ from quantify_scheduler.json_utils import load_json_schema, validate_json
 from quantify_scheduler.operations.control_flow_library import (
     ControlFlowOperation,
 )
-from quantify_scheduler.operations.gate_library import Rz
-from quantify_scheduler.operations.pulse_library import IdlePulse
 from quantify_scheduler.schedules.schedule import (
     Schedulable,
     Schedule,
@@ -405,67 +401,6 @@ def _normalize_absolute_timing(
         for schedulable in schedule.schedulables.values():
             schedulable["abs_time"] -= min_time
     return schedule
-
-
-@overload
-def _merge_rz_gates(
-    schedule: Schedule,
-    config: CompilationConfig | None = None,
-) -> Schedule: ...
-@overload
-def _merge_rz_gates(
-    schedule: Operation,
-    config: CompilationConfig | None = None,
-) -> Operation | Schedule: ...
-def _merge_rz_gates(
-    schedule: Schedule | Operation,
-    config: CompilationConfig | None = None,
-):
-    # This is a recursive function, the argument `schedule` is not always a `Schedule` type,
-    # so we rename it at the beginning to not cause confusion.
-    op = schedule
-
-    if isinstance(op, Schedule):
-        # First, process operations
-        for inner_op_key, inner_op in op.operations.items():
-            op.operations[inner_op_key] = _merge_rz_gates(
-                schedule=inner_op,
-                config=config,
-            )
-
-        first_rz_op = None
-        # Copy list so we can modify it while iterating
-        for inner_sched_key in list(op.schedulables):
-            inner_sched = op.schedulables[inner_sched_key]
-            inner_op = op.operations[inner_sched["operation_id"]]
-
-            if isinstance(inner_op, Rz):
-                if first_rz_op is not None and inner_op.qubit == first_rz_op.qubit:
-                    first_rz_op.theta += inner_op.theta
-                    # Delete the operation, it's merged into the first Rz gate.
-                    noop = IdlePulse(0)
-                    noop_id = noop.hash
-                    op.operations[noop_id] = noop
-                    inner_sched["operation_id"] = noop_id
-                else:
-                    # Create a new operation, which we will change incrementally
-                    # while new gates are added, so this needs a new object and operation id.
-                    first_rz_op = deepcopy(inner_op)
-                    new_id = str(uuid.uuid4())
-                    op.operations[new_id] = first_rz_op
-                    inner_sched["operation_id"] = new_id
-            else:
-                first_rz_op = None
-
-        return op
-    elif isinstance(op, ControlFlowOperation):
-        op.body = _merge_rz_gates(
-            schedule=op.body,
-            config=config,
-        )
-        return op
-    else:
-        return op
 
 
 def validate_config(config: dict, scheme_fn: str) -> bool:

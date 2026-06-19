@@ -124,6 +124,7 @@ def make_cluster_component(mocker):
         modules: dict = default_modules,
         sequencer_status: SequencerStatuses = SequencerStatuses.OKAY,
         sequencer_state: SequencerStates = SequencerStates.ARMED,
+        exit_code: int | None = None,
         info_flags: list[SequencerStatusFlags] | None = None,
         warn_flags: list[SequencerStatusFlags] | None = None,
         err_flags: list[SequencerStatusFlags] | None = None,
@@ -175,13 +176,13 @@ def make_cluster_component(mocker):
                 instrument,
                 "get_sequencer_status",
                 return_value=SequencerStatus(
-                    sequencer_status,
-                    sequencer_state,
-                    0,
-                    info_flags if info_flags else [],
-                    warn_flags if warn_flags else [],
-                    err_flags if err_flags else [],
-                    sequencer_logs if sequencer_logs else [],
+                    status=sequencer_status,
+                    state=sequencer_state,
+                    exit_code=exit_code or 0,
+                    info_flags=info_flags if info_flags else [],
+                    warn_flags=warn_flags if warn_flags else [],
+                    err_flags=err_flags if err_flags else [],
+                    log=sequencer_logs if sequencer_logs else [],
                 ),
             )
             if instrument.is_qtm_type:
