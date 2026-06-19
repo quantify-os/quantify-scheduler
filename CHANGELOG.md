@@ -1,5 +1,12 @@
 # Changelog
 
+## Release v0.28.1 (2026-06-19)
+
+### 🐛 Bug Fixes and Closed Issues
+
+- fix[qblox]: subsequent Rz merging is now done correctly. Previously there was a bug where a merged angle would propagate to all other Rz operations. ([!1321](https://gitlab.com/quantify-os/quantify-scheduler/-/merge_requests/1321))
+- fix[qblox]: when running experiments with MeasurementControl, subsequent runs would reset mixer corrections back to default. This is now fixed.
+
 ## Release v0.28.0 (2026-03-19)
 
 ### 🚀 Enhancements
