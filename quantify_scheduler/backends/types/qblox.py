@@ -1448,11 +1448,11 @@ class QbloxMixerCorrections(MixerCorrections):
     """The DC offset on the I channel used for this port-clock combination."""
     dc_offset_q: Optional[float] = None  # type: ignore  # (optional due to AMC)
     """The DC offset on the Q channel used for this port-clock combination."""
-    amp_ratio: float = Field(
+    amp_ratio: Optional[float] = Field(
         default=DEFAULT_MIXER_AMP_RATIO, ge=MIN_MIXER_AMP_RATIO, le=MAX_MIXER_AMP_RATIO
     )
     """The mixer gain ratio used for this port-clock combination."""
-    phase_error: float = Field(
+    phase_error: Optional[float] = Field(
         default=DEFAULT_MIXER_PHASE_ERROR_DEG,
         ge=MIN_MIXER_PHASE_ERROR_DEG,
         le=MAX_MIXER_PHASE_ERROR_DEG,

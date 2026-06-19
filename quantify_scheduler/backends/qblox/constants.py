@@ -57,8 +57,9 @@ Only applies to square pulses.
 """
 PULSE_STITCHING_DURATION_RAMP = 2000e-9
 """Duration of the individual pulses when RampPulse is concerted to long_ramp_pulse."""
-DEFAULT_MIXER_PHASE_ERROR_DEG = 0.0
-"""Default phase shift in the instruments for mixer corrections.
+DEFAULT_MIXER_PHASE_ERROR_DEG = None
+"""Default phase shift in the instruments for mixer corrections. None is equivalent to "do not set
+this on the instrument".
 """
 MIN_MIXER_PHASE_ERROR_DEG = -45
 """Lowest phase shift that can be configured in the instruments for mixer corrections.
@@ -66,9 +67,11 @@ MIN_MIXER_PHASE_ERROR_DEG = -45
 MAX_MIXER_PHASE_ERROR_DEG = 45
 """Highest phase shift that can be configured in the instruments for mixer corrections.
 """
-DEFAULT_MIXER_AMP_RATIO = 1.0
+DEFAULT_MIXER_AMP_RATIO = None
 """Default value of the amplitude correction. N.B. This correction is defined
-as Q/I."""
+as Q/I. None is equivalent to "do not set this on the instrument".
+"""
+
 MIN_MIXER_AMP_RATIO = 0.5
 """Lowest value the amplitude correction can be set to. N.B. This correction is defined
 as Q/I."""

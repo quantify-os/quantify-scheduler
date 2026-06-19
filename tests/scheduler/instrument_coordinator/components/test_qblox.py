@@ -177,6 +177,7 @@ def make_cluster_component(mocker):
                 return_value=SequencerStatus(
                     sequencer_status,
                     sequencer_state,
+                    0,
                     info_flags if info_flags else [],
                     warn_flags if warn_flags else [],
                     err_flags if err_flags else [],

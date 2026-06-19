@@ -1212,6 +1212,13 @@ def _generate_new_style_hardware_compilation_config(  # noqa: PLR0915
                         new_style_config["hardware_options"]["mixer_corrections"][port_clock][
                             "amp_ratio"
                         ] = portclock_cfg.pop("mixer_amp_ratio")
+                    else:
+                        # Preserve legacy defaults only when mixer settings are in use.
+                        mixer_corrections = new_style_config["hardware_options"][
+                            "mixer_corrections"
+                        ].get(port_clock)
+                        if mixer_corrections is not None:
+                            mixer_corrections["amp_ratio"] = 1.0
                     if "auto_sideband_cal" in portclock_cfg:
                         # Set auto_sideband_cal from portclock config:
                         new_style_config["hardware_options"]["mixer_corrections"][port_clock][
@@ -1222,6 +1229,13 @@ def _generate_new_style_hardware_compilation_config(  # noqa: PLR0915
                         new_style_config["hardware_options"]["mixer_corrections"][port_clock][
                             "phase_error"
                         ] = portclock_cfg.pop("mixer_phase_error_deg")
+                    else:
+                        # Preserve legacy defaults only when mixer settings are in use.
+                        mixer_corrections = new_style_config["hardware_options"][
+                            "mixer_corrections"
+                        ].get(port_clock)
+                        if mixer_corrections is not None:
+                            mixer_corrections["phase_error"] = 0.0
                     if portclock_cfg != {}:
                         # Set remaining portclock config parameters to sequencer options:
                         new_style_config["hardware_options"]["sequencer_options"][port_clock] = (

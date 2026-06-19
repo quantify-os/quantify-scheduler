@@ -233,9 +233,9 @@ class MixerCorrections(DataStructure):
     """The DC offset on the I channel used for this port-clock combination."""
     dc_offset_q: float = 0.0
     """The DC offset on the Q channel used for this port-clock combination."""
-    amp_ratio: float = 1.0
+    amp_ratio: float | None = 1.0
     """The mixer gain ratio used for this port-clock combination."""
-    phase_error: float = 0.0
+    phase_error: float | None = 0.0
     """The mixer phase error used for this port-clock combination."""
 
 
